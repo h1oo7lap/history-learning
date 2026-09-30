@@ -1,0 +1,589 @@
+// =============================================================================
+// History Learning Platform — Prisma schema (SPEC v2, Prisma 7.x)
+// Connection URL is NOT here: it lives in prisma.config.ts (Prisma 7).
+// Search indexes (unaccent + pg_trgm) are added by a manual SQL migration.
+// After week 1 this file is FROZEN: change it only together with SPEC.md.
+// =============================================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs" // NestJS runs CommonJS
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+/// Used by taxonomy, characters, events, missions, cards
+enum ActiveStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// Used by lessons and quizzes
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum ExpType {
+  LESSON_COMPLETION
+  QUIZ_COMPLETION
+  QUIZ_PASS
+  MISSION_COMPLETION
+  OTHER
+}
+
+enum MissionType {
+  COMPLETE_LESSON
+  COMPLETE_QUIZ
+  PASS_QUIZ
+  COLLECT_CARD
+}
+
+enum CardType {
+  CHARACTER
+  EVENT
+  ARTIFACT
+  LOCATION
+}
+
+enum CardRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum CardUnlockType {
+  NONE
+  LESSON_COMPLETE
+  QUIZ_PASS
+  LEVEL_REACH
+  MISSION_REWARD
+}
+
+// ----------------------------------------------------------------------------
+// Identity
+// ----------------------------------------------------------------------------
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique // always stored lowercase
+  passwordHash String
+  fullName     String
+  avatar       String?
+  role         Role       @default(USER)
+  gradeId      String?
+  totalExp     Int        @default(0) // cached; source of truth = ExpTransaction
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  grade              Grade?               @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  passwordResetTokens PasswordResetToken[]
+  lessonProgress     LessonProgress[]
+  quizAttempts       QuizAttempt[]
+  expTransactions    ExpTransaction[]
+  userMissions       UserMission[]
+  userCards          UserCard[]
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 of the random token sent by email
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ----------------------------------------------------------------------------
+// Classification
+// ----------------------------------------------------------------------------
+
+model EducationLevel {
+  id           String       @id @default(cuid())
+  name         String
+  code         String       @unique // PRIMARY | SECONDARY | HIGH_SCHOOL
+  description  String?
+  displayOrder Int          @default(0)
+  status       ActiveStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  grades Grade[]
+
+  @@map("education_levels")
+}
+
+model Grade {
+  id               String       @id @default(cuid())
+  educationLevelId String
+  name             String // "Lớp 7"
+  code             String       @unique // GRADE_7
+  displayOrder     Int          @default(0)
+  status           ActiveStatus @default(ACTIVE)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  educationLevel EducationLevel @relation(fields: [educationLevelId], references: [id], onDelete: Restrict)
+  users          User[]
+  lessons        LessonGrade[]
+
+  @@index([educationLevelId])
+  @@map("grades")
+}
+
+model Topic {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  description  String?
+  thumbnail    String?
+  displayOrder Int          @default(0)
+  status       ActiveStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  lessons LessonTopic[]
+
+  @@map("topics")
+}
+
+model HistoricalPeriod {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  description  String?
+  startYear    Int? // may be negative (BC) or null
+  endYear      Int?
+  displayOrder Int          @default(0)
+  status       ActiveStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  lessons LessonPeriod[]
+  cards   HistoryCard[]
+
+  @@map("historical_periods")
+}
+
+model HistoricalCharacter {
+  id               String       @id @default(cuid())
+  name             String
+  slug             String       @unique
+  avatar           String?
+  shortDescription String?
+  biography        String?
+  birthYear        Int?
+  deathYear        Int?
+  status           ActiveStatus @default(ACTIVE) // added in v2 patch: soft delete
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  lessons LessonCharacter[]
+
+  @@map("historical_characters")
+}
+
+model HistoricalEvent {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  location    String?
+  status      ActiveStatus @default(ACTIVE) // added in v2 patch: soft delete
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  lessons LessonEvent[]
+
+  @@map("historical_events")
+}
+
+// ----------------------------------------------------------------------------
+// Lessons
+// ----------------------------------------------------------------------------
+
+model Lesson {
+  id            String        @id @default(cuid())
+  title         String
+  slug          String        @unique
+  summary       String?
+  content       String // sanitized HTML from Tiptap
+  thumbnail     String?
+  difficulty    Difficulty    @default(EASY)
+  estimatedTime Int           @default(10) // minutes
+  displayOrder  Int           @default(0)
+  status        PublishStatus @default(DRAFT)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  grades     LessonGrade[]
+  topics     LessonTopic[]
+  periods    LessonPeriod[]
+  characters LessonCharacter[]
+  events     LessonEvent[]
+  media      LessonMedia[]
+  progress   LessonProgress[]
+  quiz       Quiz?
+
+  @@index([status, displayOrder])
+  @@map("lessons")
+}
+
+model LessonGrade {
+  lessonId String
+  gradeId  String
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  grade  Grade  @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+
+  @@id([lessonId, gradeId])
+  @@index([gradeId])
+  @@map("lesson_grades")
+}
+
+model LessonTopic {
+  lessonId String
+  topicId  String
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  topic  Topic  @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  @@id([lessonId, topicId])
+  @@index([topicId])
+  @@map("lesson_topics")
+}
+
+model LessonPeriod {
+  lessonId String
+  periodId String
+
+  lesson Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  period HistoricalPeriod @relation(fields: [periodId], references: [id], onDelete: Restrict)
+
+  @@id([lessonId, periodId])
+  @@index([periodId])
+  @@map("lesson_periods")
+}
+
+model LessonCharacter {
+  lessonId    String
+  characterId String
+  role        String?
+
+  lesson    Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  character HistoricalCharacter @relation(fields: [characterId], references: [id], onDelete: Restrict)
+
+  @@id([lessonId, characterId])
+  @@index([characterId])
+  @@map("lesson_characters")
+}
+
+model LessonEvent {
+  lessonId String
+  eventId  String
+
+  lesson Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  event  HistoricalEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@id([lessonId, eventId])
+  @@index([eventId])
+  @@map("lesson_events")
+}
+
+model LessonMedia {
+  id           String    @id @default(cuid())
+  lessonId     String
+  type         MediaType
+  url          String
+  title        String?
+  description  String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, displayOrder])
+  @@map("lesson_media")
+}
+
+// ----------------------------------------------------------------------------
+// Progress
+// ----------------------------------------------------------------------------
+
+model LessonProgress {
+  id          String         @id @default(cuid())
+  userId      String
+  lessonId    String
+  status      ProgressStatus @default(NOT_STARTED)
+  progress    Int            @default(0) // 0..100 (MVP: 0 or 100)
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, lessonId])
+  @@index([userId, status])
+  @@map("lesson_progress")
+}
+
+// ----------------------------------------------------------------------------
+// Quiz
+// ----------------------------------------------------------------------------
+
+model Quiz {
+  id          String        @id @default(cuid())
+  lessonId    String        @unique // max one quiz per lesson in MVP
+  title       String
+  description String?
+  timeLimit   Int? // seconds; null = unlimited
+  passScore   Int           @default(60) // percentage 0..100
+  status      PublishStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  quizId       String
+  content      String
+  type         QuestionType
+  points       Int          @default(1)
+  explanation  String?
+  displayOrder Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  quiz           Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers        Answer[]
+  attemptAnswers QuizAttemptAnswer[]
+
+  @@index([quizId, displayOrder])
+  @@map("questions")
+}
+
+model Answer {
+  id           String  @id @default(cuid())
+  questionId   String
+  content      String
+  isCorrect    Boolean @default(false)
+  displayOrder Int     @default(0)
+
+  question       Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attemptAnswers QuizAttemptAnswer[]
+
+  @@index([questionId, displayOrder])
+  @@map("answers")
+}
+
+model QuizAttempt {
+  id               String    @id @default(cuid())
+  userId           String
+  quizId           String
+  startedAt        DateTime  @default(now())
+  submittedAt      DateTime? // null until submitted
+  score            Int?
+  totalScore       Int?
+  correctAnswers   Int?
+  totalQuestions   Int?
+  passed           Boolean?
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  answers QuizAttemptAnswer[]
+
+  @@index([userId, quizId])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id         String  @id @default(cuid())
+  attemptId  String
+  questionId String
+  answerId   String
+  isCorrect  Boolean // whether THIS selected answer is a correct option
+
+  attempt  QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  answer   Answer      @relation(fields: [answerId], references: [id], onDelete: Restrict)
+
+  @@unique([attemptId, questionId, answerId])
+  @@index([attemptId])
+  @@map("quiz_attempt_answers")
+}
+
+// ----------------------------------------------------------------------------
+// Gamification
+// ----------------------------------------------------------------------------
+
+model Level {
+  id           String @id @default(cuid())
+  name         String
+  requiredExp  Int    @unique // Level 1 must be 0
+  displayOrder Int    @default(0)
+
+  @@map("levels")
+}
+
+model ExpTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  type        ExpType
+  referenceId String // lessonId | quizId | missionId | generated id for OTHER
+  description String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // Idempotency: the same reward can never be granted twice
+  @@unique([userId, type, referenceId])
+  @@index([userId, createdAt])
+  @@map("exp_transactions")
+}
+
+model Mission {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  type         MissionType
+  target       Int // > 0 (validated in DTO)
+  rewardExp    Int          @default(50)
+  rewardCardId String?
+  status       ActiveStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  rewardCard   HistoryCard? @relation("MissionRewardCard", fields: [rewardCardId], references: [id], onDelete: Restrict)
+  userMissions UserMission[]
+
+  @@index([status, type])
+  @@map("missions")
+}
+
+model UserMission {
+  id          String    @id @default(cuid())
+  userId      String
+  missionId   String
+  progress    Int       @default(0)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  claimedAt   DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, missionId])
+  @@index([userId, completed])
+  @@map("user_missions")
+}
+
+// ----------------------------------------------------------------------------
+// Collection
+// ----------------------------------------------------------------------------
+
+model HistoryCard {
+  id               String         @id @default(cuid())
+  name             String
+  slug             String         @unique
+  type             CardType
+  rarity           CardRarity     @default(COMMON)
+  image            String?
+  shortDescription String?
+  description      String?
+  periodId         String?
+  unlockType       CardUnlockType @default(NONE)
+  unlockRefId      String? // lessonId | quizId | levelId depending on unlockType
+  status           ActiveStatus   @default(ACTIVE)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  period         HistoricalPeriod? @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  userCards      UserCard[]
+  rewardedByMission Mission[]      @relation("MissionRewardCard")
+
+  @@index([type])
+  @@index([rarity])
+  @@index([unlockType, unlockRefId])
+  @@map("history_cards")
+}
+
+model UserCard {
+  id         String   @id @default(cuid())
+  userId     String
+  cardId     String
+  obtainedAt DateTime @default(now())
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  card HistoryCard @relation(fields: [cardId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, cardId])
+  @@index([userId])
+  @@map("user_cards")
+}

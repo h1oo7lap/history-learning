@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: history
+          POSTGRES_PASSWORD: history
+          POSTGRES_DB: history_learning
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @history-learning/shared build
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://history:history@localhost:5432/history_learning?schema=public
+          TEST_DATABASE_URL: postgresql://history:history@localhost:5432/history_learning_test?schema=public
+        run: |
+          psql postgresql://history:history@localhost:5432/postgres -c "CREATE DATABASE history_learning_test OWNER history;" || true
+          psql postgresql://history:history@localhost:5432/history_learning -c "CREATE EXTENSION IF NOT EXISTS unaccent; CREATE EXTENSION IF NOT EXISTS pg_trgm;" || true
+          psql postgresql://history:history@localhost:5432/history_learning_test -c "CREATE EXTENSION IF NOT EXISTS unaccent; CREATE EXTENSION IF NOT EXISTS pg_trgm;" || true
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://history:history@localhost:5432/history_learning?schema=public
+        run: pnpm db:deploy
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://history:history@localhost:5432/history_learning?schema=public
+          TEST_DATABASE_URL: postgresql://history:history@localhost:5432/history_learning_test?schema=public
+          JWT_SECRET: ci-test-secret-change-in-prod
+          JWT_EXPIRES_IN: 7d
+          NODE_ENV: test
+          WEB_ORIGIN: http://localhost:3000
+        run: pnpm test
