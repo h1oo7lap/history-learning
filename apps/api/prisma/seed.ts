@@ -9,15 +9,15 @@ async function main() {
   console.log('🌱 Starting seed...');
 
   // Seed core data
-  const { seedCore } = await import('./seed/core');
+  const { seedCore } = await import('./seed/core.js');
   await seedCore(prisma);
 
   // Seed taxonomy
-  const { seedTaxonomy } = await import('./seed/taxonomy');
+  const { seedTaxonomy } = await import('./seed/taxonomy.js');
   await seedTaxonomy(prisma);
 
   // Seed gamification (levels, missions, cards)
-  const { seedGamification } = await import('./seed/gamification');
+  const { seedGamification } = await import('./seed/gamification.js');
   await seedGamification(prisma);
 
   console.log('✅ Seed completed');

@@ -39,11 +39,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const resp = exceptionResponse as Record<string, unknown>;
-        if (typeof resp['message'] === 'string') {
+
+        // nestjs-zod: { message: 'Validation failed', errors: ZodIssue[] }
+        if (resp['message'] === 'Validation failed' && Array.isArray(resp['errors'])) {
+          console.error('[ZodValidation] errors:', JSON.stringify(resp['errors'], null, 2));
+          // Build a readable message from zod issues
+          const issues = resp['errors'] as Array<{ path: (string | number)[]; message: string }>;
+          message = issues
+            .map((i) => `${i.path.join('.')}: ${i.message}`)
+            .join('; ');
+          if (!message) message = 'Validation failed';
+        } else if (typeof resp['message'] === 'string') {
           message = resp['message'];
         } else if (Array.isArray(resp['message'])) {
           message = (resp['message'] as string[]).join('; ');
         }
+
         if (typeof resp['errorCode'] === 'string') {
           errorCode = resp['errorCode'];
         } else if (status === 401) {

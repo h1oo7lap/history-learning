@@ -20,6 +20,7 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
   total: number;
+  totalPages: number;
 }
 
 class ApiClientError extends Error {
@@ -49,11 +50,22 @@ async function request<T>(
   });
 
   if (res.status === 401) {
-    // Redirect to login
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
+    // Do NOT use window.location.href here — it causes a redirect loop:
+    // middleware sees the cookie and redirects back to /dashboard.
+    // Let AuthGate / callers handle redirect via router.replace('/login').
     throw new ApiClientError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+
+  // 204 No Content (e.g. DELETE) — no body to parse
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
+
+  const contentType = res.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    // Non-JSON response — treat as raw text error
+    const text = await res.text();
+    throw new ApiClientError('UNKNOWN_ERROR', res.status, text || 'Unknown error');
   }
 
   const body = await res.json() as ApiResponse<T> | ApiError;
