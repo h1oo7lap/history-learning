@@ -12,6 +12,10 @@ export async function seedTaxonomy(prisma: PrismaClient) {
     { name: 'Lịch sử thế giới cổ đại', slug: 'lich-su-the-gioi-co-dai', displayOrder: 6 },
     { name: 'Lịch sử thế giới trung đại', slug: 'lich-su-the-gioi-trung-dai', displayOrder: 7 },
     { name: 'Lịch sử thế giới cận đại', slug: 'lich-su-the-gioi-can-dai', displayOrder: 8 },
+    { name: 'Lịch sử thế giới hiện đại', slug: 'lich-su-the-gioi-hien-dai', displayOrder: 9 },
+    { name: 'Văn hóa và nghệ thuật truyền thống', slug: 'van-hoa-nghe-thuat-truyen-thong', displayOrder: 10 },
+    { name: 'Danh nhân lịch sử', slug: 'danh-nhan-lich-su', displayOrder: 11 },
+    { name: 'Các trận đánh lịch sử', slug: 'cac-tran-danh-lich-su', displayOrder: 12 },
   ];
 
   for (const topic of topics) {

@@ -45,6 +45,11 @@ export function ConfirmDialog({
         background: 'transparent',
         maxWidth: 440,
         width: '90vw',
+        position: 'fixed',
+        margin: 0,
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
       }}
     >
       <div

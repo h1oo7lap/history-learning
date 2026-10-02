@@ -91,7 +91,19 @@ function TopicModal({ open, topic, onClose }: TopicModalProps) {
   return (
     <dialog
       ref={dialogRef}
-      style={{ border: 'none', borderRadius: 'var(--radius-lg)', padding: 0, background: 'transparent', maxWidth: 520, width: '95vw' }}
+      style={{
+        border: 'none',
+        borderRadius: 'var(--radius-lg)',
+        padding: 0,
+        background: 'transparent',
+        maxWidth: 520,
+        width: '95vw',
+        position: 'fixed',
+        margin: 0,
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+      }}
     >
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '2rem', boxShadow: 'var(--shadow-xl)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -172,6 +184,7 @@ function TopicModal({ open, topic, onClose }: TopicModalProps) {
 
 export default function AdminTopicsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<PublishStatus | ''>('');
@@ -181,7 +194,7 @@ export default function AdminTopicsPage() {
 
   const { data, isLoading, isError } = useAdminTopics({
     page,
-    pageSize: 10,
+    pageSize,
     search: search || undefined,
     status: statusFilter || undefined,
   });
@@ -367,52 +380,82 @@ export default function AdminTopicsPage() {
       </div>
 
       {/* Pagination */}
-      {data && totalPages > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
-            Tổng cộng <strong>{data.total}</strong> chủ đề — Trang {data.page}/{totalPages}
-          </p>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              id="btn-prev-page"
-            >
-              ← Trước
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-              .map((p, idx, arr) => (
-                <span key={p}>
-                  {idx > 0 && arr[idx - 1] !== p - 1 && (
-                    <span style={{ padding: '0 0.25rem', color: 'var(--muted)' }}>…</span>
-                  )}
-                  <button
-                    className={`btn btn-sm${p === page ? ' btn-primary' : ' btn-ghost'}`}
-                    onClick={() => setPage(p)}
-                  >
-                    {p}
-                  </button>
-                </span>
-              ))}
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              id="btn-next-page"
-            >
-              Tiếp →
-            </button>
+      {data && (totalPages > 1 || data.total > 0) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>
+              Tổng cộng <strong>{data.total}</strong> chủ đề
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>Hiển thị:</span>
+              <input
+                type="number"
+                className="input"
+                style={{ padding: '0.2rem 0.5rem', fontSize: '0.875rem', height: 'auto', minHeight: 'unset', width: '60px' }}
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              />
+            </div>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>Đến trang:</span>
+                <input
+                  type="number"
+                  className="input"
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.875rem', height: 'auto', minHeight: 'unset', width: '60px' }}
+                  min={1}
+                  max={totalPages}
+                  value={page}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val >= 1 && val <= totalPages) {
+                      setPage(val);
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* Info when single page */}
-      {data && totalPages <= 1 && data.total > 0 && (
-        <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginTop: '0.75rem' }}>
-          Tổng cộng <strong>{data.total}</strong> chủ đề
-        </p>
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                id="btn-prev-page"
+              >
+                ← Trước
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .map((p, idx, arr) => (
+                  <span key={p} style={{ display: 'flex', alignItems: 'center' }}>
+                    {idx > 0 && arr[idx - 1] !== p - 1 && (
+                      <span style={{ padding: '0 0.25rem', color: 'var(--muted)' }}>…</span>
+                    )}
+                    <button
+                      className={`btn btn-sm${p === page ? ' btn-primary' : ' btn-ghost'}`}
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </button>
+                  </span>
+                ))}
+              <button
+                className="btn btn-ghost btn-sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                id="btn-next-page"
+              >
+                Tiếp →
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Modal */}
