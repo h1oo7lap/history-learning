@@ -1,6 +1,6 @@
 # Base Project — History Learning Platform ✅
 
-**Cập nhật lần cuối**: 2026-10-02 — Week 3 Dev A Day 1+2 hoàn thành
+**Cập nhật lần cuối**: 2026-10-05 — Week 3 Dev A Day 3 hoàn thành
 
 ---
 
@@ -254,6 +254,128 @@ TEST_DATABASE_URL=... pnpm --filter api exec vitest run --config vitest.config.e
 
 ---
 
+## ✅ Đã hoàn thành (Week 3 Day 3 — Dev A: Characters CRUD + Events CRUD + Slugify util)
+
+### CharactersModule — full CRUD (soft delete)
+
+| File | Nội dung |
+|---|---|
+| `src/characters/characters.service.ts` | `findAllPublic()`, `findOneBySlug()`, `adminFindAll()`, `adminFindOne()`, `adminCreate()`, `adminUpdate()`, `adminDelete()` (soft delete → INACTIVE) |
+| `src/characters/characters.controller.ts` | `GET /characters` (public, paginated, searchable), `GET /characters/:slug` (public) |
+| `src/characters/admin-characters.controller.ts` | `GET/POST /admin/characters`, `GET/PATCH/DELETE /admin/characters/:id` — `@Roles('ADMIN')` |
+| `src/characters/characters.module.ts` | Wiring cả 2 controllers + service, `exports: [CharactersService]` |
+
+#### Key behaviors (Characters)
+
+| Hành vi | Chi tiết |
+|---|---|
+| Slug auto-generate | `slugify(name)` → `uniqueSlug()` nếu conflict append `-1`, `-2`... |
+| Explicit slug | Nếu admin truyền slug explicit + conflict → `409 SLUG_TAKEN` |
+| Name change | Nếu name thay đổi mà không có slug explicit → tự động re-slugify |
+| Extra fields | `avatar`, `shortDescription`, `biography`, `birthYear`, `deathYear` — tất cả nullable |
+| **Soft delete** | `DELETE` không xoá record, chỉ set `status = INACTIVE` |
+| Public list | Chỉ trả `status = ACTIVE`, không bao giờ lộ INACTIVE |
+| Admin list | Trả tất cả status; filter `?status=ACTIVE/INACTIVE`, `?search=...` |
+| Pagination | `{ items, page, pageSize, total, totalPages }` |
+| Error codes | `CHARACTER_NOT_FOUND` (404), `SLUG_TAKEN` (409) |
+
+#### Integration tests — `test/characters.e2e-spec.ts`
+
+| Nhóm | Tests |
+|---|---|
+| `POST /admin/characters` | create (201), auto-slug-dedup (`-1`), custom slug, nullable dates, 403 USER, 401 unauth, 400 validation |
+| `GET /admin/characters` | all statuses, filter by status, search by name, pagination + totalPages, 403 USER |
+| `GET /admin/characters/:id` | by ID + birthYear, 404 not found |
+| `PATCH /admin/characters/:id` | update name/status, update years, update bio/shortDescription, auto re-slugify, 409 slug conflict, 404, 403 USER |
+| `DELETE /admin/characters/:id` | **soft delete** (record persists + status=INACTIVE), 404, 403 USER |
+| `GET /characters` (public) | ACTIVE only without auth, pagination, search, never exposes INACTIVE |
+| `GET /characters/:slug` (public) | by slug, 404 for inactive, 404 for non-existent |
+
+**Tổng: 30 tests ✅**
+
+---
+
+### EventsModule — full CRUD (soft delete)
+
+| File | Nội dung |
+|---|---|
+| `src/events/events.service.ts` | `findAllPublic()`, `findOneBySlug()`, `adminFindAll()`, `adminFindOne()`, `adminCreate()`, `adminUpdate()`, `adminDelete()` (soft delete → INACTIVE) |
+| `src/events/events.controller.ts` | `GET /events` (public, paginated, searchable), `GET /events/:slug` (public) |
+| `src/events/admin-events.controller.ts` | `GET/POST /admin/events`, `GET/PATCH/DELETE /admin/events/:id` — `@Roles('ADMIN')` |
+| `src/events/events.module.ts` | Wiring cả 2 controllers + service, `exports: [EventsService]` |
+
+#### Key behaviors (Events)
+
+| Hành vi | Chi tiết |
+|---|---|
+| Slug auto-generate | `slugify(name)` → `uniqueSlug()` nếu conflict append `-1`, `-2`... |
+| Explicit slug | Nếu admin truyền slug explicit + conflict → `409 SLUG_TAKEN` |
+| Name change | Nếu name thay đổi mà không có slug explicit → tự động re-slugify |
+| Extra fields | `description`, `startDate` (DateTime), `endDate` (DateTime), `location` — tất cả nullable |
+| **Soft delete** | `DELETE` không xoá record, chỉ set `status = INACTIVE` |
+| Public list | Chỉ trả `status = ACTIVE`, không bao giờ lộ INACTIVE |
+| Admin list | Trả tất cả status; filter `?status=ACTIVE/INACTIVE`, `?search=...` |
+| Pagination | `{ items, page, pageSize, total, totalPages }` |
+| Error codes | `EVENT_NOT_FOUND` (404), `SLUG_TAKEN` (409) |
+
+#### Integration tests — `test/events.e2e-spec.ts`
+
+| Nhóm | Tests |
+|---|---|
+| `POST /admin/events` | create (201), auto-slug-dedup (`-1`), custom slug, nullable dates/location, 403 USER, 401 unauth, 400 validation |
+| `GET /admin/events` | all statuses, filter by status, search by name, pagination + totalPages, 403 USER |
+| `GET /admin/events/:id` | by ID + location, 404 not found |
+| `PATCH /admin/events/:id` | update name/status, update dates/location, auto re-slugify, 409 slug conflict, 404, 403 USER |
+| `DELETE /admin/events/:id` | **soft delete** (record persists + status=INACTIVE), 404, 403 USER |
+| `GET /events` (public) | ACTIVE only without auth, pagination, search, never exposes INACTIVE |
+| `GET /events/:slug` (public) | by slug, 404 for inactive, 404 for non-existent |
+
+**Tổng: 29 tests ✅**
+
+---
+
+### Slugify utility — unit tests
+
+| File | Nội dung |
+|---|---|
+| `src/common/utils/slugify.ts` | `slugify()` (Vietnamese diacritics, đ/Đ), `uniqueSlug()` (dedup counter) |
+| `src/common/utils/slugify.spec.ts` | **16 unit tests** ✅ |
+
+#### `slugify()` tests (11)
+
+| Test | Chi tiết |
+|---|---|
+| basic text → kebab-case | `'Hello World'` → `'hello-world'` |
+| Vietnamese diacritics | `'Trần Hưng Đạo'` → `'tran-hung-dao'` |
+| đ and Đ | `'Đại Việt'` → `'dai-viet'`, `'đồng bằng'` → `'dong-bang'` |
+| special characters | `'Hello! @World #2024'` → `'hello-world-2024'` |
+| collapse hyphens | `'a - - b'` → `'a-b'` |
+| trim leading/trailing hyphens | `'  --hello-- '` → `'hello'` |
+| empty string | `''` → `''` |
+| numeric input | `'1945'` → `'1945'` |
+| underscores stripped | `'some_thing_here'` → `'somethinghere'` |
+| complex Vietnamese | `'Chiến thắng Bạch Đằng'` → `'chien-thang-bach-dang'` |
+| mixed-case with numbers | `'Lớp 7 Bài 3'` → `'lop-7-bai-3'` |
+
+#### `uniqueSlug()` tests (5)
+
+| Test | Chi tiết |
+|---|---|
+| base not taken | returns as-is |
+| base taken | appends `-1` |
+| counter increments | skips `-1`, `-2` → returns `-3` |
+| slugifies base | Vietnamese input is normalized |
+| slugifies on iteration | counter suffix appended to slugified base |
+
+---
+
+```bash
+pnpm --filter api test
+# ✅ 26/26 unit tests pass (paginate.spec.ts + slugify.spec.ts + app.controller.spec.ts)
+```
+
+---
+
 ## Week 2 Exit Criteria
 
 - [x] register → login → select grade flow hoàn chỉnh (API + Web)
@@ -270,7 +392,7 @@ TEST_DATABASE_URL=... pnpm --filter api exec vitest run --config vitest.config.e
 
 - [x] **Dev A Day 1**: Admin Topics CRUD + public `GET /topics` + `paginate()` helper + tests ✅
 - [x] **Dev A Day 2**: Admin Periods CRUD + public `GET /periods` + tests (31/31) ✅
-- [ ] Dev A: Admin Characters CRUD (soft delete), Events CRUD, slugify util
+- [x] **Dev A Day 3**: Admin Characters CRUD (soft delete) + Events CRUD (soft delete) + slugify unit tests ✅
 - [ ] Dev B: `admin-crud` v1: DataTable (server pagination, search, status filter)
 - [ ] Dev B: EntityForm (config-driven), ConfirmDialog, StatusBadge; Topics/Periods/Characters/Events pages
 - [ ] Dev B: ImageUploader (Cloudinary signed upload)
@@ -280,10 +402,10 @@ TEST_DATABASE_URL=... pnpm --filter api exec vitest run --config vitest.config.e
 
 ## Bước tiếp theo (Week 3 — còn lại)
 
-1. **Dev A**: Admin Periods CRUD (`src/periods/`) — tương tự Topics pattern
-2. **Dev A**: Admin Characters CRUD (soft delete bằng `status = INACTIVE`), Events CRUD
-3. **Dev B**: `admin-crud` DataTable component
-4. **Dev B**: EntityForm, ConfirmDialog, StatusBadge; Topics page done
+1. **Dev B**: `admin-crud` DataTable component (server pagination, search, status filter)
+2. **Dev B**: EntityForm, ConfirmDialog, StatusBadge; Topics/Periods/Characters/Events admin pages
+3. **Dev B**: ImageUploader (Cloudinary signed upload)
+4. **Cả hai**: Seed topics, periods, 6 characters, 6 events
 
 ---
 
