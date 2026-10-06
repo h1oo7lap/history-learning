@@ -45,6 +45,20 @@ pnpm dev
 - **Swagger**: http://localhost:4000/api/docs
 - **Mailpit**: http://localhost:8025
 
+### Thao tác với Database
+
+Khi cần xoá trắng và tạo lại database cùng với dữ liệu mẫu (seed data), bạn chạy lệnh sau ở thư mục gốc:
+
+```bash
+# Lệnh này sẽ xoá trắng DB, chạy lại toàn bộ migrations và tự động chạy file seed
+pnpm db:reset
+```
+
+Nếu chỉ muốn chạy seed data (không reset):
+```bash
+pnpm db:seed
+```
+
 ---
 
 ## Tài khoản mặc định (Seed)
