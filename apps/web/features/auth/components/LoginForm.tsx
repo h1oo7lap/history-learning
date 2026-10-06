@@ -10,6 +10,32 @@ import type { LoginDto } from '@history-learning/shared';
 import { useLogin, authKeys } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 
+
+// Bộ sinh số giả ngẫu nhiên có hạt giống: cùng seed thì cùng kết quả,
+// nên server và trình duyệt tạo ra đúng cùng một bộ sao (hết lỗi hydration).
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const round = (n: number, digits = 2) => Number(n.toFixed(digits));
+
+const STARS = (() => {
+  const rand = mulberry32(20261006);
+  return Array.from({ length: 60 }, () => ({
+    left: `${round(rand() * 100)}%`,
+    top: `${round(rand() * 100)}%`,
+    duration: `${round(2 + rand() * 4)}s`,
+    delay: `${round(rand() * 3)}s`,
+    maxOpacity: String(round(0.3 + rand() * 0.7)),
+  }));
+})();
+
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const queryClient = useQueryClient();
@@ -154,16 +180,16 @@ export function AuthHeroContent() {
     <div style={{ position: 'relative', zIndex: 1, padding: '3rem', textAlign: 'center', maxWidth: 480 }}>
       {/* Stars */}
       <div className="auth-stars">
-        {Array.from({ length: 60 }).map((_, i) => (
+        {STARS.map((s, i) => (
           <div
             key={i}
             className="auth-star"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              '--duration': `${2 + Math.random() * 4}s`,
-              '--delay': `${Math.random() * 3}s`,
-              '--max-opacity': `${0.3 + Math.random() * 0.7}`,
+              left: s.left,
+              top: s.top,
+              '--duration': s.duration,
+              '--delay': s.delay,
+              '--max-opacity': s.maxOpacity,
             } as React.CSSProperties}
           />
         ))}
@@ -190,7 +216,7 @@ export function AuthHeroContent() {
         </h2>
 
         <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, fontSize: '1.0625rem', marginBottom: '2.5rem' }}>
-          Nền tảng học lịch sử tương tác dành cho học sinh từ lớp 4 đến lớp 12. 
+          Nền tảng học lịch sử tương tác dành cho học sinh từ lớp 4 đến lớp 12.
           Học bài, làm quiz và thu thập thẻ nhân vật lịch sử.
         </p>
 

@@ -1,28 +1,26 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Res,
-  HttpCode,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Res, HttpCode } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/public';
 import { CurrentUser } from '../common/decorators/current-user';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { COOKIE_NAME } from '../common/config/constants';
 import {
   RegisterSchema,
   LoginSchema,
   ForgotPasswordSchema,
   ResetPasswordSchema,
+  type RegisterDto,
+  type LoginDto,
+  type ForgotPasswordDto,
+  type ResetPasswordDto,
 } from '@history-learning/shared';
 import type { User } from '../generated/prisma/client';
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -40,12 +38,21 @@ export class AuthController {
     this.cookieDomain = config.get<string>('COOKIE_DOMAIN') || undefined;
   }
 
+  private baseCookieOptions() {
+    return {
+      httpOnly: true,
+      secure: this.isProd,
+      sameSite: 'lax' as const,
+      path: '/',
+      domain: this.cookieDomain,
+    };
+  }
+
   @Public()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  async register(@Body() body: unknown) {
-    const dto = RegisterSchema.parse(body);
+  async register(@Body(new ZodValidationPipe(RegisterSchema)) dto: RegisterDto) {
     return this.auth.register(dto);
   }
 
@@ -54,27 +61,23 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Login and receive a session cookie' })
-  async login(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
-    const dto = LoginSchema.parse(body);
+  async login(
+    @Body(new ZodValidationPipe(LoginSchema)) dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { token } = await this.auth.login(dto);
-
-    res.cookie(this.cookieName, token, {
-      httpOnly: true,
-      secure: this.isProd,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: this.cookieDomain,
-    });
-
+    res.cookie(this.cookieName, token, { ...this.baseCookieOptions(), maxAge: SEVEN_DAYS_MS });
     return { message: 'Logged in successfully' };
   }
 
+  // Public để luôn xóa được cookie, kể cả khi token đã hết hạn
+  @Public()
   @Post('logout')
   @HttpCode(200)
   @ApiOperation({ summary: 'Clear the session cookie' })
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie(this.cookieName, { path: '/' });
+    // Phải dùng đúng path/domain đã đặt lúc login thì trình duyệt mới xóa được
+    res.clearCookie(this.cookieName, this.baseCookieOptions());
     return { message: 'Logged out successfully' };
   }
 
@@ -89,18 +92,17 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Request a password reset email' })
-  async forgotPassword(@Body() body: unknown) {
-    const dto = ForgotPasswordSchema.parse(body);
+  async forgotPassword(@Body(new ZodValidationPipe(ForgotPasswordSchema)) dto: ForgotPasswordDto) {
     await this.auth.forgotPassword(dto.email);
     return { message: 'If an account exists, a reset email has been sent' };
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Reset password with a valid token' })
-  async resetPassword(@Body() body: unknown) {
-    const dto = ResetPasswordSchema.parse(body);
+  async resetPassword(@Body(new ZodValidationPipe(ResetPasswordSchema)) dto: ResetPasswordDto) {
     await this.auth.resetPassword(dto.token, dto.password);
     return { message: 'Password reset successfully' };
   }
