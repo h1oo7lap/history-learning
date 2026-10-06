@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { GraduationCap, BookOpen, Zap, Trophy, Users, Star, ArrowRight } from 'lucide-react';
+import { cookies } from 'next/headers';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const isAuthenticated = cookieStore.has('access_token');
+
   return (
     <>
       {/* ─── Navbar (public version) ─── */}
@@ -26,8 +30,14 @@ export default function HomePage() {
               </span>
             </div>
             <div style={{ flex: 1 }} />
-            <Link href="/login" id="home-login-btn" className="btn btn-ghost btn-sm">Đăng nhập</Link>
-            <Link href="/register" id="home-register-btn" className="btn btn-primary btn-sm">Bắt đầu miễn phí</Link>
+            {!isAuthenticated ? (
+              <>
+                <Link href="/login" id="home-login-btn" className="btn btn-ghost btn-sm">Đăng nhập</Link>
+                <Link href="/register" id="home-register-btn" className="btn btn-primary btn-sm">Bắt đầu miễn phí</Link>
+              </>
+            ) : (
+              <Link href="/dashboard" id="home-dashboard-btn" className="btn btn-primary btn-sm">Bảng điều khiển</Link>
+            )}
           </div>
         </div>
       </header>
@@ -84,9 +94,15 @@ export default function HomePage() {
           </p>
 
           <div style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/register" id="hero-register-btn" className="btn btn-primary btn-lg">
-              Bắt đầu miễn phí <ArrowRight size={18} />
-            </Link>
+            {!isAuthenticated ? (
+              <Link href="/register" id="hero-register-btn" className="btn btn-primary btn-lg">
+                Bắt đầu miễn phí <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <Link href="/dashboard" id="hero-dashboard-btn" className="btn btn-primary btn-lg">
+                Tiếp tục học <ArrowRight size={18} />
+              </Link>
+            )}
             <Link href="/learning" id="hero-browse-btn" className="btn btn-outline btn-lg">
               Xem bài học
             </Link>
@@ -196,17 +212,31 @@ export default function HomePage() {
           <p style={{ fontSize: '1.0625rem', opacity: 0.85, marginBottom: '2rem', maxWidth: 480, margin: '0 auto 2rem' }}>
             Tham gia ngay hôm nay. Miễn phí hoàn toàn, không cần thẻ tín dụng.
           </p>
-          <Link href="/register" id="cta-register-btn" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.875rem 2rem',
-            background: 'white', color: 'var(--brand-700)',
-            borderRadius: 12, fontWeight: 700, fontSize: '1.0625rem',
-            textDecoration: 'none',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-            transition: 'transform 0.15s ease',
-          }}>
-            Tạo tài khoản miễn phí <ArrowRight size={20} />
-          </Link>
+          {!isAuthenticated ? (
+            <Link href="/register" id="cta-register-btn" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.875rem 2rem',
+              background: 'white', color: 'var(--brand-700)',
+              borderRadius: 12, fontWeight: 700, fontSize: '1.0625rem',
+              textDecoration: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              transition: 'transform 0.15s ease',
+            }}>
+              Tạo tài khoản miễn phí <ArrowRight size={20} />
+            </Link>
+          ) : (
+            <Link href="/dashboard" id="cta-dashboard-btn" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.875rem 2rem',
+              background: 'white', color: 'var(--brand-700)',
+              borderRadius: 12, fontWeight: 700, fontSize: '1.0625rem',
+              textDecoration: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              transition: 'transform 0.15s ease',
+            }}>
+              Đến bảng điều khiển <ArrowRight size={20} />
+            </Link>
+          )}
         </div>
       </section>
 

@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { MailerService } from '../mailer/mailer.service';
 import { AppError } from '../common/errors/app-error';
 import { generateToken, hashToken } from '../common/utils/hash';
 import type { RegisterDto, LoginDto } from '@history-learning/shared';
@@ -13,6 +14,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -79,11 +81,14 @@ export class AuthService {
       data: { userId: user.id, tokenHash, expiresAt },
     });
 
-    // TODO: send email via MailerService (week 8)
+    const appUrl = this.config.get('APP_URL');
+    const resetLink = `${appUrl}/reset-password?token=${rawToken}`;
+    
+    await this.mailerService.sendPasswordReset(user.email, resetLink);
+
     // For now, log token in dev mode only
     if (this.config.get('NODE_ENV') !== 'production') {
-      const appUrl = this.config.get('APP_URL');
-      console.log(`[DEV] Reset link: ${appUrl}/reset-password?token=${rawToken}`);
+      console.log(`[DEV] Reset link: ${resetLink}`);
     }
   }
 
