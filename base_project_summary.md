@@ -1,6 +1,6 @@
 # Base Project — History Learning Platform ✅
 
-**Cập nhật lần cuối**: 2026-10-05 — Week 3 Dev A Day 3 hoàn thành
+**Cập nhật lần cuối**: 2026-10-06 — Week 3 hoàn thành (Dev A + Dev B + Seed data)
 
 ---
 
@@ -37,7 +37,7 @@
 | `UsersModule` | GET/PATCH /me, progress, collection, missions + admin |
 | `HealthModule` | GET /api/health → `{ success: true, data: { status: ok } }` |
 | Response envelope | `{ success, data }` / `{ success, message, errorCode }` |
-| Error codes | 25+ mã lỗi trong `error-codes.ts` |
+| Error codes | 30+ mã lỗi trong `error-codes.ts` |
 | Guards | JwtAuthGuard (global), RolesGuard, OriginGuard (CSRF) |
 | Utils | `slugify` (Vietnamese), `sanitizeContent`, `htmlToText`, `generateToken` |
 | 14 stub modules | grades, topics, periods, characters, events, lessons, progress, quizzes, gamification, search, dashboard, ai, mailer, media |
@@ -48,7 +48,7 @@
 | Schema | 590 lines, 25 models, 12 enums |
 | Migration `init` | Tất cả tables đã tạo |
 | Migration `search_extensions` | unaccent, pg_trgm, GIN indexes |
-| Seed data | 3 education levels, 9 grades, 5 levels, 8 topics, 8 periods, 6 missions, 15 cards, admin + user |
+| Seed data | 3 education levels, 9 grades, 5 levels, 12 topics, 8 periods, 6 characters, 6 events, 6 missions, 15 cards, admin + user |
 
 ### apps/web (Next.js 16)
 | File | Nội dung |
@@ -376,6 +376,146 @@ pnpm --filter api test
 
 ---
 
+## ✅ Đã hoàn thành (Week 3 — Dev B: Admin Frontend CRUD)
+
+### Reusable Admin Components (`components/admin-crud/`)
+
+| Component | File | Chi tiết |
+|---|---|---|
+| `DataTable` | `DataTable.tsx` (17.4 KB) | Server pagination, debounced search, status filter, custom column helpers (`nameColumn`, `slugColumn`, `statusColumn`, `dateColumn`, `actionButtons`) |
+| `EntityForm` | `EntityForm.tsx` (11.5 KB) | Config-driven modal form (`FieldDef[]`), tự động validation, input mapping qua schema field types |
+| `ImageUploader` | `ImageUploader.tsx` (9.1 KB) | Drag-and-drop, thanh progress, Cloudinary signed upload (upload trực tiếp từ trình duyệt) |
+| `useAdminResource` | `useAdminResource.ts` (1.8 KB) | Generic hook quản lý state: page, pageSize, search, statusFilter, modal (openCreate/openEdit/closeModal), delete confirm (confirmDelete/cancelDelete) |
+| `index.ts` | Barrel export | Re-exports `DataTable`, `EntityForm`, `ImageUploader`, `StatusBadge`, `ConfirmDialog` + types |
+
+### Admin UI Components (`components/admin/`)
+
+| Component | File | Chi tiết |
+|---|---|---|
+| `StatusBadge` | `StatusBadge.tsx` (2.3 KB) | 6 trạng thái + custom colors (ACTIVE, INACTIVE, PUBLISHED, DRAFT, ARCHIVED, BANNED) |
+| `ConfirmDialog` | `ConfirmDialog.tsx` (2.5 KB) | Native `<dialog>` modal, styled icon, title/message/confirm/cancel buttons, loading state |
+
+### Media API (Cloudinary) — Backend
+
+| File | Chi tiết |
+|---|---|
+| `src/media/media.service.ts` | `signUpload(folder)` — SHA1 signature (Cloudinary signed upload), trả `{ signature, timestamp, cloudName, apiKey, folder }` |
+| `src/media/media.controller.ts` | `POST /api/media/sign` — `@Roles('ADMIN')`, default folder `history-learning/uploads` |
+| `src/media/media.module.ts` | Wiring controller + service |
+| Error code | `MEDIA_NOT_CONFIGURED` (500) — khi thiếu env vars Cloudinary |
+
+### Admin Features (`features/admin/`)
+
+| File | Chi tiết |
+|---|---|
+| `api.ts` (6.8 KB) | Types (`Topic`, `Period`, `Character`, `HistoricalEvent`, `AdminUser`, `PaginatedResult<T>`, `AdminListQuery`) + 5 API objects: `topicsAdminApi`, `periodsAdminApi`, `charactersAdminApi`, `eventsAdminApi`, `usersAdminApi` — mỗi object có `list`, `getOne`, `create`, `update`, `delete` |
+| `hooks.ts` (6.1 KB) | TanStack Query hooks: `useAdminTopics/Create/Update/Delete`, `useAdminPeriods/Create/Update/Delete`, `useAdminCharacters/Create/Update/Delete`, `useAdminEvents/Create/Update/Delete`, `useAdminUsers`, `useUpdateAdminUser` — auto invalidate queries on mutation |
+
+### Refactored Admin Pages
+
+Áp dụng các component trên để viết lại toàn bộ 4 trang admin, giảm trung bình **65-70% code** mỗi trang:
+
+| Page | Route | Chi tiết |
+|---|---|---|
+| `topics/page.tsx` | `/admin/topics` | DataTable + EntityForm (name, slug, description, status) |
+| `periods/page.tsx` | `/admin/periods` | DataTable + EntityForm (name, slug, description, startYear, endYear, status) |
+| `characters/page.tsx` | `/admin/characters` | DataTable + EntityForm (name, slug, shortDescription, biography, birthYear, deathYear, avatar via ImageUploader, status) |
+| `events/page.tsx` | `/admin/events` | DataTable + EntityForm (name, slug, description, startDate, endDate, location, status) |
+
+---
+
+## ✅ Đã hoàn thành (Week 3 — Seed Data: Characters + Events)
+
+### `prisma/seed/taxonomy.ts` — bổ sung
+
+#### 12 Topics (đã có từ trước, mở rộng từ 8 → 12)
+| # | Name |
+|---|---|
+| 1 | Lịch sử Việt Nam cổ đại |
+| 2 | Thời kỳ Bắc thuộc |
+| 3 | Độc lập và phong kiến |
+| 4 | Kháng chiến chống Pháp |
+| 5 | Kháng chiến chống Mỹ |
+| 6 | Lịch sử thế giới cổ đại |
+| 7 | Lịch sử thế giới trung đại |
+| 8 | Lịch sử thế giới cận đại |
+| 9 | Lịch sử thế giới hiện đại |
+| 10 | Văn hóa và nghệ thuật truyền thống |
+| 11 | Danh nhân lịch sử |
+| 12 | Các trận đánh lịch sử |
+
+#### 6 Characters (mới)
+| Name | Năm sinh – mất | Mô tả ngắn |
+|---|---|---|
+| Ngô Quyền | 898–944 | Đánh bại quân Nam Hán trên sông Bạch Đằng năm 938 |
+| Đinh Bộ Lĩnh | 924–979 | Dẹp loạn 12 sứ quân, thống nhất giang sơn |
+| Lý Công Uẩn | 974–1028 | Lý Thái Tổ, dời đô về Thăng Long |
+| Trần Hưng Đạo | 1228–1300 | Ba lần đánh bại quân Nguyên Mông |
+| Lê Lợi | 1385–1433 | Lãnh đạo khởi nghĩa Lam Sơn chiến thắng quân Minh |
+| Quang Trung - Nguyễn Huệ | 1753–1792 | Thiên tài quân sự, đánh bại quân Thanh và Xiêm La |
+
+#### 6 Events (mới)
+| Name | Thời gian | Địa điểm |
+|---|---|---|
+| Chiến thắng Bạch Đằng | 938 | Sông Bạch Đằng |
+| Dời đô về Thăng Long | 1010 | Thăng Long |
+| Hội nghị Diên Hồng | 1284 | Thăng Long |
+| Khởi nghĩa Lam Sơn | 1418–1427 | Thanh Hóa |
+| Trận Ngọc Hồi - Đống Đa | 30/01–03/02/1789 | Hà Nội |
+| Chiến dịch Điện Biên Phủ | 13/03–07/05/1954 | Điện Biên |
+
+---
+
+## Tổng hợp Error Codes (30+)
+
+```
+# Generic
+VALIDATION_ERROR, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, INTERNAL_ERROR, RATE_LIMITED
+
+# Auth
+EMAIL_TAKEN, INVALID_CREDENTIALS, ACCOUNT_BANNED, ACCOUNT_INACTIVE, INVALID_RESET_TOKEN, RESET_TOKEN_EXPIRED
+
+# Taxonomy
+TOPIC_NOT_FOUND, PERIOD_NOT_FOUND, CHARACTER_NOT_FOUND, EVENT_NOT_FOUND, SLUG_TAKEN
+
+# Lessons
+LESSON_NOT_FOUND, LESSON_NOT_PUBLISHED
+
+# Quiz
+QUIZ_NOT_FOUND, QUIZ_NOT_PUBLISHED, QUIZ_TIME_EXPIRED, NO_OPEN_ATTEMPT
+
+# Missions
+MISSION_NOT_FOUND, MISSION_NOT_COMPLETED, MISSION_ALREADY_CLAIMED
+
+# Media
+MEDIA_NOT_CONFIGURED
+
+# AI
+AI_UNAVAILABLE
+
+# Publish validation
+PUBLISH_VALIDATION_FAILED
+```
+
+---
+
+## Tổng hợp Test Coverage
+
+| Loại | File | Số tests |
+|---|---|---|
+| Unit | `paginate.spec.ts` | 9 |
+| Unit | `slugify.spec.ts` | 16 |
+| Unit | `app.controller.spec.ts` | 1 |
+| E2E | `auth.e2e-spec.ts` | ~12 |
+| E2E | `users.e2e-spec.ts` | ~8 |
+| E2E | `topics.e2e-spec.ts` | 29 |
+| E2E | `periods.e2e-spec.ts` | 31 |
+| E2E | `characters.e2e-spec.ts` | 30 |
+| E2E | `events.e2e-spec.ts` | 29 |
+| **Tổng** | | **~165 tests** |
+
+---
+
 ## Week 2 Exit Criteria
 
 - [x] register → login → select grade flow hoàn chỉnh (API + Web)
@@ -388,24 +528,25 @@ pnpm --filter api test
 
 ---
 
-## Week 3 Exit Criteria (tiến độ)
+## Week 3 Exit Criteria ✅
 
 - [x] **Dev A Day 1**: Admin Topics CRUD + public `GET /topics` + `paginate()` helper + tests ✅
 - [x] **Dev A Day 2**: Admin Periods CRUD + public `GET /periods` + tests (31/31) ✅
 - [x] **Dev A Day 3**: Admin Characters CRUD (soft delete) + Events CRUD (soft delete) + slugify unit tests ✅
-- [ ] Dev B: `admin-crud` v1: DataTable (server pagination, search, status filter)
-- [ ] Dev B: EntityForm (config-driven), ConfirmDialog, StatusBadge; Topics/Periods/Characters/Events pages
-- [ ] Dev B: ImageUploader (Cloudinary signed upload)
-- [ ] Cả hai: Seed topics, periods, 6 characters, 6 events
+- [x] **Dev B**: `admin-crud` v1: DataTable (server pagination, search, status filter, column helpers) ✅
+- [x] **Dev B**: EntityForm (config-driven modal), ConfirmDialog, StatusBadge ✅
+- [x] **Dev B**: ImageUploader (Cloudinary signed upload) + MediaService backend ✅
+- [x] **Dev B**: Topics/Periods/Characters/Events admin pages refactored (65-70% code reduction) ✅
+- [x] **Cả hai**: Seed 12 topics, 8 periods, 6 characters, 6 events ✅
 
 ---
 
-## Bước tiếp theo (Week 3 — còn lại)
+## Bước tiếp theo (Week 4)
 
-1. **Dev B**: `admin-crud` DataTable component (server pagination, search, status filter)
-2. **Dev B**: EntityForm, ConfirmDialog, StatusBadge; Topics/Periods/Characters/Events admin pages
-3. **Dev B**: ImageUploader (Cloudinary signed upload)
-4. **Cả hai**: Seed topics, periods, 6 characters, 6 events
+1. **LessonsModule** — Admin CRUD cho lessons (rich content editor)
+2. **QuizzesModule** — Admin CRUD cho quizzes + questions + answers
+3. **Public frontend** — Lesson list, lesson detail, quiz taking UI
+4. **Deploy** — Vercel (web) + Render (api) + Neon/Supabase (DB)
 
 ---
 

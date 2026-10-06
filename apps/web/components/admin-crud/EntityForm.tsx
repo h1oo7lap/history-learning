@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import type { PublishStatus } from '@/features/admin/api';
+import { ImageUploader } from './ImageUploader';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -232,10 +233,16 @@ export function EntityForm<T extends Record<string, any>>({
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+        ) : field.type === 'image' ? (
+          <ImageUploader
+            value={String(form[field.name] ?? '')}
+            onChange={(url) => updateField(field.name, url)}
+            folder="characters"
+          />
         ) : (
           <input
             id={`field-${field.name}`}
-            type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'url' || field.type === 'image' ? 'url' : 'text'}
+            type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'url' ? 'url' : 'text'}
             className={`input${hasError ? ' error' : ''}`}
             placeholder={field.placeholder}
             value={String(form[field.name] ?? '')}

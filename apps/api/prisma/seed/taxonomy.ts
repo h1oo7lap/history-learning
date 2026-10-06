@@ -45,5 +45,41 @@ export async function seedTaxonomy(prisma: PrismaClient) {
     });
   }
 
+  console.log('  Seeding characters...');
+  const characters = [
+    { name: 'Ngô Quyền', slug: 'ngo-quyen', shortDescription: 'Vị vua sáng lập nhà Ngô, người đánh bại quân Nam Hán trên sông Bạch Đằng năm 938.', birthYear: 898, deathYear: 944 },
+    { name: 'Đinh Bộ Lĩnh', slug: 'dinh-bo-linh', shortDescription: 'Vị hoàng đế sáng lập triều Đinh, người có công dẹp loạn 12 sứ quân, thống nhất giang sơn.', birthYear: 924, deathYear: 979 },
+    { name: 'Lý Công Uẩn', slug: 'ly-cong-uan', shortDescription: 'Lý Thái Tổ, vị vua sáng lập nhà Lý, dời đô về Thăng Long.', birthYear: 974, deathYear: 1028 },
+    { name: 'Trần Hưng Đạo', slug: 'tran-hung-dao', shortDescription: 'Vị tướng kiệt xuất của nhà Trần, ba lần đánh bại quân Nguyên Mông.', birthYear: 1228, deathYear: 1300 },
+    { name: 'Lê Lợi', slug: 'le-loi', shortDescription: 'Lê Thái Tổ, người lãnh đạo cuộc khởi nghĩa Lam Sơn chiến thắng quân Minh.', birthYear: 1385, deathYear: 1433 },
+    { name: 'Quang Trung - Nguyễn Huệ', slug: 'quang-trung-nguyen-hue', shortDescription: 'Vị hoàng đế thiên tài quân sự, đánh bại quân Thanh và Xiêm La.', birthYear: 1753, deathYear: 1792 },
+  ];
+
+  for (const char of characters) {
+    await prisma.historicalCharacter.upsert({
+      where: { slug: char.slug },
+      update: {},
+      create: char,
+    });
+  }
+
+  console.log('  Seeding events...');
+  const events = [
+    { name: 'Chiến thắng Bạch Đằng', slug: 'chien-thang-bach-dang-938', description: 'Trận chiến do Ngô Quyền lãnh đạo đánh bại quân Nam Hán, kết thúc 1000 năm Bắc thuộc.', startDate: new Date('0938-12-01T00:00:00.000Z'), location: 'Sông Bạch Đằng' },
+    { name: 'Dời đô về Thăng Long', slug: 'doi-do-ve-thang-long', description: 'Lý Công Uẩn dời đô từ Hoa Lư về thành Đại La và đổi tên thành Thăng Long.', startDate: new Date('1010-07-01T00:00:00.000Z'), location: 'Thăng Long' },
+    { name: 'Hội nghị Diên Hồng', slug: 'hoi-nghi-dien-hong', description: 'Hội nghị do Thượng hoàng Trần Thánh Tông triệu tập các bô lão để bàn kế đánh giặc Nguyên Mông.', startDate: new Date('1284-12-01T00:00:00.000Z'), location: 'Thăng Long' },
+    { name: 'Khởi nghĩa Lam Sơn', slug: 'khoi-nghia-lam-son', description: 'Cuộc khởi nghĩa do Lê Lợi lãnh đạo chống lại ách đô hộ của nhà Minh.', startDate: new Date('1418-02-07T00:00:00.000Z'), endDate: new Date('1427-12-31T00:00:00.000Z'), location: 'Thanh Hóa' },
+    { name: 'Trận Ngọc Hồi - Đống Đa', slug: 'tran-ngoc-hoi-dong-da', description: 'Chiến thắng vang dội của Quang Trung đánh tan 29 vạn quân Thanh.', startDate: new Date('1789-01-30T00:00:00.000Z'), endDate: new Date('1789-02-03T00:00:00.000Z'), location: 'Hà Nội' },
+    { name: 'Chiến dịch Điện Biên Phủ', slug: 'chien-dich-dien-bien-phu', description: 'Chiến thắng lừng lẫy năm châu, chấn động địa cầu đánh bại thực dân Pháp.', startDate: new Date('1954-03-13T00:00:00.000Z'), endDate: new Date('1954-05-07T00:00:00.000Z'), location: 'Điện Biên' },
+  ];
+
+  for (const event of events) {
+    await prisma.historicalEvent.upsert({
+      where: { slug: event.slug },
+      update: {},
+      create: event,
+    });
+  }
+
   console.log('  ✓ Taxonomy seed done');
 }
