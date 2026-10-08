@@ -15,7 +15,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly mailerService: MailerService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({
@@ -83,8 +83,11 @@ export class AuthService {
 
     const appUrl = this.config.get('APP_URL');
     const resetLink = `${appUrl}/reset-password?token=${rawToken}`;
-    
-    await this.mailerService.sendPasswordReset(user.email, resetLink);
+
+    // await this.mailerService.sendPasswordReset(user.email, resetLink);
+    void this.mailerService.sendPasswordReset(user.email, resetLink).catch((error) => {
+      console.error('[Mailer] Failed to send password reset email:', error);
+    });
 
     // For now, log token in dev mode only
     if (this.config.get('NODE_ENV') !== 'production') {
