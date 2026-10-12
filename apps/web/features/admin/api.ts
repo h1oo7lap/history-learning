@@ -3,6 +3,9 @@ import { api } from '@/lib/api-client';
 // ─── Types ─────────────────────────────────────────────────────
 
 export type PublishStatus = 'ACTIVE' | 'INACTIVE';
+export type LessonStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type MediaType = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
 export type UserRole = 'USER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
 
@@ -57,6 +60,98 @@ export interface HistoricalEvent {
   updatedAt: string;
 }
 
+// ─── Lesson types ──────────────────────────────────────────────
+
+export interface LessonGradeRel {
+  gradeId: string;
+  grade: { id: string; name: string; code: string };
+}
+
+export interface LessonTopicRel {
+  topicId: string;
+  topic: { id: string; name: string; slug: string };
+}
+
+export interface LessonPeriodRel {
+  periodId: string;
+  period: { id: string; name: string; slug: string };
+}
+
+export interface LessonCharacterRel {
+  characterId: string;
+  role: string | null;
+  character: { id: string; name: string; slug: string };
+}
+
+export interface LessonEventRel {
+  eventId: string;
+  event: { id: string; name: string; slug: string };
+}
+
+export interface LessonMedia {
+  id: string;
+  type: MediaType;
+  url: string;
+  title: string | null;
+  description: string | null;
+  displayOrder: number;
+}
+
+export interface Lesson {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  content: string;
+  thumbnail: string | null;
+  difficulty: Difficulty;
+  estimatedTime: number;
+  displayOrder: number;
+  status: LessonStatus;
+  createdAt: string;
+  updatedAt: string;
+  grades: LessonGradeRel[];
+  topics: LessonTopicRel[];
+  periods: LessonPeriodRel[];
+  characters: LessonCharacterRel[];
+  events: LessonEventRel[];
+  media: LessonMedia[];
+}
+
+export interface CreateLessonPayload {
+  title: string;
+  slug?: string;
+  summary?: string | null;
+  content: string;
+  thumbnail?: string | null;
+  difficulty?: Difficulty;
+  estimatedTime?: number;
+  displayOrder?: number;
+  status?: LessonStatus;
+  gradeIds?: string[];
+  topicIds?: string[];
+  periodIds?: string[];
+  characters?: { characterId: string; role?: string | null }[];
+  eventIds?: string[];
+  media?: { type: MediaType; url: string; title?: string | null; description?: string | null; displayOrder?: number }[];
+}
+
+export interface UpdateLessonPayload extends Partial<CreateLessonPayload> {}
+
+// ─── Relation option types (for form dropdowns) ────────────────
+
+export interface GradeOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface TaxonomyOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -81,6 +176,17 @@ export interface AdminListQuery {
   pageSize?: number;
   search?: string;
   status?: PublishStatus | '';
+}
+
+export interface LessonListQuery {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: LessonStatus | '';
+  gradeId?: string;
+  topicId?: string;
+  periodId?: string;
+  difficulty?: Difficulty | '';
 }
 
 // ─── Topics API ────────────────────────────────────────────────
@@ -222,6 +328,46 @@ export const eventsAdminApi = {
   ) => api.patch<HistoricalEvent>(`admin/events/${id}`, dto),
 
   delete: (id: string) => api.delete<void>(`admin/events/${id}`),
+};
+
+// ─── Lessons API ───────────────────────────────────────────────
+
+export const lessonsAdminApi = {
+  list: (q: LessonListQuery = {}) =>
+    api.get<PaginatedResult<Lesson>>('admin/lessons', {
+      ...(q.page !== undefined && { page: q.page }),
+      ...(q.pageSize !== undefined && { pageSize: q.pageSize }),
+      ...(q.search && { search: q.search }),
+      ...(q.status && { status: q.status }),
+      ...(q.gradeId && { gradeId: q.gradeId }),
+      ...(q.topicId && { topicId: q.topicId }),
+      ...(q.periodId && { periodId: q.periodId }),
+      ...(q.difficulty && { difficulty: q.difficulty }),
+    }),
+
+  getOne: (id: string) => api.get<Lesson>(`admin/lessons/${id}`),
+
+  create: (dto: CreateLessonPayload) =>
+    api.post<Lesson>('admin/lessons', dto),
+
+  update: (id: string, dto: UpdateLessonPayload) =>
+    api.patch<Lesson>(`admin/lessons/${id}`, dto),
+
+  delete: (id: string) => api.delete<void>(`admin/lessons/${id}`),
+};
+
+// ─── Relation lookup APIs (for lesson form dropdowns) ──────────
+
+export const relationLookupApi = {
+  grades: () => api.get<GradeOption[]>('grades'),
+  topics: (q?: { pageSize?: number }) =>
+    api.get<PaginatedResult<TaxonomyOption>>('admin/topics', { pageSize: q?.pageSize ?? 100 }),
+  periods: (q?: { pageSize?: number }) =>
+    api.get<PaginatedResult<TaxonomyOption>>('admin/periods', { pageSize: q?.pageSize ?? 100 }),
+  characters: (q?: { pageSize?: number }) =>
+    api.get<PaginatedResult<TaxonomyOption>>('admin/characters', { pageSize: q?.pageSize ?? 100 }),
+  events: (q?: { pageSize?: number }) =>
+    api.get<PaginatedResult<TaxonomyOption>>('admin/events', { pageSize: q?.pageSize ?? 100 }),
 };
 
 // ─── Admin Users API ───────────────────────────────────────────

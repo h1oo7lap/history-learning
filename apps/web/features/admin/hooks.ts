@@ -4,9 +4,19 @@ import {
   periodsAdminApi,
   charactersAdminApi,
   eventsAdminApi,
+  lessonsAdminApi,
   usersAdminApi,
+  relationLookupApi,
 } from './api';
-import type { AdminListQuery, PublishStatus, UserStatus, UserRole } from './api';
+import type {
+  AdminListQuery,
+  LessonListQuery,
+  PublishStatus,
+  UserStatus,
+  UserRole,
+  CreateLessonPayload,
+  UpdateLessonPayload,
+} from './api';
 
 // ─── Topics hooks ──────────────────────────────────────────────
 
@@ -179,6 +189,96 @@ export function useDeleteEvent() {
   return useMutation({
     mutationFn: (id: string) => eventsAdminApi.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: [EVENTS_KEY] }),
+  });
+}
+
+// ─── Lessons hooks ─────────────────────────────────────────────
+
+export const LESSONS_KEY = 'admin-lessons';
+
+export function useAdminLessons(query: LessonListQuery) {
+  return useQuery({
+    queryKey: [LESSONS_KEY, query],
+    queryFn: () => lessonsAdminApi.list(query),
+  });
+}
+
+export function useAdminLesson(id: string | null) {
+  return useQuery({
+    queryKey: [LESSONS_KEY, 'detail', id],
+    queryFn: () => lessonsAdminApi.getOne(id!),
+    enabled: !!id,
+  });
+}
+
+export function useCreateLesson() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateLessonPayload) => lessonsAdminApi.create(dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [LESSONS_KEY] }),
+  });
+}
+
+export function useUpdateLesson() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateLessonPayload }) =>
+      lessonsAdminApi.update(id, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [LESSONS_KEY] }),
+  });
+}
+
+export function useDeleteLesson() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => lessonsAdminApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [LESSONS_KEY] }),
+  });
+}
+
+// ─── Relation lookup hooks (for lesson form) ───────────────────
+
+export function useGradeOptions() {
+  return useQuery({
+    queryKey: ['lookup-grades'],
+    queryFn: () => relationLookupApi.grades(),
+    staleTime: 5 * 60 * 1000, // 5 min
+  });
+}
+
+export function useTopicOptions() {
+  return useQuery({
+    queryKey: ['lookup-topics'],
+    queryFn: () => relationLookupApi.topics(),
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.items,
+  });
+}
+
+export function usePeriodOptions() {
+  return useQuery({
+    queryKey: ['lookup-periods'],
+    queryFn: () => relationLookupApi.periods(),
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.items,
+  });
+}
+
+export function useCharacterOptions() {
+  return useQuery({
+    queryKey: ['lookup-characters'],
+    queryFn: () => relationLookupApi.characters(),
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.items,
+  });
+}
+
+export function useEventOptions() {
+  return useQuery({
+    queryKey: ['lookup-events'],
+    queryFn: () => relationLookupApi.events(),
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.items,
   });
 }
 
