@@ -1,6 +1,6 @@
 # Base Project — History Learning Platform ✅
 
-**Cập nhật lần cuối**: 2026-10-06 — Week 3 hoàn thành (Dev A + Dev B + Seed data)
+**Cập nhật lần cuối**: 2026-10-12 — Week 4 Lượt A hoàn thành (block-based content backend)
 
 ---
 
@@ -21,7 +21,7 @@
 | `schemas/auth.ts` | Register, Login, ForgotPassword, ResetPassword |
 | `schemas/user.ts` | UpdateProfile |
 | `schemas/taxonomy.ts` | Topic, Period, Character, Event |
-| `schemas/lesson.ts` | CreateLesson, LessonMedia, LessonCharacterRel, ListQuery |
+| `schemas/lesson.ts` | CreateLesson, UpdateLesson, LessonMedia, LessonCharacterRel, ListQuery, **ContentJsonSchema** (4 block types), **extractYoutubeId** |
 | `schemas/quiz.ts` | Quiz, Question, Answer, Submit |
 | `schemas/gamification.ts` | Mission, HistoryCard |
 | `schemas/ai.ts` | AiChat |
@@ -39,16 +39,17 @@
 | Response envelope | `{ success, data }` / `{ success, message, errorCode }` |
 | Error codes | 30+ mã lỗi trong `error-codes.ts` |
 | Guards | JwtAuthGuard (global), RolesGuard, OriginGuard (CSRF) |
-| Utils | `slugify` (Vietnamese), `sanitizeContent`, `htmlToText`, `generateToken` |
+| Utils | `slugify` (Vietnamese), `sanitizeContent`, `htmlToText`, `generateToken`, **`blocksToHtml`**, **`blocksToPlainText`**, **`hasTextContent`** |
 | 14 stub modules | grades, topics, periods, characters, events, lessons, progress, quizzes, gamification, search, dashboard, ai, mailer, media |
 
 ### Prisma Database
 | Thành phần | Kết quả |
 |---|---|
-| Schema | 590 lines, 25 models, 12 enums |
+| Schema | 592 lines, 25 models, 12 enums — **`Lesson.contentJson Json?`** thêm |
 | Migration `init` | Tất cả tables đã tạo |
 | Migration `search_extensions` | unaccent, pg_trgm, GIN indexes |
-| Seed data | 3 education levels, 9 grades, 5 levels, 12 topics, 8 periods, 6 characters, 6 events, 6 missions, 15 cards, admin + user |
+| Migration `lesson_content_json` | `ALTER TABLE lessons ADD COLUMN contentJson JSONB` |
+| Seed data | 3 education levels, 9 grades, 5 levels, 12 topics, 8 periods, 6 characters, 6 events, 6 missions, 15 cards, 10 lessons, admin + user |
 
 ### apps/web (Next.js 16)
 | File | Nội dung |
@@ -505,14 +506,19 @@ PUBLISH_VALIDATION_FAILED
 |---|---|---|
 | Unit | `paginate.spec.ts` | 9 |
 | Unit | `slugify.spec.ts` | 16 |
+| Unit | `html.spec.ts` | 19 |
+| Unit | `youtube.spec.ts` | 17 |
 | Unit | `app.controller.spec.ts` | 1 |
-| E2E | `auth.e2e-spec.ts` | ~12 |
-| E2E | `users.e2e-spec.ts` | ~8 |
+| Unit | `lessons.service.spec.ts` | 31 |
+| E2E | `auth.e2e-spec.ts` | 17 |
+| E2E | `users.e2e-spec.ts` | 8 |
 | E2E | `topics.e2e-spec.ts` | 29 |
 | E2E | `periods.e2e-spec.ts` | 31 |
 | E2E | `characters.e2e-spec.ts` | 30 |
 | E2E | `events.e2e-spec.ts` | 29 |
-| **Tổng** | | **~165 tests** |
+| E2E | `lessons.e2e-spec.ts` | 32 |
+| E2E | `app.e2e-spec.ts` | 1 |
+| **Tổng** | | **270 tests** |
 
 ---
 
@@ -541,11 +547,36 @@ PUBLISH_VALIDATION_FAILED
 
 ---
 
-## Bước tiếp theo (Week 4)
+## Week 4 Lượt A Exit Criteria ✅
 
-1. **LessonsModule** — Admin CRUD cho lessons (rich content editor)
-2. **QuizzesModule** — Admin CRUD cho quizzes + questions + answers
-3. **Public frontend** — Lesson list, lesson detail, quiz taking UI
+- [x] **Migration**: `contentJson JSONB` thêm vào bảng `lessons` (nullable, backward-compat) ✅
+- [x] **Schema shared**: `ContentJsonSchema` — 4 block types (text/image/audio/video) với `z.discriminatedUnion` ✅
+  - `id` duy nhất trong cùng bài (superRefine), tối đa 100 blocks, text ≤10.000 chars
+  - URL image/audio: `https` + `res.cloudinary.com` + cloud name path validation
+  - `youtubeId`: regex `^[A-Za-z0-9_-]{11}$`
+  - Kích thước JSON ≤ `CONTENT.LESSON_CONTENT_MAX_BYTES` (200 KB)
+- [x] **`extractYoutubeId`**: xuất từ shared, nhận watch/youtu.be/embed/shorts/live → trả ID 11 ký tự hoặc null ✅
+- [x] **`blocksToHtml`**: text → `<p>`, escape HTML trước, áp `**bold**`/`*italic*`, image/audio/video bị bỏ qua ✅
+- [x] **`blocksToPlainText`** + **`hasTextContent`**: AI/search tiếp tục dùng `content` (không đổi) ✅
+- [x] **LessonsService**: khi `contentJson` gửi lên → bỏ qua `content` client, tự sinh HTML + validate Cloudinary cloud name ✅
+- [x] **LessonsService**: khi `contentJson=null` → quay về legacy HTML mode (sanitizeContent) ✅
+- [x] **Publish rule**: bài chỉ có ảnh/video/audio (không có text block) → 422 PUBLISH_VALIDATION_FAILED ✅
+- [x] **List endpoints**: không trả `content`/`contentJson` (dùng `select`) ✅
+- [x] **Detail endpoints** (admin + public): trả `contentJson` đầy đủ ✅
+- [x] **Unit tests**: 93/93 pass (19 html + 17 youtube + 31 service + 26 khác) ✅
+- [x] **E2e tests**: 185/185 pass (32 lessons mới + 153 cũ) ✅
+
+---
+
+## Bước tiếp theo (Week 4 — Lượt B & C)
+
+1. **Lượt B** — Renderer học sinh: hiển thị `contentJson` blocks trong `app/lessons/[slug]/page.tsx`
+   - Text block: render markdown inline (**bold**, *italic*), xuống dòng = `<p>`
+   - Image block: `<img>` có alt + caption
+   - Audio block: HTML5 `<audio controls>`
+   - Video block: YouTube embed `<iframe>`
+2. **Lượt C** — Form admin + Upload: drag-drop block editor, signed upload Cloudinary, `extractYoutubeId` ở frontend
+3. **QuizzesModule** — Admin CRUD cho quizzes + questions + answers
 4. **Deploy** — Vercel (web) + Render (api) + Neon/Supabase (DB)
 
 ---

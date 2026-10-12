@@ -264,7 +264,8 @@ model Lesson {
   title         String
   slug          String        @unique
   summary       String?
-  content       String // sanitized HTML from Tiptap
+  content       String // sanitized HTML; auto-generated from contentJson when present
+  contentJson   Json?  // block-based content (see ContentJsonSchema in @history-learning/shared); null = legacy HTML mode
   thumbnail     String?
   difficulty    Difficulty    @default(EASY)
   estimatedTime Int           @default(10) // minutes

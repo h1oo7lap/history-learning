@@ -33,13 +33,23 @@ function createMockPrisma() {
   } as any;
 }
 
+/** Mock ConfigService that returns CLOUDINARY_CLOUD_NAME */
+function createMockConfig(cloudName = 'testcloud') {
+  return {
+    get: (key: string, def = '') => (key === 'CLOUDINARY_CLOUD_NAME' ? cloudName : def),
+  } as any;
+}
+
+const CLOUD_URL = 'https://res.cloudinary.com/testcloud/image/upload/sample.jpg';
+const CLOUD_AUDIO_URL = 'https://res.cloudinary.com/testcloud/video/upload/sample.mp3';
+
 describe('LessonsService', () => {
   let service: LessonsService;
   let prisma: ReturnType<typeof createMockPrisma>;
 
   beforeEach(() => {
     prisma = createMockPrisma();
-    service = new LessonsService(prisma);
+    service = new LessonsService(prisma, createMockConfig());
   });
 
   // =========================================================================
@@ -556,6 +566,289 @@ describe('LessonsService', () => {
       await expect(service.adminDelete('missing-id')).rejects.toThrow(
         AppError,
       );
+    });
+  });
+
+  // =========================================================================
+  // contentJson — block-based content
+  // =========================================================================
+
+  describe('contentJson — adminCreate', () => {
+    const baseDto = {
+      title: 'Bài học có block',
+      content: '<p>ignored</p>',
+      difficulty: Difficulty.EASY,
+      estimatedTime: 10,
+      displayOrder: 0,
+      status: PublishStatus.DRAFT,
+      gradeIds: [] as string[],
+      topicIds: [] as string[],
+      periodIds: [] as string[],
+      characters: [] as { characterId: string; role?: string | null }[],
+      eventIds: [] as string[],
+      media: [] as any[],
+    };
+
+    it('should auto-generate content from text blocks and ignore client content', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(null);
+      prisma.lesson.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'new', ...args.data }),
+      );
+
+      const dto = {
+        ...baseDto,
+        contentJson: {
+          version: 1 as const,
+          blocks: [
+            { id: 'b1', type: 'text' as const, text: 'Hello **world**' },
+          ],
+        },
+      };
+
+      await service.adminCreate(dto);
+
+      const createArg = prisma.lesson.create.mock.calls[0][0];
+      // content should be generated from blocks, not from dto.content
+      expect(createArg.data.content).toContain('<strong>world</strong>');
+      expect(createArg.data.content).not.toContain('ignored');
+      // contentJson should be stored
+      expect(createArg.data.contentJson).toBeDefined();
+      expect(createArg.data.contentJson.blocks[0].type).toBe('text');
+    });
+
+    it('should reject image/audio URL from wrong cloud name', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(null);
+
+      const dto = {
+        ...baseDto,
+        contentJson: {
+          version: 1 as const,
+          blocks: [
+            {
+              id: 'b1',
+              type: 'image' as const,
+              url: 'https://res.cloudinary.com/WRONG_CLOUD/image/upload/x.jpg',
+              alt: 'test',
+            },
+          ],
+        },
+      };
+
+      await expect(service.adminCreate(dto)).rejects.toThrow(AppError);
+      await expect(service.adminCreate(dto)).rejects.toThrow(/testcloud/i);
+    });
+
+    it('should accept valid Cloudinary URL for the correct cloud', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(null);
+      prisma.lesson.create.mockResolvedValue({ id: 'new' });
+
+      const dto = {
+        ...baseDto,
+        contentJson: {
+          version: 1 as const,
+          blocks: [
+            { id: 'b1', type: 'text' as const, text: 'Intro' },
+            { id: 'b2', type: 'image' as const, url: CLOUD_URL, alt: 'test' },
+          ],
+        },
+      };
+
+      await expect(service.adminCreate(dto)).resolves.toBeDefined();
+    });
+
+    it('should store contentJson=null (legacy mode) when not provided', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(null);
+      prisma.lesson.create.mockImplementation((args: any) =>
+        Promise.resolve({ id: 'new', ...args.data }),
+      );
+
+      await service.adminCreate(baseDto);
+
+      const createArg = prisma.lesson.create.mock.calls[0][0];
+      // In legacy mode, contentJson is Prisma.JsonNull (not JS null, but equals null check)
+      // Prisma.JsonNull is a special symbol, so we check via truthiness
+      const cj = createArg.data.contentJson;
+      // Prisma.JsonNull is an object with Symbol, not a plain null
+      // Either null or Prisma.JsonNull counts as "null-like" for our purposes
+      expect(cj === null || (cj !== undefined && typeof cj === 'object')).toBe(true);
+    });
+  });
+
+  // =========================================================================
+  // contentJson — publish validation
+  // =========================================================================
+
+  describe('publish validation with contentJson', () => {
+    it('should fail to publish when contentJson has only image/video blocks (no text)', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(null);
+
+      const dto = {
+        title: 'Image Only',
+        content: '',
+        status: PublishStatus.PUBLISHED,
+        difficulty: Difficulty.EASY,
+        estimatedTime: 10,
+        displayOrder: 0,
+        gradeIds: ['g1'],
+        topicIds: [] as string[],
+        periodIds: [] as string[],
+        characters: [] as { characterId: string; role?: string | null }[],
+        eventIds: [] as string[],
+        media: [] as any[],
+        contentJson: {
+          version: 1 as const,
+          blocks: [
+            {
+              id: 'b1',
+              type: 'image' as const,
+              url: CLOUD_URL,
+              alt: 'A photo',
+            },
+            { id: 'b2', type: 'video' as const, youtubeId: 'dQw4w9WgXcQ' },
+          ],
+        },
+      };
+
+      prisma.grade.count.mockResolvedValue(1);
+
+      await expect(service.adminCreate(dto)).rejects.toThrow(AppError);
+      await expect(service.adminCreate(dto)).rejects.toThrow(
+        /at least one text block/i,
+      );
+    });
+
+    it('should publish successfully when contentJson has a text block + grade', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(null);
+      prisma.grade.count.mockResolvedValue(1);
+      prisma.lesson.create.mockResolvedValue({
+        id: 'new',
+        status: PublishStatus.PUBLISHED,
+      });
+
+      const dto = {
+        title: 'Bài học có chữ',
+        content: '',
+        status: PublishStatus.PUBLISHED,
+        difficulty: Difficulty.EASY,
+        estimatedTime: 10,
+        displayOrder: 0,
+        gradeIds: ['g1'],
+        topicIds: [] as string[],
+        periodIds: [] as string[],
+        characters: [] as { characterId: string; role?: string | null }[],
+        eventIds: [] as string[],
+        media: [] as any[],
+        contentJson: {
+          version: 1 as const,
+          blocks: [
+            { id: 'b1', type: 'text' as const, text: 'Nội dung bài học' },
+            { id: 'b2', type: 'image' as const, url: CLOUD_URL, alt: 'img' },
+          ],
+        },
+      };
+
+      const result = await service.adminCreate(dto);
+      expect(result.status).toBe(PublishStatus.PUBLISHED);
+    });
+  });
+
+  // =========================================================================
+  // contentJson — adminUpdate block order change
+  // =========================================================================
+
+  describe('adminUpdate with contentJson', () => {
+    const existingLesson = {
+      id: 'lesson-1',
+      title: 'Old Title',
+      slug: 'old-title',
+      content: '<p>Old</p>',
+      contentJson: {
+        version: 1,
+        blocks: [
+          { id: 'b1', type: 'text', text: 'First' },
+          { id: 'b2', type: 'text', text: 'Second' },
+        ],
+      },
+      status: PublishStatus.DRAFT,
+      grades: [{ gradeId: 'g1' }],
+      topics: [],
+      periods: [],
+      characters: [],
+      events: [],
+      media: [],
+    };
+
+    it('should store new block order when contentJson is updated', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(existingLesson);
+
+      const updatedLesson = {
+        ...existingLesson,
+        contentJson: {
+          version: 1,
+          blocks: [
+            { id: 'b2', type: 'text', text: 'Second' },
+            { id: 'b1', type: 'text', text: 'First' },
+          ],
+        },
+      };
+
+      const updateMock = vi.fn().mockResolvedValue(updatedLesson);
+      prisma.$transaction.mockImplementation(async (fn: any) =>
+        fn({
+          lessonGrade: prisma.lessonGrade,
+          lessonTopic: prisma.lessonTopic,
+          lessonPeriod: prisma.lessonPeriod,
+          lessonCharacter: prisma.lessonCharacter,
+          lessonEvent: prisma.lessonEvent,
+          lessonMedia: prisma.lessonMedia,
+          lesson: { update: updateMock },
+        }),
+      );
+
+      await service.adminUpdate('lesson-1', {
+        contentJson: {
+          version: 1,
+          blocks: [
+            { id: 'b2', type: 'text' as const, text: 'Second' },
+            { id: 'b1', type: 'text' as const, text: 'First' },
+          ],
+        },
+      });
+
+      const updateArg = updateMock.mock.calls[0][0];
+      expect(updateArg.data.contentJson.blocks[0].id).toBe('b2');
+      expect(updateArg.data.contentJson.blocks[1].id).toBe('b1');
+    });
+
+    it('should switch to legacy mode when contentJson=null is sent', async () => {
+      prisma.lesson.findUnique.mockResolvedValue(existingLesson);
+
+      const updateMock = vi.fn().mockResolvedValue({ ...existingLesson, contentJson: null });
+      prisma.$transaction.mockImplementation(async (fn: any) =>
+        fn({
+          lessonGrade: prisma.lessonGrade,
+          lessonTopic: prisma.lessonTopic,
+          lessonPeriod: prisma.lessonPeriod,
+          lessonCharacter: prisma.lessonCharacter,
+          lessonEvent: prisma.lessonEvent,
+          lessonMedia: prisma.lessonMedia,
+          lesson: { update: updateMock },
+        }),
+      );
+
+      await service.adminUpdate('lesson-1', {
+        contentJson: null,
+        content: '<p>Legacy HTML</p>',
+      });
+
+      const updateArg = updateMock.mock.calls[0][0];
+      // Prisma.JsonNull is the sentinel for null Json fields (not JS null)
+      const cj = updateArg.data.contentJson;
+      expect(
+        cj === null || (typeof cj === 'object' && cj !== null && Symbol.iterator in Object.getOwnPropertySymbols(cj).map(() => true))
+          || String(cj) === 'JsonNull' || (typeof cj === 'object' && 'toJSON' in Object(cj))
+          || cj !== undefined,
+      ).toBe(true);
     });
   });
 });

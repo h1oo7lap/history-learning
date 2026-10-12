@@ -1,17 +1,25 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PublishStatus } from '@history-learning/shared';
+import { Prisma } from '../generated/prisma/client';
 import type {
   CreateLessonDto,
   UpdateLessonDto,
   LessonListQueryDto,
+  ContentJsonDto,
 } from '@history-learning/shared';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
 import { paginate, getPaginationArgs } from '../common/pagination/paginate';
 import { slugify, uniqueSlug } from '../common/utils/slugify';
+import {
+  sanitizeContent,
+  blocksToHtml,
+  hasTextContent,
+} from '../common/utils/html';
 
-/** Fields included when returning a lesson with relations */
+/** Fields included when returning a lesson in admin/public detail (includes contentJson) */
 const LESSON_INCLUDE = {
   grades: { include: { grade: true } },
   topics: { include: { topic: true } },
@@ -22,9 +30,35 @@ const LESSON_INCLUDE = {
   quiz: true,
 } as const;
 
+/** Fields for list endpoints — excludes content/contentJson for performance */
+const LESSON_LIST_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  summary: true,
+  thumbnail: true,
+  difficulty: true,
+  estimatedTime: true,
+  displayOrder: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  // content and contentJson intentionally excluded from list
+  grades: { include: { grade: true } },
+  topics: { include: { topic: true } },
+} as const;
+
 @Injectable()
 export class LessonsService {
-  constructor(private readonly prisma: PrismaService) {}
+  /** Cloudinary cloud name for URL validation */
+  private readonly cloudName: string;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {
+    this.cloudName = this.config.get<string>('CLOUDINARY_CLOUD_NAME', '');
+  }
 
   // ---------------------------------------------------------------------------
   // Public helpers
@@ -33,6 +67,7 @@ export class LessonsService {
   /**
    * Public list — only PUBLISHED lessons.
    * Supports pagination + optional search + grade/topic/period/difficulty filter.
+   * Does NOT return content or contentJson.
    */
   async findAllPublic(query: LessonListQueryDto) {
     const { skip, take, page, pageSize } = getPaginationArgs(query);
@@ -60,10 +95,7 @@ export class LessonsService {
         orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
         skip,
         take,
-        include: {
-          grades: { include: { grade: true } },
-          topics: { include: { topic: true } },
-        },
+        select: LESSON_LIST_SELECT,
       }),
       this.prisma.lesson.count({ where }),
     ]);
@@ -73,6 +105,7 @@ export class LessonsService {
 
   /**
    * Get a single published lesson by slug (public).
+   * Returns contentJson so the student renderer (round B) can display blocks.
    */
   async findOneBySlug(slug: string) {
     const lesson = await this.prisma.lesson.findFirst({
@@ -96,6 +129,7 @@ export class LessonsService {
   /**
    * Admin list — all statuses.
    * Supports pagination + search + status/grade/topic/difficulty filters.
+   * Does NOT return content or contentJson.
    */
   async adminFindAll(query: LessonListQueryDto) {
     const { skip, take, page, pageSize } = getPaginationArgs(query);
@@ -123,10 +157,7 @@ export class LessonsService {
         orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
         skip,
         take,
-        include: {
-          grades: { include: { grade: true } },
-          topics: { include: { topic: true } },
-        },
+        select: LESSON_LIST_SELECT,
       }),
       this.prisma.lesson.count({ where }),
     ]);
@@ -135,7 +166,7 @@ export class LessonsService {
   }
 
   /**
-   * Get a single lesson by ID (admin) — includes all relations.
+   * Get a single lesson by ID (admin) — includes all relations + contentJson.
    */
   async adminFindOne(id: string) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -156,6 +187,13 @@ export class LessonsService {
    * Create a new lesson with relations.
    * Auto-generates slug from title if not provided.
    * Validates all relation IDs before creating.
+   *
+   * When contentJson is provided:
+   *   - Validates Cloudinary URLs against this project's cloud name
+   *   - Auto-generates `content` (HTML) from text blocks
+   *   - Client-supplied `content` is ignored
+   * When contentJson is null/absent:
+   *   - Uses client-supplied `content` through sanitizeContent
    */
   async adminCreate(dto: CreateLessonDto) {
     // Generate slug
@@ -169,10 +207,13 @@ export class LessonsService {
     // Validate relation IDs
     await this.validateRelationIds(dto);
 
+    // Resolve content
+    const { content, contentJson } = this.resolveContent(dto.content, dto.contentJson);
+
     // Publish validation
     const status = dto.status ?? PublishStatus.DRAFT;
     if (status === PublishStatus.PUBLISHED) {
-      this.validatePublish(dto.title, dto.content, dto.gradeIds ?? []);
+      this.validatePublish(dto.title, content, contentJson, dto.gradeIds ?? []);
     }
 
     return this.prisma.lesson.create({
@@ -180,7 +221,8 @@ export class LessonsService {
         title: dto.title,
         slug,
         summary: dto.summary ?? null,
-        content: dto.content,
+        content,
+        contentJson: contentJson != null ? (contentJson as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
         thumbnail: dto.thumbnail ?? null,
         difficulty: dto.difficulty,
         estimatedTime: dto.estimatedTime,
@@ -205,6 +247,8 @@ export class LessonsService {
           create: (dto.eventIds ?? []).map((eventId) => ({ eventId })),
         },
         media: {
+          // Note: content media (images/audio/video in lesson body) now lives in contentJson.
+          // LessonMedia table is kept for supplemental file attachments.
           create: (dto.media ?? []).map((m, i) => ({
             type: m.type,
             url: m.url,
@@ -247,17 +291,55 @@ export class LessonsService {
     // Validate relation IDs (only for provided arrays)
     await this.validateRelationIds(dto);
 
+    // Resolve content for the final state
+    // dto.contentJson: undefined = not touched; null = clear (back to HTML); object = set new blocks
+    const rawExistingJson = existing.contentJson;
+    // Cast only if it's a real ContentJson object (has version + blocks array)
+    const existingContentJson: ContentJsonDto | null =
+      rawExistingJson != null &&
+      typeof rawExistingJson === 'object' &&
+      !Array.isArray(rawExistingJson) &&
+      'blocks' in rawExistingJson &&
+      Array.isArray((rawExistingJson as { blocks: unknown }).blocks)
+        ? (rawExistingJson as unknown as ContentJsonDto)
+        : null;
+    const incomingContentJson: ContentJsonDto | null | undefined = dto.contentJson;
+
+    let finalContent: string;
+    let finalContentJson: ContentJsonDto | null;
+
+    if (incomingContentJson !== undefined) {
+      // Client explicitly provided contentJson (new blocks or null to clear)
+      const rawContent = dto.content ?? existing.content;
+      const resolved = this.resolveContent(rawContent, incomingContentJson);
+      finalContent = resolved.content;
+      finalContentJson = resolved.contentJson;
+    } else {
+      // contentJson not touched — use existing
+      if (existingContentJson !== null) {
+        // Still in block mode: regenerate content from existing blocks
+        finalContent = dto.content !== undefined
+          ? dto.content
+          : blocksToHtml(existingContentJson);
+        finalContentJson = existingContentJson;
+      } else {
+        // Legacy HTML mode: use dto.content if provided
+        finalContent = dto.content !== undefined
+          ? sanitizeContent(dto.content)
+          : existing.content;
+        finalContentJson = null;
+      }
+    }
+
     // Determine final status for publish validation
     const newStatus = dto.status ?? existing.status;
     if (newStatus === PublishStatus.PUBLISHED) {
       const finalTitle = dto.title ?? existing.title;
-      const finalContent = dto.content ?? existing.content;
-      // If gradeIds are provided in DTO, use them; otherwise use existing grades
       const finalGradeIds =
         dto.gradeIds !== undefined
           ? dto.gradeIds
           : existing.grades.map((g) => g.gradeId);
-      this.validatePublish(finalTitle, finalContent, finalGradeIds ?? []);
+      this.validatePublish(finalTitle, finalContent, finalContentJson, finalGradeIds ?? []);
     }
 
     // Build the update within a transaction for relation sync
@@ -288,7 +370,8 @@ export class LessonsService {
           ...(dto.title !== undefined ? { title: dto.title } : {}),
           slug,
           ...(dto.summary !== undefined ? { summary: dto.summary } : {}),
-          ...(dto.content !== undefined ? { content: dto.content } : {}),
+          content: finalContent,
+          contentJson: finalContentJson != null ? (finalContentJson as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
           ...(dto.thumbnail !== undefined ? { thumbnail: dto.thumbnail } : {}),
           ...(dto.difficulty !== undefined
             ? { difficulty: dto.difficulty }
@@ -374,6 +457,66 @@ export class LessonsService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Resolve the final content and contentJson to store.
+   *
+   * Rules:
+   * - If contentJson is provided (non-null): validate Cloudinary cloud name,
+   *   generate HTML from text blocks, ignore client content.
+   * - If contentJson is null or undefined: sanitize client-supplied HTML.
+   */
+  private resolveContent(
+    clientContent: string,
+    contentJson: ContentJsonDto | null | undefined,
+  ): { content: string; contentJson: ContentJsonDto | null } {
+    if (contentJson != null) {
+      // Validate Cloudinary cloud name for image/audio URLs
+      if (this.cloudName) {
+        this.validateCloudinaryUrls(contentJson);
+      }
+      const html = blocksToHtml(contentJson);
+      return { content: html, contentJson };
+    }
+
+    // Legacy HTML mode
+    return {
+      content: sanitizeContent(clientContent),
+      contentJson: null,
+    };
+  }
+
+  /**
+   * Validate that all image/audio block URLs belong to this project's Cloudinary cloud.
+   * Throws VALIDATION_ERROR if any URL has the wrong cloud name path.
+   */
+  private validateCloudinaryUrls(contentJson: ContentJsonDto): void {
+    const expectedPrefix = `/${this.cloudName}/`;
+    const errors: string[] = [];
+
+    for (const block of contentJson.blocks) {
+      if (block.type === 'image' || block.type === 'audio') {
+        try {
+          const url = new URL(block.url);
+          if (!url.pathname.startsWith(expectedPrefix)) {
+            errors.push(
+              `Block "${block.id}": URL path must start with "${expectedPrefix}" (got "${url.pathname.slice(0, 30)}...")`,
+            );
+          }
+        } catch {
+          errors.push(`Block "${block.id}": invalid URL`);
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AppError(
+        ErrorCodes.VALIDATION_ERROR,
+        400,
+        errors.join('; '),
+      );
+    }
+  }
+
+  /**
    * Validate that all referenced relation IDs exist in the database.
    * Throws VALIDATION_ERROR with details if any are missing.
    */
@@ -440,12 +583,15 @@ export class LessonsService {
   /**
    * Validate publish requirements:
    * - title must not be empty
-   * - content must not be empty
+   * - content (derived) must have at least some text (not just image/video/audio)
    * - at least 1 grade
+   *
+   * A lesson with only image/audio/video blocks (no text) CANNOT be published.
    */
   private validatePublish(
     title: string,
     content: string,
+    contentJson: ContentJsonDto | null,
     gradeIds: string[],
   ) {
     const errors: string[] = [];
@@ -453,9 +599,21 @@ export class LessonsService {
     if (!title || title.trim().length === 0) {
       errors.push('Title is required for publishing');
     }
-    if (!content || content.trim().length === 0) {
-      errors.push('Content is required for publishing');
+
+    // When contentJson is present, check that there's at least one text block
+    if (contentJson !== null) {
+      if (!hasTextContent(contentJson.blocks)) {
+        errors.push(
+          'Content is required for publishing: at least one text block must be present',
+        );
+      }
+    } else {
+      // Legacy HTML mode: check content is not empty
+      if (!content || content.trim().length === 0) {
+        errors.push('Content is required for publishing');
+      }
     }
+
     if (!gradeIds || gradeIds.length === 0) {
       errors.push('At least one grade is required for publishing');
     }
@@ -463,7 +621,7 @@ export class LessonsService {
     if (errors.length) {
       throw new AppError(
         ErrorCodes.PUBLISH_VALIDATION_FAILED,
-        400,
+        422,
         errors.join('; '),
       );
     }
