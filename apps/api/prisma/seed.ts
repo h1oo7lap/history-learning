@@ -16,6 +16,10 @@ async function main() {
   const { seedTaxonomy } = await import('./seed/taxonomy.js');
   await seedTaxonomy(prisma);
 
+  // Seed lessons
+  const { seedLessons } = await import('./seed/lessons.js');
+  await seedLessons(prisma);
+
   // Seed gamification (levels, missions, cards)
   const { seedGamification } = await import('./seed/gamification.js');
   await seedGamification(prisma);
