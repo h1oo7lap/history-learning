@@ -6,6 +6,7 @@ import {
   eventsAdminApi,
   lessonsAdminApi,
   usersAdminApi,
+  quizzesAdminApi,
   relationLookupApi,
 } from './api';
 import type {
@@ -16,6 +17,10 @@ import type {
   UserRole,
   CreateLessonPayload,
   UpdateLessonPayload,
+  QuizListQuery,
+  CreateQuizPayload,
+  UpdateQuizPayload,
+  QuestionPayload,
 } from './api';
 
 // ─── Topics hooks ──────────────────────────────────────────────
@@ -299,5 +304,61 @@ export function useUpdateAdminUser() {
     mutationFn: ({ id, dto }: { id: string; dto: { status?: UserStatus; role?: UserRole } }) =>
       usersAdminApi.update(id, dto),
     onSuccess: () => qc.invalidateQueries({ queryKey: [ADMIN_USERS_KEY] }),
+  });
+}
+
+// ─── Quizzes hooks ─────────────────────────────────────────────
+
+export const QUIZZES_KEY = 'admin-quizzes';
+
+export function useAdminQuizzes(query: QuizListQuery) {
+  return useQuery({
+    queryKey: [QUIZZES_KEY, query],
+    queryFn: () => quizzesAdminApi.list(query),
+  });
+}
+
+export function useAdminQuiz(id: string | null) {
+  return useQuery({
+    queryKey: [QUIZZES_KEY, 'detail', id],
+    queryFn: () => quizzesAdminApi.getOne(id!),
+    enabled: !!id,
+  });
+}
+
+export function useCreateQuiz() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateQuizPayload) => quizzesAdminApi.create(dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUIZZES_KEY] }),
+  });
+}
+
+export function useUpdateQuiz() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateQuizPayload }) =>
+      quizzesAdminApi.update(id, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUIZZES_KEY] }),
+  });
+}
+
+export function useDeleteQuiz() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => quizzesAdminApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [QUIZZES_KEY] }),
+  });
+}
+
+export function useSetQuizQuestions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, questions }: { id: string; questions: QuestionPayload[] }) =>
+      quizzesAdminApi.setQuestions(id, questions),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [QUIZZES_KEY] });
+      qc.invalidateQueries({ queryKey: [QUIZZES_KEY, 'detail', vars.id] });
+    },
   });
 }

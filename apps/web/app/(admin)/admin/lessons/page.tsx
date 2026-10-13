@@ -33,6 +33,8 @@ import type {
   GradeOption,
   TaxonomyOption,
 } from '@/features/admin/api';
+import { BlockEditor } from '@/components/content/BlockEditor';
+import type { ContentBlock } from '@/components/content/BlockEditor';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -387,6 +389,9 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
   const [characters, setCharacters] = useState<CharacterWithRole[]>([]);
   const [eventIds, setEventIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Block editor state
+  const [contentMode, setContentMode] = useState<'html' | 'blocks'>('html');
+  const [blocks, setBlocks] = useState<ContentBlock[]>([]);;
 
   // Initialize from lesson when editing
   useEffect(() => {
@@ -409,6 +414,17 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
         setPeriodIds(lesson.periods.map((p) => p.periodId));
         setCharacters(lesson.characters.map((c) => ({ characterId: c.characterId, role: c.role ?? '' })));
         setEventIds(lesson.events.map((e) => e.eventId));
+        // Restore contentJson blocks if present
+        // contentJson shape on server: { version: 1, blocks: [...] }
+        const cj = (lesson as any).contentJson;
+        const cjBlocks = cj?.blocks;
+        if (Array.isArray(cjBlocks) && cjBlocks.length > 0) {
+          setContentMode('blocks');
+          setBlocks(cjBlocks as ContentBlock[]);
+        } else {
+          setContentMode('html');
+          setBlocks([]);
+        }
       } else {
         setTitle('');
         setSlug('');
@@ -424,6 +440,8 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
         setPeriodIds([]);
         setCharacters([]);
         setEventIds([]);
+        setContentMode('html');
+        setBlocks([]);
       }
       setActiveTab('basic');
       setErrors({});
@@ -437,7 +455,35 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Tiêu đề không được để trống';
     if (title.trim().length < 5) errs.title = 'Tiêu đề tối thiểu 5 ký tự';
-    if (!content.trim()) errs.content = 'Nội dung không được để trống';
+    if (contentMode === 'html' && !content.trim()) errs.content = 'Nội dung không được để trống';
+
+    // Validate blocks when in block mode
+    if (contentMode === 'blocks') {
+      if (blocks.length === 0) {
+        errs.content = 'Cần ít nhất 1 block nội dung';
+      } else {
+        for (let i = 0; i < blocks.length; i++) {
+          const b = blocks[i];
+          if (b.type === 'text' && !b.text.trim()) {
+            errs.content = `Block văn bản ${i + 1}: nội dung không được để trống`;
+            break;
+          }
+          if (b.type === 'image') {
+            if (!b.url) { errs.content = `Block hình ảnh ${i + 1}: chưa upload ảnh`; break; }
+            if (!b.alt.trim()) { errs.content = `Block hình ảnh ${i + 1}: Alt text không được để trống`; break; }
+          }
+          if (b.type === 'audio' && !b.url) {
+            errs.content = `Block âm thanh ${i + 1}: chưa upload file âm thanh`;
+            break;
+          }
+          if (b.type === 'video' && !b.youtubeId) {
+            errs.content = `Block video ${i + 1}: chưa nhập YouTube ID hợp lệ`;
+            break;
+          }
+        }
+      }
+    }
+
     if (estimatedTime && isNaN(Number(estimatedTime))) errs.estimatedTime = 'Phải là số';
     if (displayOrder && isNaN(Number(displayOrder))) errs.displayOrder = 'Phải là số';
     setErrors(errs);
@@ -449,6 +495,7 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
     return Object.keys(errs).length === 0;
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -457,7 +504,11 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
       title: title.trim(),
       ...(slug.trim() ? { slug: slug.trim() } : {}),
       summary: summary.trim() || null,
-      content: content,
+      content: contentMode === 'html' ? content : '',
+      // contentJson must be { version: 1, blocks: [...] } to match ContentJsonSchema
+      ...(contentMode === 'blocks' && blocks.length > 0
+        ? { contentJson: { version: 1 as const, blocks: blocks as any } }
+        : {}),
       thumbnail: thumbnail.trim() || null,
       difficulty,
       estimatedTime: Number(estimatedTime) || 10,
@@ -609,28 +660,72 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
 
                 {/* Content */}
                 <div>
-                  <label className="label" htmlFor="lesson-content">
-                    Nội dung <span style={{ color: 'var(--error)' }}>*</span>
-                  </label>
-                  <textarea
-                    id="lesson-content"
-                    className={`input${errors.content ? ' error' : ''}`}
-                    rows={8}
-                    placeholder="Nội dung bài học (HTML)..."
-                    value={content}
-                    onChange={(e) => {
-                      setContent(e.target.value);
-                      setErrors((prev) => { const n = { ...prev }; delete n.content; return n; });
-                    }}
-                    style={{
-                      resize: 'vertical', minHeight: 120,
-                      fontFamily: 'monospace', fontSize: '0.85rem',
-                    }}
-                  />
-                  {errors.content && <p className="field-error">{errors.content}</p>}
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-                    Hỗ trợ HTML (sẽ được sanitize trước khi hiển thị)
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                    <label className="label" style={{ margin: 0 }}>
+                      Nội dung <span style={{ color: 'var(--error)' }}>*</span>
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setContentMode('html')}
+                        style={{
+                          padding: '0.2rem 0.6rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600,
+                          border: '1px solid var(--border)', cursor: 'pointer',
+                          background: contentMode === 'html' ? 'var(--brand-500)' : 'var(--surface-2)',
+                          color: contentMode === 'html' ? '#fff' : 'var(--muted)',
+                        }}
+                      >
+                        HTML
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setContentMode('blocks')}
+                        style={{
+                          padding: '0.2rem 0.6rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600,
+                          border: '1px solid var(--border)', cursor: 'pointer',
+                          background: contentMode === 'blocks' ? 'var(--brand-500)' : 'var(--surface-2)',
+                          color: contentMode === 'blocks' ? '#fff' : 'var(--muted)',
+                        }}
+                      >
+                        🧱 Block Editor
+                      </button>
+                    </div>
                   </div>
+
+                  {contentMode === 'html' ? (
+                    <>
+                      <textarea
+                        id="lesson-content"
+                        className={`input${errors.content ? ' error' : ''}`}
+                        rows={8}
+                        placeholder="Nội dung bài học (HTML)..."
+                        value={content}
+                        onChange={(e) => {
+                          setContent(e.target.value);
+                          setErrors((prev) => { const n = { ...prev }; delete n.content; return n; });
+                        }}
+                        style={{ resize: 'vertical', minHeight: 120, fontFamily: 'monospace', fontSize: '0.85rem' }}
+                      />
+                      {errors.content && <p className="field-error">{errors.content}</p>}
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>Hỗ trợ HTML (sẽ được sanitize)</div>
+                    </>
+                  ) : (
+                    <>
+                      <BlockEditor
+                        value={blocks}
+                        onChange={(b) => {
+                          setBlocks(b);
+                          setErrors((prev) => { const n = { ...prev }; delete n.content; return n; });
+                        }}
+                      />
+                      {errors.content && (
+                        <p style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: '0.35rem', fontWeight: 500 }}>
+                          ⚠️ {errors.content}
+                        </p>
+                      )}
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.35rem' }}>Drag-drop blocks · Upload Cloudinary · YouTube ID tự động trích xuất</div>
+                    </>
+                  )}
                 </div>
 
                 {/* Thumbnail */}

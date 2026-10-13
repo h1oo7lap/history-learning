@@ -380,3 +380,108 @@ export const usersAdminApi = {
   update: (id: string, dto: { status?: UserStatus; role?: UserRole }) =>
     api.patch<AdminUser>(`admin/users/${id}`, dto),
 };
+
+// ─── Quiz types ────────────────────────────────────────────────
+
+export type QuizStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
+
+export interface AdminAnswer {
+  id: string;
+  questionId: string;
+  content: string;
+  isCorrect: boolean;
+  displayOrder: number;
+}
+
+export interface AdminQuestion {
+  id: string;
+  quizId: string;
+  content: string;
+  type: QuestionType;
+  points: number;
+  explanation: string | null;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  answers: AdminAnswer[];
+}
+
+export interface AdminQuizLesson {
+  id: string;
+  title: string;
+  slug: string;
+}
+
+export interface AdminQuiz {
+  id: string;
+  lessonId: string;
+  title: string;
+  description: string | null;
+  timeLimit: number | null;
+  passScore: number;
+  status: QuizStatus;
+  createdAt: string;
+  updatedAt: string;
+  lesson: AdminQuizLesson;
+  questions: AdminQuestion[];
+  _count?: { questions: number };
+}
+
+export interface CreateQuizPayload {
+  lessonId: string;
+  title: string;
+  description?: string | null;
+  timeLimit?: number | null;
+  passScore?: number;
+  status?: QuizStatus;
+}
+
+export type UpdateQuizPayload = Partial<Omit<CreateQuizPayload, 'lessonId'>>;
+
+export interface QuizListQuery {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: QuizStatus | '';
+}
+
+export interface AnswerPayload {
+  content: string;
+  isCorrect: boolean;
+  displayOrder?: number;
+}
+
+export interface QuestionPayload {
+  content: string;
+  type: QuestionType;
+  points?: number;
+  explanation?: string | null;
+  displayOrder?: number;
+  answers: AnswerPayload[];
+}
+
+// ─── Quizzes API ───────────────────────────────────────────────
+
+export const quizzesAdminApi = {
+  list: (q: QuizListQuery = {}) =>
+    api.get<PaginatedResult<AdminQuiz>>('admin/quizzes', {
+      ...(q.page !== undefined && { page: q.page }),
+      ...(q.pageSize !== undefined && { pageSize: q.pageSize }),
+      ...(q.search && { search: q.search }),
+      ...(q.status && { status: q.status }),
+    }),
+
+  getOne: (id: string) => api.get<AdminQuiz>(`admin/quizzes/${id}`),
+
+  create: (dto: CreateQuizPayload) => api.post<AdminQuiz>('admin/quizzes', dto),
+
+  update: (id: string, dto: UpdateQuizPayload) =>
+    api.patch<AdminQuiz>(`admin/quizzes/${id}`, dto),
+
+  delete: (id: string) => api.delete<void>(`admin/quizzes/${id}`),
+
+  setQuestions: (id: string, questions: QuestionPayload[]) =>
+    api.put<AdminQuiz>(`admin/quizzes/${id}/questions`, { questions }),
+};
+

@@ -568,7 +568,33 @@ PUBLISH_VALIDATION_FAILED
 
 ---
 
-## Bước tiếp theo (Week 4 — Lượt B & C)
+## ✅ Đã hoàn thành (Week 4 — Lượt C)
+
+### Form admin + Upload: Block Editor
+
+- **`components/content/BlockEditor.tsx`**: drag-drop block editor với 4 loại block
+  - `text` — textarea, markdown inline hints
+  - `image` — drag-drop hoặc chọn → Cloudinary signed upload (XHR + progress bar)
+  - `audio` — chọn MP3/OGG/WAV → Cloudinary upload (resource_type=video), max 20MB
+  - `video` — URL/ID YouTube → `extractYoutubeId()` → thumbnail preview
+  - ↑↓ buttons di chuyển blocks, ✕ xoá block
+- **Admin lessons form**: toggle `HTML / 🧱 Block Editor`, lưu vào `content` hoặc `contentJson`
+- **`lib/api-client.ts`**: thêm `put<T>` method
+
+### QuizzesModule — Admin CRUD
+
+- **Backend** (`apps/api/src/quizzes/`):
+  - `quizzes.service.ts`: adminFindAll (paginated), adminFindOne, adminCreate (1 quiz/lesson), adminUpdate, adminDelete, adminSetQuestions (atomic transaction), findPublishedByLessonId
+  - `admin-quizzes.controller.ts`: REST CRUD + `PUT /:id/questions`
+  - `quizzes.module.ts`: wired up với providers + exports
+- **Frontend** (`apps/web/`):
+  - `features/admin/api.ts`: types + `quizzesAdminApi`
+  - `features/admin/hooks.ts`: `useAdminQuizzes`, `useCreateQuiz`, `useUpdateQuiz`, `useDeleteQuiz`, `useSetQuizQuestions`
+  - `app/(admin)/admin/quizzes/page.tsx`: DataTable + QuizForm dialog + QuestionsDialog (inline QuestionEditor + AnswerEditor)
+
+---
+
+## Bước tiếp theo (Week 4 — Lượt D)
 
 1. **Lượt B** — Renderer học sinh: hiển thị `contentJson` blocks trong `app/lessons/[slug]/page.tsx`
    - Text block: render markdown inline (**bold**, *italic*), xuống dòng = `<p>`
