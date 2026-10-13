@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useId } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { api } from '@/lib/api-client';
 import { extractYoutubeId } from '@history-learning/shared';
 

@@ -13,6 +13,7 @@ import type { ColumnDef } from '@/components/admin-crud';
 import { useAdminResource } from '@/components/admin-crud/useAdminResource';
 import {
   useAdminQuizzes,
+  useAdminQuiz,
   useCreateQuiz,
   useUpdateQuiz,
   useDeleteQuiz,
@@ -377,6 +378,7 @@ function QuizForm({ open, quiz, isPending, onSubmit, onClose }: QuizFormProps) {
 function QuestionsDialog({ quiz, open, onClose }: { quiz: AdminQuiz | null; open: boolean; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const setQuestionsM = useSetQuizQuestions();
+  const { data: quizDetail, isLoading } = useAdminQuiz(open && quiz ? quiz.id : null);
   const [localQ, setLocalQ] = useState<QuestionPayload[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -384,23 +386,56 @@ function QuestionsDialog({ quiz, open, onClose }: { quiz: AdminQuiz | null; open
     const el = dialogRef.current;
     if (!el) return;
     if (open && quiz) {
-      setLocalQ(quiz.questions.map((q) => ({
-        content: q.content, type: q.type, points: q.points,
-        explanation: q.explanation, displayOrder: q.displayOrder,
-        answers: q.answers.map((a) => ({ content: a.content, isCorrect: a.isCorrect, displayOrder: a.displayOrder })),
-      })));
       if (!el.open) el.showModal();
     } else {
       if (el.open) el.close();
     }
   }, [open, quiz]);
 
+  useEffect(() => {
+    if (quizDetail?.questions) {
+      setLocalQ(
+        quizDetail.questions.map((q) => ({
+          content: q.content,
+          type: q.type,
+          points: q.points,
+          explanation: q.explanation,
+          displayOrder: q.displayOrder,
+          answers: (q.answers || []).map((a) => ({
+            content: a.content,
+            isCorrect: a.isCorrect,
+            displayOrder: a.displayOrder,
+          })),
+        })),
+      );
+    } else if (open && !isLoading && !quizDetail) {
+      setLocalQ([]);
+    }
+  }, [quizDetail, isLoading, open]);
+
   const validate = () => {
+    if (localQ.length === 0) {
+      toast.error('Quiz cần ít nhất 1 câu hỏi');
+      return false;
+    }
     for (let i = 0; i < localQ.length; i++) {
       const q = localQ[i];
-      if (!q.content.trim()) { toast.error(`Câu ${i + 1}: nội dung không được trống`); return false; }
-      if (!q.answers.some((a) => a.isCorrect)) { toast.error(`Câu ${i + 1}: cần ít nhất 1 đáp án đúng`); return false; }
-      if (q.answers.some((a) => !a.content.trim())) { toast.error(`Câu ${i + 1}: tất cả đáp án phải có nội dung`); return false; }
+      if (!q.content.trim()) {
+        toast.error(`Câu ${i + 1}: nội dung không được để trống`);
+        return false;
+      }
+      if (!q.answers || q.answers.length < 2) {
+        toast.error(`Câu ${i + 1}: cần ít nhất 2 đáp án`);
+        return false;
+      }
+      if (!q.answers.some((a) => a.isCorrect)) {
+        toast.error(`Câu ${i + 1}: cần ít nhất 1 đáp án đúng`);
+        return false;
+      }
+      if (q.answers.some((a) => !a.content.trim())) {
+        toast.error(`Câu ${i + 1}: tất cả đáp án phải có nội dung`);
+        return false;
+      }
     }
     return true;
   };
@@ -422,23 +457,96 @@ function QuestionsDialog({ quiz, open, onClose }: { quiz: AdminQuiz | null; open
   if (!open || !quiz) return null;
 
   return (
-    <dialog ref={dialogRef} style={{ border: 'none', borderRadius: 'var(--radius-lg)', padding: 0, background: 'transparent', maxWidth: 720, width: '97vw', position: 'fixed', margin: 0, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xl)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1.25rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+    <dialog
+      ref={dialogRef}
+      style={{
+        border: 'none',
+        borderRadius: 'var(--radius-lg)',
+        padding: 0,
+        background: 'transparent',
+        maxWidth: 720,
+        width: '97vw',
+        position: 'fixed',
+        margin: 0,
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-xl)',
+          maxHeight: '92vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.9rem 1.25rem',
+            borderBottom: '1px solid var(--border)',
+            flexShrink: 0,
+          }}
+        >
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>❓ Quản lý câu hỏi</h2>
-            <p style={{ fontSize: '0.76rem', color: 'var(--muted)', margin: '0.1rem 0 0' }}>{quiz.title}</p>
+            <p style={{ fontSize: '0.76rem', color: 'var(--muted)', margin: '0.1rem 0 0' }}>
+              {quiz.title}
+            </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--muted)' }}>✕</button>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              color: 'var(--muted)',
+            }}
+          >
+            ✕
+          </button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.1rem' }}>
-          <QuestionEditor questions={localQ} onChange={setLocalQ} />
+          {isLoading ? (
+            <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--muted)' }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>⏳</div>
+              <p style={{ margin: 0, fontSize: '0.88rem' }}>Đang tải danh sách câu hỏi...</p>
+            </div>
+          ) : (
+            <QuestionEditor questions={localQ} onChange={setLocalQ} />
+          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1.25rem', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{localQ.length} câu hỏi • Lưu sẽ ghi đè tất cả câu hỏi cũ</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.8rem 1.25rem',
+            borderTop: '1px solid var(--border)',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+            {localQ.length} câu hỏi • Lưu sẽ ghi đè tất cả câu hỏi cũ
+          </span>
           <div style={{ display: 'flex', gap: '0.6rem' }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>Huỷ</button>
-            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving || localQ.length === 0} style={{ minWidth: 120 }}>
+            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
+              Huỷ
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSave}
+              disabled={saving || isLoading || localQ.length === 0}
+              style={{ minWidth: 120 }}
+            >
               {saving ? '⏳ Đang lưu...' : `💾 Lưu ${localQ.length} câu hỏi`}
             </button>
           </div>

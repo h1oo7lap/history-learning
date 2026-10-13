@@ -1,11 +1,10 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PublishStatus, PAGINATION } from '@history-learning/shared';
 import type { CreateQuizDto, UpdateQuizDto, QuestionDto } from '@history-learning/shared';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
 import { paginate } from '../common/pagination/paginate';
-import { Prisma } from '../generated/prisma/client';
 
 const QUIZ_INCLUDE = {
   questions: {
@@ -39,11 +38,12 @@ export class QuizzesService {
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
-    const where: Prisma.QuizWhereInput = {};
-    if (query.status && query.status !== '') {
-      where.status = query.status as Prisma.EnumPublishStatusFilter;
-    }
-    if (query.search) where.title = { contains: query.search, mode: 'insensitive' };
+    const where = {
+      ...(query.status && query.status !== '' ? { status: query.status as PublishStatus } : {}),
+      ...(query.search
+        ? { title: { contains: query.search, mode: 'insensitive' as const } }
+        : {}),
+    };
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.quiz.findMany({ where, select: QUIZ_LIST_SELECT, skip, take, orderBy: { createdAt: 'desc' } }),
@@ -64,7 +64,7 @@ export class QuizzesService {
     if (!lesson) throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Bai hoc khong ton tai');
 
     const existing = await this.prisma.quiz.findUnique({ where: { lessonId: dto.lessonId } });
-    if (existing) throw new AppError(ErrorCodes.QUIZ_NOT_FOUND, 409, 'Bai hoc da co quiz');
+    if (existing) throw new AppError(ErrorCodes.QUIZ_ALREADY_EXISTS, 409, 'Bai hoc nay da co quiz, moi bai hoc chi co 1 quiz');
 
     return this.prisma.quiz.create({
       data: {
