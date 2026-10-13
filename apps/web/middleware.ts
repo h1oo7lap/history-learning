@@ -13,7 +13,6 @@ const AUTH_COOKIE = 'access_token';
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/onboarding',
-  '/learning',
   '/quiz',
   '/missions',
   '/collection',

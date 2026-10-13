@@ -103,7 +103,7 @@ export default async function HomePage() {
                 Tiếp tục học <ArrowRight size={18} />
               </Link>
             )}
-            <Link href="/learning" id="hero-browse-btn" className="btn btn-outline btn-lg">
+            <Link href="/lessons" id="hero-browse-btn" className="btn btn-outline btn-lg">
               Xem bài học
             </Link>
           </div>

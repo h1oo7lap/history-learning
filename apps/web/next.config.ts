@@ -9,6 +9,20 @@ const config: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/learning',
+        destination: '/lessons',
+        permanent: true,
+      },
+      {
+        source: '/learning/:slug*',
+        destination: '/lessons/:slug*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default config;

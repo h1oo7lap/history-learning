@@ -11,7 +11,7 @@ import { useMe, useLogout } from '@/features/auth/hooks';
 
 const NAV_LINKS = [
   { href: '/dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
-  { href: '/learning', label: 'Bài học', icon: BookOpen },
+  { href: '/lessons', label: 'Bài học', icon: BookOpen },
   { href: '/missions', label: 'Nhiệm vụ', icon: Target },
   { href: '/collection', label: 'Bộ sưu tập', icon: Trophy },
   { href: '/ai', label: 'AI Hỗ trợ', icon: Sparkles },
