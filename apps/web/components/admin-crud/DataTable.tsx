@@ -155,15 +155,19 @@ export function DataTable<T extends { id: string }>({
     padding: '0.875rem 1rem',
   };
 
-
-
   return (
     <div>
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: '1.5rem',
+          gap: '1rem',
+          flexWrap: 'wrap',
+        }}
+      >
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>
             {entityIcon} {entityLabel}
@@ -184,15 +188,27 @@ export function DataTable<T extends { id: string }>({
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap',
-        alignItems: 'center',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.75rem',
+          marginBottom: '1rem',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-          <span style={{
-            position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--muted)', fontSize: '0.9rem', pointerEvents: 'none',
-          }}>
+          <span
+            style={{
+              position: 'absolute',
+              left: '0.75rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--muted)',
+              fontSize: '0.9rem',
+              pointerEvents: 'none',
+            }}
+          >
             🔍
           </span>
           <input
@@ -214,7 +230,9 @@ export function DataTable<T extends { id: string }>({
         >
           <option value="">Tất cả trạng thái</option>
           {defaultStatusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
         {hasFilters && (
@@ -228,18 +246,27 @@ export function DataTable<T extends { id: string }>({
       <div className="card" style={{ overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted)' }}>
-            <div className="data-table-spinner" style={{
-              width: 40, height: 40, margin: '0 auto 1rem',
-              border: '3px solid var(--border)', borderTopColor: 'var(--brand-500)',
-              borderRadius: '50%', animation: 'dt-spin 0.8s linear infinite',
-            }} />
+            <div
+              className="data-table-spinner"
+              style={{
+                width: 40,
+                height: 40,
+                margin: '0 auto 1rem',
+                border: '3px solid var(--border)',
+                borderTopColor: 'var(--brand-500)',
+                borderRadius: '50%',
+                animation: 'dt-spin 0.8s linear infinite',
+              }}
+            />
             <p>Đang tải dữ liệu...</p>
           </div>
         ) : isError ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--error)' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⚠️</div>
             <p style={{ fontWeight: 600 }}>Không thể tải dữ liệu</p>
-            <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Vui lòng kiểm tra kết nối và thử lại.</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
+              Vui lòng kiểm tra kết nối và thử lại.
+            </p>
           </div>
         ) : !data?.items.length ? (
           <div style={{ padding: '3rem', textAlign: 'center' }}>
@@ -262,7 +289,12 @@ export function DataTable<T extends { id: string }>({
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+                <tr
+                  style={{
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                >
                   {columns.map((col) => (
                     <th
                       key={col.key}
@@ -275,9 +307,7 @@ export function DataTable<T extends { id: string }>({
                       {col.header}
                     </th>
                   ))}
-                  {renderActions && (
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Thao tác</th>
-                  )}
+                  {renderActions && <th style={{ ...thStyle, textAlign: 'right' }}>Thao tác</th>}
                 </tr>
               </thead>
               <tbody>
@@ -285,7 +315,8 @@ export function DataTable<T extends { id: string }>({
                   <tr
                     key={item.id}
                     style={{
-                      borderBottom: rowIdx < data.items.length - 1 ? '1px solid var(--border)' : 'none',
+                      borderBottom:
+                        rowIdx < data.items.length - 1 ? '1px solid var(--border)' : 'none',
                       transition: 'background 0.12s ease',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
@@ -307,7 +338,9 @@ export function DataTable<T extends { id: string }>({
                     ))}
                     {renderActions && (
                       <td style={{ ...tdStyle, textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                        <div
+                          style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}
+                        >
                           {renderActions(item)}
                         </div>
                       </td>
@@ -322,17 +355,34 @@ export function DataTable<T extends { id: string }>({
 
       {/* Pagination */}
       {data && (totalPages > 1 || data.total > 0) && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '1rem',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>
               Tổng cộng <strong>{data.total}</strong> {entityLabel.toLowerCase()}
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>Hiển thị:</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                Hiển thị:
+              </span>
               <input
                 type="number"
                 className="input"
-                style={{ padding: '0.2rem 0.5rem', fontSize: '0.875rem', height: 'auto', minHeight: 'unset', width: '60px' }}
+                style={{
+                  padding: '0.2rem 0.5rem',
+                  fontSize: '0.875rem',
+                  height: 'auto',
+                  minHeight: 'unset',
+                  width: '60px',
+                }}
                 value={pageSize}
                 onChange={(e) => {
                   onPageSizeChange(Number(e.target.value));
@@ -346,7 +396,13 @@ export function DataTable<T extends { id: string }>({
                 <input
                   type="number"
                   className="input"
-                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.875rem', height: 'auto', minHeight: 'unset', width: '60px' }}
+                  style={{
+                    padding: '0.2rem 0.5rem',
+                    fontSize: '0.875rem',
+                    height: 'auto',
+                    minHeight: 'unset',
+                    width: '60px',
+                  }}
                   min={1}
                   max={totalPages}
                   value={page}
@@ -379,7 +435,7 @@ export function DataTable<T extends { id: string }>({
                       <span style={{ padding: '0 0.25rem', color: 'var(--muted)' }}>…</span>
                     )}
                     <button
-                      className={`btn btn-sm${p === page ? ' btn-primary' : ' btn-ghost'}`}
+                      className={`btn btn-sm${p === page ? 'btn-primary' : 'btn-ghost'}`}
                       onClick={() => onPageChange(p)}
                     >
                       {p}
@@ -422,10 +478,17 @@ export function nameColumn<T extends { name: string; description?: string | null
       <div>
         <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.name}</div>
         {item.description && (
-          <div style={{
-            color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.15rem',
-            maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
+          <div
+            style={{
+              color: 'var(--muted)',
+              fontSize: '0.8rem',
+              marginTop: '0.15rem',
+              maxWidth: 280,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {item.description}
           </div>
         )}
@@ -440,10 +503,15 @@ export function slugColumn<T extends { slug: string }>(): ColumnDef<T> {
     key: 'slug',
     header: 'Slug',
     render: (item) => (
-      <code style={{
-        fontSize: '0.8rem', background: 'var(--surface-2)',
-        padding: '0.15rem 0.5rem', borderRadius: 4, color: 'var(--brand-600)',
-      }}>
+      <code
+        style={{
+          fontSize: '0.8rem',
+          background: 'var(--surface-2)',
+          padding: '0.15rem 0.5rem',
+          borderRadius: 4,
+          color: 'var(--brand-600)',
+        }}
+      >
         {item.slug}
       </code>
     ),
@@ -482,26 +550,28 @@ export function actionButtons<T extends { id: string }>(
   onDelete: (item: T) => void,
   idPrefix?: string,
 ) {
-  return (item: T) => (
-    <>
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => onEdit(item)}
-        title="Sửa"
-        style={{ padding: '0.3rem 0.6rem', fontSize: '1rem' }}
-        id={idPrefix ? `btn-edit-${item.id}` : undefined}
-      >
-        ✏️
-      </button>
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => onDelete(item)}
-        title="Xóa"
-        style={{ padding: '0.3rem 0.6rem', fontSize: '1rem', color: 'var(--error)' }}
-        id={idPrefix ? `btn-delete-${item.id}` : undefined}
-      >
-        🗑️
-      </button>
-    </>
-  );
+  return function ActionButtonsCell(item: T) {
+    return (
+      <>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => onEdit(item)}
+          title="Sửa"
+          style={{ padding: '0.3rem 0.6rem', fontSize: '1rem' }}
+          id={idPrefix ? `btn-edit-${item.id}` : undefined}
+        >
+          ✏️
+        </button>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => onDelete(item)}
+          title="Xóa"
+          style={{ padding: '0.3rem 0.6rem', fontSize: '1rem', color: 'var(--error)' }}
+          id={idPrefix ? `btn-delete-${item.id}` : undefined}
+        >
+          🗑️
+        </button>
+      </>
+    );
+  };
 }

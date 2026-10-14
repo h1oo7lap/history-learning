@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   DataTable,
@@ -53,12 +53,20 @@ const DIFFICULTY_COLORS: Record<string, { bg: string; text: string; border: stri
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const colors = DIFFICULTY_COLORS[difficulty] ?? DIFFICULTY_COLORS.EASY;
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-      padding: '0.15rem 0.55rem', borderRadius: 'var(--radius-full)',
-      fontSize: '0.75rem', fontWeight: 600,
-      background: colors.bg, color: colors.text, border: `1px solid ${colors.border}`,
-    }}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.3rem',
+        padding: '0.15rem 0.55rem',
+        borderRadius: 'var(--radius-full)',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        background: colors.bg,
+        color: colors.text,
+        border: `1px solid ${colors.border}`,
+      }}
+    >
       {difficulty === 'EASY' && '🟢'}
       {difficulty === 'MEDIUM' && '🟡'}
       {difficulty === 'HARD' && '🔴'}
@@ -80,18 +88,28 @@ const lessonTitleColumn: ColumnDef<Lesson> = {
             src={item.thumbnail}
             alt=""
             style={{
-              width: 36, height: 36, borderRadius: 6,
-              objectFit: 'cover', flexShrink: 0,
+              width: 36,
+              height: 36,
+              borderRadius: 6,
+              objectFit: 'cover',
+              flexShrink: 0,
             }}
           />
         )}
         <div>
           <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.title}</div>
           {item.summary && (
-            <div style={{
-              color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.1rem',
-              maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
+            <div
+              style={{
+                color: 'var(--muted)',
+                fontSize: '0.8rem',
+                marginTop: '0.1rem',
+                maxWidth: 240,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {item.summary}
             </div>
           )}
@@ -114,11 +132,17 @@ const gradeTagsColumn: ColumnDef<Lesson> = {
     <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
       {item.grades.length > 0 ? (
         item.grades.slice(0, 3).map((g) => (
-          <span key={g.gradeId} style={{
-            padding: '0.1rem 0.4rem', borderRadius: 4,
-            background: 'var(--surface-2)', fontSize: '0.75rem',
-            fontWeight: 500, whiteSpace: 'nowrap',
-          }}>
+          <span
+            key={g.gradeId}
+            style={{
+              padding: '0.1rem 0.4rem',
+              borderRadius: 4,
+              background: 'var(--surface-2)',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+          >
             {g.grade.code || g.grade.name}
           </span>
         ))
@@ -126,11 +150,16 @@ const gradeTagsColumn: ColumnDef<Lesson> = {
         <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
       )}
       {item.grades.length > 3 && (
-        <span style={{
-          padding: '0.1rem 0.4rem', borderRadius: 4,
-          background: 'var(--surface-2)', fontSize: '0.75rem',
-          fontWeight: 500, color: 'var(--muted)',
-        }}>
+        <span
+          style={{
+            padding: '0.1rem 0.4rem',
+            borderRadius: 4,
+            background: 'var(--surface-2)',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            color: 'var(--muted)',
+          }}
+        >
           +{item.grades.length - 3}
         </span>
       )}
@@ -143,9 +172,7 @@ const timeColumn: ColumnDef<Lesson> = {
   header: 'Thời gian',
   nowrap: true,
   render: (item) => (
-    <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-      ⏱ {item.estimatedTime} phút
-    </span>
+    <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>⏱ {item.estimatedTime} phút</span>
   ),
 };
 
@@ -173,18 +200,18 @@ function MultiCheckbox({ label, options, selected, onChange, isLoading }: MultiC
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = options.filter((opt) =>
-    opt.name.toLowerCase().includes(searchTerm.toLowerCase())
+    opt.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const toggleItem = (id: string) => {
-    onChange(
-      selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]
-    );
+    onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
   };
 
   return (
     <div>
-      <label className="label" style={{ marginBottom: '0.35rem' }}>{label}</label>
+      <label className="label" style={{ marginBottom: '0.35rem' }}>
+        {label}
+      </label>
       {isLoading ? (
         <div style={{ padding: '0.75rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
           Đang tải...
@@ -200,12 +227,24 @@ function MultiCheckbox({ label, options, selected, onChange, isLoading }: MultiC
               style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}
             />
           )}
-          <div style={{
-            maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)', padding: '0.25rem',
-          }}>
+          <div
+            style={{
+              maxHeight: 160,
+              overflowY: 'auto',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.25rem',
+            }}
+          >
             {filtered.length === 0 && (
-              <div style={{ padding: '0.5rem', color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+              <div
+                style={{
+                  padding: '0.5rem',
+                  color: 'var(--muted)',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                }}
+              >
                 Không tìm thấy
               </div>
             )}
@@ -213,11 +252,17 @@ function MultiCheckbox({ label, options, selected, onChange, isLoading }: MultiC
               <label
                 key={opt.id}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  padding: '0.35rem 0.5rem', borderRadius: 4,
-                  cursor: 'pointer', fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
                   transition: 'background 0.1s',
-                  background: selected.includes(opt.id) ? 'var(--brand-50, rgb(99 102 241 / 0.08))' : 'transparent',
+                  background: selected.includes(opt.id)
+                    ? 'var(--brand-50, rgb(99 102 241 / 0.08))'
+                    : 'transparent',
                 }}
               >
                 <input
@@ -255,11 +300,16 @@ interface CharacterMultiSelectProps {
   isLoading?: boolean;
 }
 
-function CharacterMultiSelect({ options, selected, onChange, isLoading }: CharacterMultiSelectProps) {
+function CharacterMultiSelect({
+  options,
+  selected,
+  onChange,
+  isLoading,
+}: CharacterMultiSelectProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = options.filter((opt) =>
-    opt.name.toLowerCase().includes(searchTerm.toLowerCase())
+    opt.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const selectedIds = selected.map((s) => s.characterId);
@@ -273,12 +323,14 @@ function CharacterMultiSelect({ options, selected, onChange, isLoading }: Charac
   };
 
   const updateRole = (characterId: string, role: string) => {
-    onChange(selected.map((s) => s.characterId === characterId ? { ...s, role } : s));
+    onChange(selected.map((s) => (s.characterId === characterId ? { ...s, role } : s)));
   };
 
   return (
     <div>
-      <label className="label" style={{ marginBottom: '0.35rem' }}>Nhân vật liên quan</label>
+      <label className="label" style={{ marginBottom: '0.35rem' }}>
+        Nhân vật liên quan
+      </label>
       {isLoading ? (
         <div style={{ padding: '0.75rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
           Đang tải...
@@ -294,12 +346,24 @@ function CharacterMultiSelect({ options, selected, onChange, isLoading }: Charac
               style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}
             />
           )}
-          <div style={{
-            maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)', padding: '0.25rem',
-          }}>
+          <div
+            style={{
+              maxHeight: 200,
+              overflowY: 'auto',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.25rem',
+            }}
+          >
             {filtered.length === 0 && (
-              <div style={{ padding: '0.5rem', color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+              <div
+                style={{
+                  padding: '0.5rem',
+                  color: 'var(--muted)',
+                  fontSize: '0.85rem',
+                  textAlign: 'center',
+                }}
+              >
                 Không tìm thấy
               </div>
             )}
@@ -307,15 +371,26 @@ function CharacterMultiSelect({ options, selected, onChange, isLoading }: Charac
               const isSelected = selectedIds.includes(opt.id);
               const entry = selected.find((s) => s.characterId === opt.id);
               return (
-                <div key={opt.id} style={{
-                  padding: '0.35rem 0.5rem', borderRadius: 4,
-                  background: isSelected ? 'var(--brand-50, rgb(99 102 241 / 0.08))' : 'transparent',
-                  transition: 'background 0.1s',
-                }}>
-                  <label style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    cursor: 'pointer', fontSize: '0.85rem',
-                  }}>
+                <div
+                  key={opt.id}
+                  style={{
+                    padding: '0.35rem 0.5rem',
+                    borderRadius: 4,
+                    background: isSelected
+                      ? 'var(--brand-50, rgb(99 102 241 / 0.08))'
+                      : 'transparent',
+                    transition: 'background 0.1s',
+                  }}
+                >
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -331,8 +406,10 @@ function CharacterMultiSelect({ options, selected, onChange, isLoading }: Charac
                       value={entry?.role ?? ''}
                       onChange={(e) => updateRole(opt.id, e.target.value)}
                       style={{
-                        marginTop: '0.25rem', marginLeft: '1.5rem',
-                        fontSize: '0.8rem', padding: '0.25rem 0.5rem',
+                        marginTop: '0.25rem',
+                        marginLeft: '1.5rem',
+                        fontSize: '0.8rem',
+                        padding: '0.25rem 0.5rem',
                         width: 'calc(100% - 1.5rem)',
                       }}
                     />
@@ -391,7 +468,7 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Block editor state
   const [contentMode, setContentMode] = useState<'html' | 'blocks'>('html');
-  const [blocks, setBlocks] = useState<ContentBlock[]>([]);;
+  const [blocks, setBlocks] = useState<ContentBlock[]>([]);
 
   // Initialize from lesson when editing
   useEffect(() => {
@@ -412,11 +489,13 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
         setGradeIds(lesson.grades.map((g) => g.gradeId));
         setTopicIds(lesson.topics.map((t) => t.topicId));
         setPeriodIds(lesson.periods.map((p) => p.periodId));
-        setCharacters(lesson.characters.map((c) => ({ characterId: c.characterId, role: c.role ?? '' })));
+        setCharacters(
+          lesson.characters.map((c) => ({ characterId: c.characterId, role: c.role ?? '' })),
+        );
         setEventIds(lesson.events.map((e) => e.eventId));
         // Restore contentJson blocks if present
         // contentJson shape on server: { version: 1, blocks: [...] }
-        const cj = (lesson as any).contentJson;
+        const cj = lesson.contentJson;
         const cjBlocks = cj?.blocks;
         if (Array.isArray(cjBlocks) && cjBlocks.length > 0) {
           setContentMode('blocks');
@@ -469,8 +548,14 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
             break;
           }
           if (b.type === 'image') {
-            if (!b.url) { errs.content = `Block hình ảnh ${i + 1}: chưa upload ảnh`; break; }
-            if (!b.alt.trim()) { errs.content = `Block hình ảnh ${i + 1}: Alt text không được để trống`; break; }
+            if (!b.url) {
+              errs.content = `Block hình ảnh ${i + 1}: chưa upload ảnh`;
+              break;
+            }
+            if (!b.alt.trim()) {
+              errs.content = `Block hình ảnh ${i + 1}: Alt text không được để trống`;
+              break;
+            }
           }
           if (b.type === 'audio' && !b.url) {
             errs.content = `Block âm thanh ${i + 1}: chưa upload file âm thanh`;
@@ -495,7 +580,6 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
     return Object.keys(errs).length === 0;
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -507,8 +591,9 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
       content: contentMode === 'html' ? content : '',
       // contentJson must be { version: 1, blocks: [...] } to match ContentJsonSchema
       ...(contentMode === 'blocks' && blocks.length > 0
-        ? { contentJson: { version: 1 as const, blocks: blocks as any } }
+        ? { contentJson: { version: 1 as const, blocks: blocks as unknown[] } }
         : {}),
+
       thumbnail: thumbnail.trim() || null,
       difficulty,
       estimatedTime: Number(estimatedTime) || 10,
@@ -538,33 +623,59 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
     <dialog
       ref={dialogRef}
       style={{
-        border: 'none', borderRadius: 'var(--radius-lg)', padding: 0,
-        background: 'transparent', maxWidth: 720, width: '95vw',
-        position: 'fixed', margin: 0, top: '50%', left: '50%',
+        border: 'none',
+        borderRadius: 'var(--radius-lg)',
+        padding: 0,
+        background: 'transparent',
+        maxWidth: 720,
+        width: '95vw',
+        position: 'fixed',
+        margin: 0,
+        top: '50%',
+        left: '50%',
         transform: 'translate(-50%, -50%)',
       }}
     >
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xl)',
-        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-      }}>
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-xl)',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)',
-          flexShrink: 0,
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '1.25rem 1.5rem',
+            borderBottom: '1px solid var(--border)',
+            flexShrink: 0,
+          }}
+        >
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
             {lesson ? '✏️ Sửa bài học' : '➕ Thêm bài học'}
           </h2>
           <button
             onClick={onClose}
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '1.25rem', color: 'var(--muted)', lineHeight: 1,
-              width: 32, height: 32, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', borderRadius: 'var(--radius-sm)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.25rem',
+              color: 'var(--muted)',
+              lineHeight: 1,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 'var(--radius-sm)',
               transition: 'background 0.12s',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
@@ -575,21 +686,30 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
         </div>
 
         {/* Tabs */}
-        <div style={{
-          display: 'flex', gap: '0', borderBottom: '1px solid var(--border)',
-          padding: '0 1.5rem', flexShrink: 0,
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '0',
+            borderBottom: '1px solid var(--border)',
+            padding: '0 1.5rem',
+            flexShrink: 0,
+          }}
+        >
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
               style={{
-                padding: '0.6rem 1rem', border: 'none', cursor: 'pointer',
-                fontSize: '0.85rem', fontWeight: activeTab === tab.key ? 600 : 400,
+                padding: '0.6rem 1rem',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: activeTab === tab.key ? 600 : 400,
                 color: activeTab === tab.key ? 'var(--brand-600)' : 'var(--muted)',
                 background: 'none',
-                borderBottom: activeTab === tab.key ? '2px solid var(--brand-500)' : '2px solid transparent',
+                borderBottom:
+                  activeTab === tab.key ? '2px solid var(--brand-500)' : '2px solid transparent',
                 transition: 'all 0.15s ease',
                 marginBottom: '-1px',
               }}
@@ -600,14 +720,25 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
         </div>
 
         {/* Form body */}
-        <form onSubmit={handleSubmit} style={{
-          display: 'flex', flexDirection: 'column', flex: 1,
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            padding: '1.5rem', overflowY: 'auto', flex: 1,
-            display: 'flex', flexDirection: 'column', gap: '1rem',
-          }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              padding: '1.5rem',
+              overflowY: 'auto',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
             {/* === TAB: Basic === */}
             {activeTab === 'basic' && (
               <>
@@ -618,12 +749,16 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                   </label>
                   <input
                     id="lesson-title"
-                    className={`input${errors.title ? ' error' : ''}`}
+                    className={`input${errors.title ? 'error' : ''}`}
                     placeholder="Ví dụ: Chiến thắng Bạch Đằng năm 938"
                     value={title}
                     onChange={(e) => {
                       setTitle(e.target.value);
-                      setErrors((prev) => { const n = { ...prev }; delete n.title; return n; });
+                      setErrors((prev) => {
+                        const n = { ...prev };
+                        delete n.title;
+                        return n;
+                      });
                     }}
                   />
                   {errors.title && <p className="field-error">{errors.title}</p>}
@@ -633,7 +768,9 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                 <div>
                   <label className="label" htmlFor="lesson-slug">
                     Slug{' '}
-                    <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.8rem' }}>(để trống = tự động)</span>
+                    <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.8rem' }}>
+                      (để trống = tự động)
+                    </span>
                   </label>
                   <input
                     id="lesson-slug"
@@ -646,7 +783,9 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
 
                 {/* Summary */}
                 <div>
-                  <label className="label" htmlFor="lesson-summary">Tóm tắt</label>
+                  <label className="label" htmlFor="lesson-summary">
+                    Tóm tắt
+                  </label>
                   <textarea
                     id="lesson-summary"
                     className="input"
@@ -660,7 +799,14 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
 
                 {/* Content */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '0.4rem',
+                    }}
+                  >
                     <label className="label" style={{ margin: 0 }}>
                       Nội dung <span style={{ color: 'var(--error)' }}>*</span>
                     </label>
@@ -669,9 +815,14 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                         type="button"
                         onClick={() => setContentMode('html')}
                         style={{
-                          padding: '0.2rem 0.6rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600,
-                          border: '1px solid var(--border)', cursor: 'pointer',
-                          background: contentMode === 'html' ? 'var(--brand-500)' : 'var(--surface-2)',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: 4,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          border: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          background:
+                            contentMode === 'html' ? 'var(--brand-500)' : 'var(--surface-2)',
                           color: contentMode === 'html' ? '#fff' : 'var(--muted)',
                         }}
                       >
@@ -681,9 +832,14 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                         type="button"
                         onClick={() => setContentMode('blocks')}
                         style={{
-                          padding: '0.2rem 0.6rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600,
-                          border: '1px solid var(--border)', cursor: 'pointer',
-                          background: contentMode === 'blocks' ? 'var(--brand-500)' : 'var(--surface-2)',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: 4,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          border: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          background:
+                            contentMode === 'blocks' ? 'var(--brand-500)' : 'var(--surface-2)',
                           color: contentMode === 'blocks' ? '#fff' : 'var(--muted)',
                         }}
                       >
@@ -696,18 +852,31 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                     <>
                       <textarea
                         id="lesson-content"
-                        className={`input${errors.content ? ' error' : ''}`}
+                        className={`input${errors.content ? 'error' : ''}`}
                         rows={8}
                         placeholder="Nội dung bài học (HTML)..."
                         value={content}
                         onChange={(e) => {
                           setContent(e.target.value);
-                          setErrors((prev) => { const n = { ...prev }; delete n.content; return n; });
+                          setErrors((prev) => {
+                            const n = { ...prev };
+                            delete n.content;
+                            return n;
+                          });
                         }}
-                        style={{ resize: 'vertical', minHeight: 120, fontFamily: 'monospace', fontSize: '0.85rem' }}
+                        style={{
+                          resize: 'vertical',
+                          minHeight: 120,
+                          fontFamily: 'monospace',
+                          fontSize: '0.85rem',
+                        }}
                       />
                       {errors.content && <p className="field-error">{errors.content}</p>}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>Hỗ trợ HTML (sẽ được sanitize)</div>
+                      <div
+                        style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}
+                      >
+                        Hỗ trợ HTML (sẽ được sanitize)
+                      </div>
                     </>
                   ) : (
                     <>
@@ -715,22 +884,39 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                         value={blocks}
                         onChange={(b) => {
                           setBlocks(b);
-                          setErrors((prev) => { const n = { ...prev }; delete n.content; return n; });
+                          setErrors((prev) => {
+                            const n = { ...prev };
+                            delete n.content;
+                            return n;
+                          });
                         }}
                       />
                       {errors.content && (
-                        <p style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: '0.35rem', fontWeight: 500 }}>
+                        <p
+                          style={{
+                            color: 'var(--error)',
+                            fontSize: '0.8rem',
+                            marginTop: '0.35rem',
+                            fontWeight: 500,
+                          }}
+                        >
                           ⚠️ {errors.content}
                         </p>
                       )}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.35rem' }}>Drag-drop blocks · Upload Cloudinary · YouTube ID tự động trích xuất</div>
+                      <div
+                        style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.35rem' }}
+                      >
+                        Drag-drop blocks · Upload Cloudinary · YouTube ID tự động trích xuất
+                      </div>
                     </>
                   )}
                 </div>
 
                 {/* Thumbnail */}
                 <div>
-                  <label className="label" htmlFor="lesson-thumbnail">URL Ảnh bìa</label>
+                  <label className="label" htmlFor="lesson-thumbnail">
+                    URL Ảnh bìa
+                  </label>
                   <input
                     id="lesson-thumbnail"
                     className="input"
@@ -745,10 +931,15 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                         src={thumbnail}
                         alt="Thumbnail preview"
                         style={{
-                          maxWidth: 160, maxHeight: 90, borderRadius: 6,
-                          objectFit: 'cover', border: '1px solid var(--border)',
+                          maxWidth: 160,
+                          maxHeight: 90,
+                          borderRadius: 6,
+                          objectFit: 'cover',
+                          border: '1px solid var(--border)',
                         }}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
                     </div>
                   )}
@@ -762,7 +953,9 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   {/* Difficulty */}
                   <div>
-                    <label className="label" htmlFor="lesson-difficulty">Độ khó</label>
+                    <label className="label" htmlFor="lesson-difficulty">
+                      Độ khó
+                    </label>
                     <select
                       id="lesson-difficulty"
                       className="input"
@@ -777,10 +970,12 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
 
                   {/* Estimated Time */}
                   <div>
-                    <label className="label" htmlFor="lesson-time">Thời gian (phút)</label>
+                    <label className="label" htmlFor="lesson-time">
+                      Thời gian (phút)
+                    </label>
                     <input
                       id="lesson-time"
-                      className={`input${errors.estimatedTime ? ' error' : ''}`}
+                      className={`input${errors.estimatedTime ? 'error' : ''}`}
                       type="number"
                       min={1}
                       max={180}
@@ -794,10 +989,12 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   {/* Display Order */}
                   <div>
-                    <label className="label" htmlFor="lesson-order">Thứ tự hiển thị</label>
+                    <label className="label" htmlFor="lesson-order">
+                      Thứ tự hiển thị
+                    </label>
                     <input
                       id="lesson-order"
-                      className={`input${errors.displayOrder ? ' error' : ''}`}
+                      className={`input${errors.displayOrder ? 'error' : ''}`}
                       type="number"
                       value={displayOrder}
                       onChange={(e) => setDisplayOrder(e.target.value)}
@@ -807,7 +1004,9 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
 
                   {/* Status */}
                   <div>
-                    <label className="label" htmlFor="lesson-status">Trạng thái</label>
+                    <label className="label" htmlFor="lesson-status">
+                      Trạng thái
+                    </label>
                     <select
                       id="lesson-status"
                       className="input"
@@ -823,12 +1022,19 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
 
                 {/* Status info */}
                 {status === 'PUBLISHED' && (
-                  <div style={{
-                    padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)',
-                    background: 'rgb(59 130 246 / 0.08)', border: '1px solid rgb(59 130 246 / 0.2)',
-                    fontSize: '0.85rem', color: '#2563eb',
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  }}>
+                  <div
+                    style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgb(59 130 246 / 0.08)',
+                      border: '1px solid rgb(59 130 246 / 0.2)',
+                      fontSize: '0.85rem',
+                      color: '#2563eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
                     <span>ℹ️</span>
                     <span>Để xuất bản, bài học cần có tiêu đề, nội dung và ít nhất 1 lớp.</span>
                   </div>
@@ -841,7 +1047,10 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
               <>
                 <MultiCheckbox
                   label="Lớp học"
-                  options={(gradeOptions as GradeOption[]).map((g) => ({ id: g.id, name: `${g.name} (${g.code})` }))}
+                  options={(gradeOptions as GradeOption[]).map((g) => ({
+                    id: g.id,
+                    name: `${g.name} (${g.code})`,
+                  }))}
                   selected={gradeIds}
                   onChange={setGradeIds}
                   isLoading={gradesLoading}
@@ -882,21 +1091,37 @@ function LessonForm({ open, lesson, isPending, onSubmit, onClose }: LessonFormPr
           </div>
 
           {/* Footer */}
-          <div style={{
-            display: 'flex', gap: '0.75rem', justifyContent: 'space-between',
-            alignItems: 'center', padding: '1rem 1.5rem',
-            borderTop: '1px solid var(--border)', flexShrink: 0,
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid var(--border)',
+              flexShrink: 0,
+            }}
+          >
             <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
               {activeTab === 'basic' && '1/3'}
               {activeTab === 'meta' && '2/3'}
               {activeTab === 'relations' && '3/3'}
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button type="button" className="btn btn-ghost" onClick={onClose} disabled={isPending}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={onClose}
+                disabled={isPending}
+              >
                 Hủy
               </button>
-              <button type="submit" className="btn btn-primary" disabled={isPending} style={{ minWidth: 100 }}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isPending}
+                style={{ minWidth: 100 }}
+              >
                 {isPending ? '⏳ Đang lưu...' : lesson ? 'Cập nhật' : 'Tạo mới'}
               </button>
             </div>
@@ -946,12 +1171,15 @@ export default function AdminLessonsPage() {
       resource.openEdit(editLesson);
       setEditId(null);
     }
-  }, [editLesson, editId]);
+  }, [editLesson, editId, resource]);
 
   const handleSubmit = async (formData: CreateLessonPayload | UpdateLessonPayload) => {
     try {
       if (resource.editing) {
-        await updateMutation.mutateAsync({ id: resource.editing.id, dto: formData as UpdateLessonPayload });
+        await updateMutation.mutateAsync({
+          id: resource.editing.id,
+          dto: formData as UpdateLessonPayload,
+        });
         toast.success('Cập nhật bài học thành công');
       } else {
         await createMutation.mutateAsync(formData as CreateLessonPayload);
@@ -998,10 +1226,7 @@ export default function AdminLessonsPage() {
         entityIcon="📖"
         searchPlaceholder="Tìm kiếm bài học..."
         onCreate={resource.openCreate}
-        renderActions={actionButtons<Lesson>(
-          openEditWithDetail,
-          resource.confirmDelete,
-        )}
+        renderActions={actionButtons<Lesson>(openEditWithDetail, resource.confirmDelete)}
         idPrefix="lesson"
       />
 

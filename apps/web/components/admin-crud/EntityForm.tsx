@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import type { PublishStatus } from '@/features/admin/api';
 import { ImageUploader } from './ImageUploader';
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -58,7 +57,7 @@ export interface EntityFormProps<T> {
 
 // ─── Component ──────────────────────────────────────────────────
 
-export function EntityForm<T extends Record<string, any>>({
+export function EntityForm<T extends object>({
   open,
   entity,
   fields,
@@ -82,7 +81,8 @@ export function EntityForm<T extends Record<string, any>>({
       const initial: Record<string, unknown> = {};
       for (const field of fields) {
         if (entity) {
-          const val = entity[field.name];
+          const val = (entity as Record<string, unknown>)[field.name];
+
           // Convert numbers and dates to string for input fields
           if (field.type === 'number') {
             initial[field.name] = val != null ? String(val) : '';
@@ -144,7 +144,12 @@ export function EntityForm<T extends Record<string, any>>({
       const val = form[field.name];
       if (field.type === 'number') {
         dto[field.name] = val !== '' ? Number(val) : null;
-      } else if (field.type === 'text' || field.type === 'textarea' || field.type === 'url' || field.type === 'image') {
+      } else if (
+        field.type === 'text' ||
+        field.type === 'textarea' ||
+        field.type === 'url' ||
+        field.type === 'image'
+      ) {
         const str = String(val ?? '').trim();
         dto[field.name] = str || (field.required ? str : null);
       } else if (field.type === 'date') {
@@ -205,7 +210,9 @@ export function EntityForm<T extends Record<string, any>>({
           {field.label}
           {field.required && <span style={{ color: 'var(--error)', marginLeft: 4 }}>*</span>}
           {field.hint && (
-            <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 6, fontSize: '0.8rem' }}>
+            <span
+              style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 6, fontSize: '0.8rem' }}
+            >
               {field.hint}
             </span>
           )}
@@ -214,7 +221,7 @@ export function EntityForm<T extends Record<string, any>>({
         {field.type === 'textarea' ? (
           <textarea
             id={`field-${field.name}`}
-            className={`input${hasError ? ' error' : ''}`}
+            className={`input${hasError ? 'error' : ''}`}
             rows={field.rows ?? 3}
             placeholder={field.placeholder}
             value={String(form[field.name] ?? '')}
@@ -224,13 +231,15 @@ export function EntityForm<T extends Record<string, any>>({
         ) : field.type === 'select' ? (
           <select
             id={`field-${field.name}`}
-            className={`input${hasError ? ' error' : ''}`}
+            className={`input${hasError ? 'error' : ''}`}
             value={String(form[field.name] ?? '')}
             onChange={(e) => updateField(field.name, e.target.value)}
             style={commonInputStyle}
           >
             {field.options?.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         ) : field.type === 'image' ? (
@@ -242,8 +251,16 @@ export function EntityForm<T extends Record<string, any>>({
         ) : (
           <input
             id={`field-${field.name}`}
-            type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'url' ? 'url' : 'text'}
-            className={`input${hasError ? ' error' : ''}`}
+            type={
+              field.type === 'number'
+                ? 'number'
+                : field.type === 'date'
+                  ? 'date'
+                  : field.type === 'url'
+                    ? 'url'
+                    : 'text'
+            }
+            className={`input${hasError ? 'error' : ''}`}
             placeholder={field.placeholder}
             value={String(form[field.name] ?? '')}
             onChange={(e) => updateField(field.name, e.target.value)}
@@ -275,30 +292,44 @@ export function EntityForm<T extends Record<string, any>>({
         transform: 'translate(-50%, -50%)',
       }}
     >
-      <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '2rem',
-        boxShadow: 'var(--shadow-xl)',
-        maxHeight: '85vh',
-        overflowY: 'auto',
-      }}>
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '2rem',
+          boxShadow: 'var(--shadow-xl)',
+          maxHeight: '85vh',
+          overflowY: 'auto',
+        }}
+      >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: '1.5rem',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '1.5rem',
+          }}
+        >
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
             {entity ? `✏️ ${editTitle}` : `➕ ${createTitle}`}
           </h2>
           <button
             onClick={onClose}
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '1.25rem', color: 'var(--muted)', lineHeight: 1,
-              width: 32, height: 32, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', borderRadius: 'var(--radius-sm)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.25rem',
+              color: 'var(--muted)',
+              lineHeight: 1,
+              width: 32,
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 'var(--radius-sm)',
               transition: 'background 0.12s',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
@@ -309,24 +340,46 @@ export function EntityForm<T extends Record<string, any>>({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
           {groupedFields.map((group, i) => {
             if (group.fields.length === 1) {
               return renderField(group.fields[0]);
             }
             return (
-              <div key={`group-${i}`} style={{ display: 'grid', gridTemplateColumns: group.fields.map(() => '1fr').join(' '), gap: '0.75rem' }}>
+              <div
+                key={`group-${i}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: group.fields.map(() => '1fr').join(' '),
+                  gap: '0.75rem',
+                }}
+              >
                 {group.fields.map((f) => renderField(f))}
               </div>
             );
           })}
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              justifyContent: 'flex-end',
+              marginTop: '0.5rem',
+            }}
+          >
             <button type="button" className="btn btn-ghost" onClick={onClose} disabled={isPending}>
               Hủy
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isPending} style={{ minWidth: 100 }}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isPending}
+              style={{ minWidth: 100 }}
+            >
               {isPending ? '⏳ Đang lưu...' : entity ? 'Cập nhật' : 'Tạo mới'}
             </button>
           </div>

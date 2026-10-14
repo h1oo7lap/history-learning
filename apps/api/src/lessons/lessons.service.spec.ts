@@ -36,12 +36,13 @@ function createMockPrisma() {
 /** Mock ConfigService that returns CLOUDINARY_CLOUD_NAME */
 function createMockConfig(cloudName = 'testcloud') {
   return {
-    get: (key: string, def = '') => (key === 'CLOUDINARY_CLOUD_NAME' ? cloudName : def),
+    get: (key: string, def = '') =>
+      key === 'CLOUDINARY_CLOUD_NAME' ? cloudName : def,
   } as any;
 }
 
-const CLOUD_URL = 'https://res.cloudinary.com/testcloud/image/upload/sample.jpg';
-const CLOUD_AUDIO_URL = 'https://res.cloudinary.com/testcloud/video/upload/sample.mp3';
+const CLOUD_URL =
+  'https://res.cloudinary.com/testcloud/image/upload/sample.jpg';
 
 describe('LessonsService', () => {
   let service: LessonsService;
@@ -69,7 +70,13 @@ describe('LessonsService', () => {
       periodIds: [] as string[],
       characters: [] as { characterId: string; role?: string | null }[],
       eventIds: [] as string[],
-      media: [] as { type: any; url: string; title?: string | null; description?: string | null; displayOrder: number }[],
+      media: [] as {
+        type: any;
+        url: string;
+        title?: string | null;
+        description?: string | null;
+        displayOrder: number;
+      }[],
     };
 
     it('should create a lesson with default DRAFT status', async () => {
@@ -473,9 +480,7 @@ describe('LessonsService', () => {
 
   describe('findAllPublic', () => {
     it('should only return PUBLISHED lessons', async () => {
-      const publishedLessons = [
-        { id: 'l1', status: PublishStatus.PUBLISHED },
-      ];
+      const publishedLessons = [{ id: 'l1', status: PublishStatus.PUBLISHED }];
       prisma.$transaction.mockResolvedValue([publishedLessons, 1]);
 
       const result = await service.findAllPublic({
@@ -484,10 +489,9 @@ describe('LessonsService', () => {
       });
 
       expect(result.items).toEqual(publishedLessons);
-      // Verify the where clause includes PUBLISHED status
-      const findManyCall = prisma.lesson.findMany.mock.calls;
       // $transaction receives an array of promises, so we verify transaction arg
       const txArg = prisma.$transaction.mock.calls[0][0];
+
       // The transaction was called with two Prisma queries
       expect(txArg).toHaveLength(2);
     });
@@ -534,9 +538,9 @@ describe('LessonsService', () => {
       // findFirst with status: PUBLISHED won't find a DRAFT lesson
       prisma.lesson.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.findOneBySlug('draft-lesson-slug'),
-      ).rejects.toThrow(AppError);
+      await expect(service.findOneBySlug('draft-lesson-slug')).rejects.toThrow(
+        AppError,
+      );
     });
   });
 
@@ -563,9 +567,7 @@ describe('LessonsService', () => {
     it('should throw NOT_FOUND when deleting non-existent lesson', async () => {
       prisma.lesson.findUnique.mockResolvedValue(null);
 
-      await expect(service.adminDelete('missing-id')).rejects.toThrow(
-        AppError,
-      );
+      await expect(service.adminDelete('missing-id')).rejects.toThrow(AppError);
     });
   });
 
@@ -670,7 +672,9 @@ describe('LessonsService', () => {
       const cj = createArg.data.contentJson;
       // Prisma.JsonNull is an object with Symbol, not a plain null
       // Either null or Prisma.JsonNull counts as "null-like" for our purposes
-      expect(cj === null || (cj !== undefined && typeof cj === 'object')).toBe(true);
+      expect(cj === null || (cj !== undefined && typeof cj === 'object')).toBe(
+        true,
+      );
     });
   });
 
@@ -823,7 +827,9 @@ describe('LessonsService', () => {
     it('should switch to legacy mode when contentJson=null is sent', async () => {
       prisma.lesson.findUnique.mockResolvedValue(existingLesson);
 
-      const updateMock = vi.fn().mockResolvedValue({ ...existingLesson, contentJson: null });
+      const updateMock = vi
+        .fn()
+        .mockResolvedValue({ ...existingLesson, contentJson: null });
       prisma.$transaction.mockImplementation(async (fn: any) =>
         fn({
           lessonGrade: prisma.lessonGrade,
@@ -845,9 +851,14 @@ describe('LessonsService', () => {
       // Prisma.JsonNull is the sentinel for null Json fields (not JS null)
       const cj = updateArg.data.contentJson;
       expect(
-        cj === null || (typeof cj === 'object' && cj !== null && Symbol.iterator in Object.getOwnPropertySymbols(cj).map(() => true))
-          || String(cj) === 'JsonNull' || (typeof cj === 'object' && 'toJSON' in Object(cj))
-          || cj !== undefined,
+        cj === null ||
+          (typeof cj === 'object' &&
+            cj !== null &&
+            Symbol.iterator in
+              Object.getOwnPropertySymbols(cj).map(() => true)) ||
+          String(cj) === 'JsonNull' ||
+          (typeof cj === 'object' && 'toJSON' in Object(cj)) ||
+          cj !== undefined,
       ).toBe(true);
     });
   });

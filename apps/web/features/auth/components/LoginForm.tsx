@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { Eye, EyeOff, BookOpen, Loader2, GraduationCap, History } from 'lucide-react';
+import { Eye, EyeOff, Loader2, GraduationCap, History } from 'lucide-react';
+
 import { LoginSchema } from '@history-learning/shared';
 import type { LoginDto } from '@history-learning/shared';
 import { useLogin, authKeys } from '../hooks';
 import { useQueryClient } from '@tanstack/react-query';
-
 
 // Bộ sinh số giả ngẫu nhiên có hạt giống: cùng seed thì cùng kết quả,
 // nên server và trình duyệt tạo ra đúng cùng một bộ sao (hết lỗi hydration).
@@ -71,19 +71,46 @@ export function LoginForm() {
         <div className="auth-form-card">
           {/* Logo */}
           <div style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.5rem' }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <History size={22} color="white" />
               </div>
-              <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '1.125rem', color: 'var(--foreground)' }}>
+              <span
+                style={{
+                  fontFamily: 'Outfit, sans-serif',
+                  fontWeight: 700,
+                  fontSize: '1.125rem',
+                  color: 'var(--foreground)',
+                }}
+              >
                 Học Lịch Sử
               </span>
             </div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.375rem', color: 'var(--foreground)' }}>
+            <h1
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: 800,
+                marginBottom: '0.375rem',
+                color: 'var(--foreground)',
+              }}
+            >
               Chào mừng trở lại
             </h1>
             <p style={{ color: 'var(--muted)', fontSize: '0.9375rem' }}>
@@ -92,14 +119,19 @@ export function LoginForm() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}
+          >
             {/* Email */}
             <div>
-              <label className="label" htmlFor="login-email">Email</label>
+              <label className="label" htmlFor="login-email">
+                Email
+              </label>
               <input
                 id="login-email"
                 type="email"
-                className={`input${errors.email ? ' error' : ''}`}
+                className={`input${errors.email ? 'error' : ''}`}
                 placeholder="email@example.com"
                 autoComplete="email"
                 {...register('email')}
@@ -109,9 +141,25 @@ export function LoginForm() {
 
             {/* Password */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.375rem' }}>
-                <label className="label" htmlFor="login-password" style={{ margin: 0 }}>Mật khẩu</label>
-                <Link href="/forgot-password" style={{ fontSize: '0.8125rem', color: 'var(--brand-500)', textDecoration: 'none' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.375rem',
+                }}
+              >
+                <label className="label" htmlFor="login-password" style={{ margin: 0 }}>
+                  Mật khẩu
+                </label>
+                <Link
+                  href="/forgot-password"
+                  style={{
+                    fontSize: '0.8125rem',
+                    color: 'var(--brand-500)',
+                    textDecoration: 'none',
+                  }}
+                >
                   Quên mật khẩu?
                 </Link>
               </div>
@@ -119,7 +167,7 @@ export function LoginForm() {
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
-                  className={`input${errors.password ? ' error' : ''}`}
+                  className={`input${errors.password ? 'error' : ''}`}
                   placeholder="••••••••"
                   autoComplete="current-password"
                   style={{ paddingRight: '2.75rem' }}
@@ -127,11 +175,18 @@ export function LoginForm() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(v => !v)}
+                  onClick={() => setShowPassword((v) => !v)}
                   style={{
-                    position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',
-                    display: 'flex', alignItems: 'center',
+                    position: 'absolute',
+                    right: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--muted)',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                 >
@@ -150,7 +205,10 @@ export function LoginForm() {
               style={{ marginTop: '0.5rem' }}
             >
               {login.isPending ? (
-                <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Đang đăng nhập...</>
+                <>
+                  <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Đang đăng
+                  nhập...
+                </>
               ) : (
                 'Đăng nhập'
               )}
@@ -158,9 +216,19 @@ export function LoginForm() {
           </form>
 
           {/* Footer */}
-          <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--muted)' }}>
+          <p
+            style={{
+              marginTop: '1.5rem',
+              textAlign: 'center',
+              fontSize: '0.9rem',
+              color: 'var(--muted)',
+            }}
+          >
             Chưa có tài khoản?{' '}
-            <Link href="/register" style={{ color: 'var(--brand-500)', fontWeight: 600, textDecoration: 'none' }}>
+            <Link
+              href="/register"
+              style={{ color: 'var(--brand-500)', fontWeight: 600, textDecoration: 'none' }}
+            >
               Đăng ký ngay
             </Link>
           </p>
@@ -177,61 +245,109 @@ export function LoginForm() {
 // ─── Shared hero content ──────────────────────────────────────
 export function AuthHeroContent() {
   return (
-    <div style={{ position: 'relative', zIndex: 1, padding: '3rem', textAlign: 'center', maxWidth: 480 }}>
+    <div
+      style={{
+        position: 'relative',
+        zIndex: 1,
+        padding: '3rem',
+        textAlign: 'center',
+        maxWidth: 480,
+      }}
+    >
       {/* Stars */}
       <div className="auth-stars">
         {STARS.map((s, i) => (
           <div
             key={i}
             className="auth-star"
-            style={{
-              left: s.left,
-              top: s.top,
-              '--duration': s.duration,
-              '--delay': s.delay,
-              '--max-opacity': s.maxOpacity,
-            } as React.CSSProperties}
+            style={
+              {
+                left: s.left,
+                top: s.top,
+                '--duration': s.duration,
+                '--delay': s.delay,
+                '--max-opacity': s.maxOpacity,
+              } as React.CSSProperties
+            }
           />
         ))}
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Icon */}
-        <div style={{
-          width: 96, height: 96, borderRadius: 24,
-          background: 'linear-gradient(135deg, rgba(90, 114, 247, 0.5), rgba(139, 92, 246, 0.4))',
-          border: '1px solid rgba(255,255,255,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 2rem',
-          backdropFilter: 'blur(8px)',
-        }}>
+        <div
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 24,
+            background: 'linear-gradient(135deg, rgba(90, 114, 247, 0.5), rgba(139, 92, 246, 0.4))',
+            border: '1px solid rgba(255,255,255,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 2rem',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
           <GraduationCap size={48} color="white" strokeWidth={1.5} />
         </div>
 
-        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 800, color: 'white', marginBottom: '1rem' }}>
+        <h2
+          style={{
+            fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
+            fontWeight: 800,
+            color: 'white',
+            marginBottom: '1rem',
+          }}
+        >
           Khám phá <br />
-          <span style={{ background: 'linear-gradient(135deg, #7c9dff, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span
+            style={{
+              background: 'linear-gradient(135deg, #7c9dff, #c084fc)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
             Lịch Sử Việt Nam
           </span>
         </h2>
 
-        <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, fontSize: '1.0625rem', marginBottom: '2.5rem' }}>
-          Nền tảng học lịch sử tương tác dành cho học sinh từ lớp 4 đến lớp 12.
-          Học bài, làm quiz và thu thập thẻ nhân vật lịch sử.
+        <p
+          style={{
+            color: 'rgba(255,255,255,0.7)',
+            lineHeight: 1.7,
+            fontSize: '1.0625rem',
+            marginBottom: '2.5rem',
+          }}
+        >
+          Nền tảng học lịch sử tương tác dành cho học sinh từ lớp 4 đến lớp 12. Học bài, làm quiz và
+          thu thập thẻ nhân vật lịch sử.
         </p>
 
         {/* Feature pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem', justifyContent: 'center' }}>
-          {['📚 Bài học phong phú', '🧩 Quiz tương tác', '🃏 Thu thập thẻ', '🎯 Nhiệm vụ hàng ngày'].map(f => (
-            <span key={f} style={{
-              padding: '0.375rem 0.875rem',
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 100,
-              color: 'rgba(255,255,255,0.85)',
-              fontSize: '0.875rem',
-              backdropFilter: 'blur(4px)',
-            }}>{f}</span>
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem', justifyContent: 'center' }}
+        >
+          {[
+            '📚 Bài học phong phú',
+            '🧩 Quiz tương tác',
+            '🃏 Thu thập thẻ',
+            '🎯 Nhiệm vụ hàng ngày',
+          ].map((f) => (
+            <span
+              key={f}
+              style={{
+                padding: '0.375rem 0.875rem',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 100,
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: '0.875rem',
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              {f}
+            </span>
           ))}
         </div>
       </div>

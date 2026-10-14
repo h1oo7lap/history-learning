@@ -4,7 +4,8 @@ import type { PublicLessonSummary, PaginatedLessons } from '@/features/lessons/a
 
 export const metadata: Metadata = {
   title: 'Danh sách bài học',
-  description: 'Khám phá tất cả bài học lịch sử Việt Nam và thế giới. Học theo chủ đề, giai đoạn lịch sử và lớp học.',
+  description:
+    'Khám phá tất cả bài học lịch sử Việt Nam và thế giới. Học theo chủ đề, giai đoạn lịch sử và lớp học.',
 };
 
 // ─── Data fetching ──────────────────────────────────────────────
@@ -81,14 +82,14 @@ function LessonCard({ lesson }: { lesson: PublicLessonSummary }) {
 
           <h2 className="lesson-card-title">{lesson.title}</h2>
 
-          {lesson.summary && (
-            <p className="lesson-card-summary">{lesson.summary}</p>
-          )}
+          {lesson.summary && <p className="lesson-card-summary">{lesson.summary}</p>}
 
           {topics.length > 0 && (
             <div className="lesson-card-tags">
               {topics.slice(0, 2).map((t) => (
-                <span key={t.id} className="lesson-card-tag">{t.name}</span>
+                <span key={t.id} className="lesson-card-tag">
+                  {t.name}
+                </span>
               ))}
               {topics.length > 2 && (
                 <span className="lesson-card-tag lesson-card-tag--more">+{topics.length - 2}</span>
@@ -148,11 +149,14 @@ export default async function LessonsPage({
       <div className="lessons-hero">
         <div className="lessons-hero-inner">
           <h1 className="lessons-hero-title">
-            <span className="lessons-hero-icon" aria-hidden="true">📚</span>
+            <span className="lessons-hero-icon" aria-hidden="true">
+              📚
+            </span>
             Bài học lịch sử
           </h1>
           <p className="lessons-hero-sub">
-            Khám phá {data.total > 0 ? `${data.total} bài học` : 'các bài học'} về lịch sử Việt Nam và thế giới
+            Khám phá {data.total > 0 ? `${data.total} bài học` : 'các bài học'} về lịch sử Việt Nam
+            và thế giới
           </p>
         </div>
       </div>
@@ -162,8 +166,18 @@ export default async function LessonsPage({
         <form method="GET" action="/lessons" className="lessons-search-form" role="search">
           <div className="lessons-search-row">
             <div className="lessons-search-wrap">
-              <svg className="lessons-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <svg
+                className="lessons-search-icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <input
                 id="lesson-search"
@@ -204,7 +218,12 @@ export default async function LessonsPage({
         {data.total > 0 && (
           <p className="lessons-results-info">
             Hiển thị {data.items.length} / {data.total} bài học
-            {search && <> cho <strong>"{search}"</strong></>}
+            {search && (
+              <>
+                {' '}
+                cho <strong>&ldquo;{search}&rdquo;</strong>
+              </>
+            )}
           </p>
         )}
 
@@ -223,7 +242,11 @@ export default async function LessonsPage({
         {data.totalPages > 1 && (
           <nav className="lessons-pagination" aria-label="Phân trang">
             {currentPage > 1 && (
-              <Link href={buildUrl(currentPage - 1)} className="btn btn-outline btn-sm" id="pagination-prev">
+              <Link
+                href={buildUrl(currentPage - 1)}
+                className="btn btn-outline btn-sm"
+                id="pagination-prev"
+              >
                 ← Trước
               </Link>
             )}
@@ -233,7 +256,7 @@ export default async function LessonsPage({
                 <Link
                   key={p}
                   href={buildUrl(p)}
-                  className={`lessons-pagination-dot${p === currentPage ? ' active' : ''}`}
+                  className={`lessons-pagination-dot${p === currentPage ? 'active' : ''}`}
                   id={`pagination-page-${p}`}
                   aria-current={p === currentPage ? 'page' : undefined}
                   aria-label={`Trang ${p}`}
@@ -244,7 +267,11 @@ export default async function LessonsPage({
             </div>
 
             {currentPage < data.totalPages && (
-              <Link href={buildUrl(currentPage + 1)} className="btn btn-outline btn-sm" id="pagination-next">
+              <Link
+                href={buildUrl(currentPage + 1)}
+                className="btn btn-outline btn-sm"
+                id="pagination-next"
+              >
                 Tiếp →
               </Link>
             )}

@@ -116,6 +116,7 @@ export interface Lesson {
   characters: LessonCharacterRel[];
   events: LessonEventRel[];
   media: LessonMedia[];
+  contentJson?: { version: number; blocks: unknown[] } | null;
 }
 
 export interface CreateLessonPayload {
@@ -123,6 +124,7 @@ export interface CreateLessonPayload {
   slug?: string;
   summary?: string | null;
   content: string;
+  contentJson?: { version: number; blocks: unknown[] } | null;
   thumbnail?: string | null;
   difficulty?: Difficulty;
   estimatedTime?: number;
@@ -133,10 +135,16 @@ export interface CreateLessonPayload {
   periodIds?: string[];
   characters?: { characterId: string; role?: string | null }[];
   eventIds?: string[];
-  media?: { type: MediaType; url: string; title?: string | null; description?: string | null; displayOrder?: number }[];
+  media?: {
+    type: MediaType;
+    url: string;
+    title?: string | null;
+    description?: string | null;
+    displayOrder?: number;
+  }[];
 }
 
-export interface UpdateLessonPayload extends Partial<CreateLessonPayload> {}
+export type UpdateLessonPayload = Partial<CreateLessonPayload>;
 
 // ─── Relation option types (for form dropdowns) ────────────────
 
@@ -347,11 +355,9 @@ export const lessonsAdminApi = {
 
   getOne: (id: string) => api.get<Lesson>(`admin/lessons/${id}`),
 
-  create: (dto: CreateLessonPayload) =>
-    api.post<Lesson>('admin/lessons', dto),
+  create: (dto: CreateLessonPayload) => api.post<Lesson>('admin/lessons', dto),
 
-  update: (id: string, dto: UpdateLessonPayload) =>
-    api.patch<Lesson>(`admin/lessons/${id}`, dto),
+  update: (id: string, dto: UpdateLessonPayload) => api.patch<Lesson>(`admin/lessons/${id}`, dto),
 
   delete: (id: string) => api.delete<void>(`admin/lessons/${id}`),
 };
@@ -476,12 +482,10 @@ export const quizzesAdminApi = {
 
   create: (dto: CreateQuizPayload) => api.post<AdminQuiz>('admin/quizzes', dto),
 
-  update: (id: string, dto: UpdateQuizPayload) =>
-    api.patch<AdminQuiz>(`admin/quizzes/${id}`, dto),
+  update: (id: string, dto: UpdateQuizPayload) => api.patch<AdminQuiz>(`admin/quizzes/${id}`, dto),
 
   delete: (id: string) => api.delete<void>(`admin/quizzes/${id}`),
 
   setQuestions: (id: string, questions: QuestionPayload[]) =>
     api.put<AdminQuiz>(`admin/quizzes/${id}/questions`, { questions }),
 };
-
