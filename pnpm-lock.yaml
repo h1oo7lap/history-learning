@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  nestjs-zod: 5.5.0
+
 importers:
 
   .:
@@ -66,7 +69,7 @@ importers:
         specifier: ^5.2.1
         version: 5.2.1(@nestjs/common@12.1.1(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.1.1)(pino-http@11.0.0)(pino@10.3.1)(rxjs@7.8.2)
       nestjs-zod:
-        specifier: ^5.5.0
+        specifier: 5.5.0
         version: 5.5.0(@nestjs/common@12.1.1(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/swagger@12.0.2(@nestjs/common@12.1.1(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.1.1)(reflect-metadata@0.2.2)(typescript@6.0.3))(rxjs@7.8.2)(zod@3.25.76)
       nodemailer:
         specifier: ^10.0.13

@@ -24,11 +24,17 @@ export const CreateQuizSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional().nullable(),
   timeLimit: z.number().int().positive().optional().nullable(),
-  passScore: z.number().int().min(QUIZ.PASS_SCORE_MIN).max(QUIZ.PASS_SCORE_MAX).default(QUIZ.PASS_SCORE_DEFAULT),
+  passScore: z
+    .number()
+    .int()
+    .min(QUIZ.PASS_SCORE_MIN)
+    .max(QUIZ.PASS_SCORE_MAX)
+    .default(QUIZ.PASS_SCORE_DEFAULT),
   status: z.nativeEnum(PublishStatus).default(PublishStatus.DRAFT),
 });
-export type CreateQuizDto = z.infer<typeof CreateQuizSchema>;
+export type CreateQuizDto = z.input<typeof CreateQuizSchema>;
 export const UpdateQuizSchema = CreateQuizSchema.partial();
+
 export type UpdateQuizDto = z.infer<typeof UpdateQuizSchema>;
 
 export const SubmitAnswerSchema = z.object({

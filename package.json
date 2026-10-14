@@ -24,5 +24,18 @@
   "devDependencies": {
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11"
+  },
+  "pnpm": {
+    "overrides": {
+      "nestjs-zod": "5.5.0"
+    },
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "@nestjs/microservices",
+        "@nestjs/websockets",
+        "class-transformer",
+        "class-validator"
+      ]
+    }
   }
 }

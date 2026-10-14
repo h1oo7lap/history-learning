@@ -10,6 +10,9 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: postgresql://history:history@localhost:5432/history_learning?schema=public
+
     services:
       postgres:
         image: postgres:16-alpine

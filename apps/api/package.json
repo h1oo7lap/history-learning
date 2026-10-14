@@ -76,13 +76,5 @@
     "typescript": "^6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "nestjs-zod": "5.5.0"
-    },
-    "peerDependencyRules": {
-      "ignoreMissing": ["@nestjs/microservices", "@nestjs/websockets", "class-transformer", "class-validator"]
-    }
   }
 }
