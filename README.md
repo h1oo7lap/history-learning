@@ -37,7 +37,9 @@ pnpm db:migrate
 pnpm db:seed
 
 # 7. Khởi động dev servers
-pnpm dev
+# Mở 2 terminal:
+pnpm dev:api   # port 4000
+pnpm dev:web   # port 3000
 ```
 
 - **Web**: http://localhost:3000
