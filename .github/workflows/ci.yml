@@ -51,8 +51,9 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        run: pnpm --filter api prisma generate
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter api prisma generate
 
       - name: Build shared package
         run: pnpm --filter @history-learning/shared build
