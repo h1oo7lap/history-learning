@@ -8,6 +8,7 @@ Kit contents:
 ```text
 SPEC.md                                   requirements (v2)
 PLAYBOOK.md                               this file
+PROGRESS.md                               implementation progress & test logs
 docker-compose.yml, docker/postgres/init.sql
 apps/api/prisma/schema.prisma             full schema, ready to migrate
 apps/api/.env.example, apps/web/.env.example
@@ -20,22 +21,8 @@ apps/api/.env.example, apps/web/.env.example
 ## 1.1 Version policy
 
 * Pin exact versions through `pnpm-lock.yaml`. Commit it. Upgrade only between weeks, never mid-feature.
-* Use the **latest stable major** available on the day of kickoff, except where the table says otherwise.
-
-| Tool | Version | Note |
-|---|---|---|
-| Node.js | 22 LTS or 24 LTS | Same version on both machines and CI. Add `.nvmrc` and `engines` in `package.json` |
-| pnpm | 10.x | `corepack enable`; set `packageManager` in root `package.json` |
-| TypeScript | 5.x, `strict: true` | Also `noUncheckedIndexedAccess: true` |
-| PostgreSQL | 16 | Match cloud DB major version |
-| NestJS | 11.x or newer | |
-| Next.js | latest stable, App Router | |
-| React | version required by Next.js | |
-| TailwindCSS + shadcn/ui | latest stable | Use `shadcn` CLI to add components |
-| **Prisma** | **7.x — install explicitly** | See warning below |
-| Zod | the major supported by `nestjs-zod` | Verify in the week 1 spike |
-| TanStack Query | v5 | |
-| Playwright, Vitest, Jest | latest stable | |
+* Use the **latest stable major** available on the day of kickoff, except where specified otherwise.
+* Chi tiết danh mục tech stack chuẩn và phiên bản xem tại [SPEC.md — 4.1 Stack (final)](./SPEC.md#41-stack-final).
 
 > **Prisma warning (verified at kickoff):** the npm `latest` tag of `prisma` can point to a Prisma 8 pre-release that does not have `migrate`/`generate` the way this project needs. Always install with an explicit major:
 > `pnpm add -D prisma@7` and `pnpm add @prisma/client@7 @prisma/adapter-pg`. Keep `prisma` and `@prisma/client` on the same major. Never run `pnpm update --latest` on Prisma.
@@ -98,73 +85,27 @@ Put backend values in `apps/api/src/common/config/constants.ts`. Never scatter m
 
 ## 2.2 Auth
 
-| Parameter | Value |
-|---|---|
-| Password | min 8, max 128 chars, at least one letter and one digit |
-| Hash | Argon2id, `memoryCost 19456` (19 MiB), `timeCost 2`, `parallelism 1` |
-| JWT | HS256, expires `7d`, payload `{ sub: userId }` only (role is read from DB) |
-| Cookie | name `access_token`; `httpOnly`, `secure` in prod, `sameSite: 'lax'`, `path: '/'`, `maxAge` 7 days |
-| Reset token | 32 random bytes (hex), store SHA-256 hash, expires 30 min, single use |
-| Email | lowercase + trim before save/compare |
-| fullName | 2–100 chars |
+Các thông số bảo mật, mật khẩu, thuật toán băm Argon2id, JWT, Cookie và thời gian sống (TTL) được quy định chuẩn tại [SPEC.md — 12.1 Authentication](./SPEC.md#121-authentication-decision-changed-from-v1) và [SPEC.md — 12.3 Security checklist](./SPEC.md#123-security-checklist).
 
 ## 2.3 Rate limits (in-memory throttler)
 
-| Scope | Limit |
-|---|---|
-| Global | 100 req / min / IP |
-| `POST /auth/login`, `/auth/register` | 10 / min / IP |
-| `POST /auth/forgot-password` | 3 / hour / IP and 3 / hour / email |
-| `POST /ai/chat` | 10 / min and 50 / day / user (day resets 00:00 ICT) |
-| Admin upload sign | 30 / min / user |
+Các hạn mức giới hạn tần suất yêu cầu (rate limits) cho auth, AI và upload media xem tại [SPEC.md — 9.3 Safety and cost control](./SPEC.md#93-safety-and-cost-control) và [SPEC.md — 12.3 Security checklist](./SPEC.md#123-security-checklist).
 
 ## 2.4 Content
 
-| Parameter | Value |
-|---|---|
-| Slug | lowercase kebab-case from unaccented title; on conflict append `-2`, `-3`... Slug never changes after PUBLISHED |
-| Lesson title | 5–200 chars |
-| Lesson summary | ≤ 500 chars |
-| Lesson content | ≤ 200 KB sanitized HTML |
-| `estimatedTime` | 1–180 minutes |
-| Image upload | ≤ 5 MB; jpg, png, webp; serve through Cloudinary transformation (width ≤ 1280) |
-| Media per lesson | ≤ 20 |
-| Pagination | `pageSize` default 20, max 100 |
-| Search | min 2 chars; max 5 results per group; debounce 300 ms in UI |
+Quy chuẩn giới hạn ký tự bài học, tóm tắt, dung lượng nội dung, tải ảnh và phân trang xem tại [SPEC.md — 7. Content Rules](./SPEC.md#7-content-rules).
 
 ## 2.5 Quiz
 
-| Parameter | Value |
-|---|---|
-| `passScore` | default 60 (%), range 0–100 |
-| Question `points` | default 1 |
-| Answers per question | 2–6 (TRUE_FALSE exactly 2) |
-| Questions per quiz | 1–50 |
-| Time limit grace | 10 s |
-| Open attempts | 1 per user per quiz; starting again returns the same open attempt |
-| Stale open attempts | attempts open > 24 h can be replaced by a new one |
+Quy chuẩn điểm đạt (`passScore`), điểm câu hỏi, số câu hỏi, thời gian và số lần làm bài xem tại [SPEC.md — 8.2 Quiz](./SPEC.md#82-quiz).
 
-## 2.6 Gamification
+## 2.6 Gamification (EXP & Streak)
 
-| Parameter | Value |
-|---|---|
-| `LESSON_COMPLETION` | 20 EXP, once per lesson |
-| `QUIZ_COMPLETION` | 10 EXP, once per quiz (first submit) |
-| `QUIZ_PASS` | 30 EXP, once per quiz (first pass) |
-| Mission reward | `Mission.rewardExp`, default 50 |
-| Levels (seed) | L1 0 · L2 100 · L3 250 · L4 500 · L5 1000 |
-| Reward loop cap | 5 iterations |
+Quy chuẩn điểm EXP thưởng, công thức Level, chuỗi ngày học (Streak), nhiệm vụ và mở khoá thẻ bài xem tại [SPEC.md — 8.3 RewardService](./SPEC.md#83-rewardservice-single-source-of-truth-for-rewards), [8.4 EXP](./SPEC.md#84-exp), [8.5 Level](./SPEC.md#85-level), [8.6 Missions](./SPEC.md#86-missions) và [8.7 Card unlock](./SPEC.md#87-card-unlock).
 
 ## 2.7 AI
 
-| Parameter | Value |
-|---|---|
-| Max user message | 500 chars |
-| Lesson context budget | 6,000 chars plain text (cut at paragraph boundary) |
-| Timeout | 30 s |
-| Max output tokens | 800 |
-| History stored | none |
-| Rate limit | see 2.3 |
+Quy chuẩn giới hạn độ dài tin nhắn, ngân sách context bài học và chi phí gọi AI xem tại [SPEC.md — 9. AI Assistant](./SPEC.md#9-ai-assistant-p1-basic-p2-extras).
 
 ## 2.8 Frontend
 
@@ -191,7 +132,7 @@ history-learning/
 ├── tsconfig.base.json            strict base config
 ├── docker-compose.yml
 ├── docker/postgres/init.sql
-├── SPEC.md  PLAYBOOK.md  README.md
+├── SPEC.md  PLAYBOOK.md  PROGRESS.md  README.md
 │
 ├── packages/shared/
 │   ├── package.json  tsconfig.json

@@ -1,4 +1,4 @@
-# Base Project — History Learning Platform ✅
+# PROGRESS — History Learning Platform ✅
 
 **Cập nhật lần cuối**: 2026-10-15 — Week 4 hoàn thành toàn diện (Lượt A, B, C, D: Block-based Content, Public Lessons & Renderer, Admin Block Editor, Quizzes Admin CRUD, CI Pipeline & Test Suite)
 
@@ -467,39 +467,6 @@ pnpm --filter api test
 
 ---
 
-## Tổng hợp Error Codes (30+)
-
-```
-# Generic
-VALIDATION_ERROR, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, INTERNAL_ERROR, RATE_LIMITED
-
-# Auth
-EMAIL_TAKEN, INVALID_CREDENTIALS, ACCOUNT_BANNED, ACCOUNT_INACTIVE, INVALID_RESET_TOKEN, RESET_TOKEN_EXPIRED
-
-# Taxonomy
-TOPIC_NOT_FOUND, PERIOD_NOT_FOUND, CHARACTER_NOT_FOUND, EVENT_NOT_FOUND, SLUG_TAKEN
-
-# Lessons
-LESSON_NOT_FOUND, LESSON_NOT_PUBLISHED
-
-# Quiz
-QUIZ_NOT_FOUND, QUIZ_ALREADY_EXISTS, QUIZ_NOT_PUBLISHED, QUIZ_TIME_EXPIRED, NO_OPEN_ATTEMPT
-
-# Missions
-MISSION_NOT_FOUND, MISSION_NOT_COMPLETED, MISSION_ALREADY_CLAIMED
-
-# Media
-MEDIA_NOT_CONFIGURED
-
-# AI
-AI_UNAVAILABLE
-
-# Publish validation
-PUBLISH_VALIDATION_FAILED
-```
-
----
-
 ## Tổng hợp Test Coverage
 
 | Loại | Package | File | Số tests |
@@ -725,31 +692,4 @@ PUBLISH_VALIDATION_FAILED
 
 ---
 
-## Chạy dev
-
-```bash
-docker compose up -d
-pnpm --filter @history-learning/shared build
-pnpm dev:api   # port 4000
-pnpm dev:web   # port 3000
-```
-
-## Chạy tests
-
-```bash
-# Toàn bộ Unit tests (API + Web)
-pnpm test
-
-# Unit tests API
-pnpm --filter api test
-
-# Unit tests Web
-pnpm --filter web test
-
-# E2E tests API (cần TEST_DATABASE_URL)
-TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/history_learning_test pnpm --filter api test:e2e
-
-# Typecheck & Lint
-pnpm typecheck
-pnpm lint
-```
+> 📖 Hướng dẫn khởi chạy môi trường dev và danh mục lệnh kiểm thử chi tiết xem tại [README.md](./README.md) và [PLAYBOOK.md](./PLAYBOOK.md).

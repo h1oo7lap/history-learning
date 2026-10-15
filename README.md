@@ -2,7 +2,7 @@
 
 Nền tảng học lịch sử Việt Nam cho học sinh từ lớp 4 đến lớp 12.
 
-> 📖 Đọc [`SPEC.md`](./SPEC.md) để hiểu yêu cầu và [`PLAYBOOK.md`](./PLAYBOOK.md) để biết cách triển khai.
+> 📖 Đọc [`SPEC.md`](./SPEC.md) để hiểu yêu cầu, [`PLAYBOOK.md`](./PLAYBOOK.md) để biết cách triển khai, và [`PROGRESS.md`](./PROGRESS.md) để theo dõi tiến độ.
 
 ---
 
@@ -83,7 +83,8 @@ history-learning/
 │   └── shared/           # Zod schemas, enums, constants (used by both)
 ├── docker-compose.yml    # Postgres + Mailpit
 ├── SPEC.md               # Yêu cầu sản phẩm
-└── PLAYBOOK.md           # Hướng dẫn triển khai
+├── PLAYBOOK.md           # Hướng dẫn triển khai
+└── PROGRESS.md           # Nhật ký tiến độ và kiểm thử
 ```
 
 ## Scripts
