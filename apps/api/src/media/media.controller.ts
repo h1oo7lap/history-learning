@@ -18,7 +18,8 @@ export class MediaController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get a signed Cloudinary upload signature (admin only)' })
   sign(@Body() dto: SignUploadDto) {
-    const folder = dto.folder ?? 'history-learning/uploads';
+    const rawFolder = dto.folder?.trim() || 'uploads';
+    const folder = rawFolder.replace(/^history-learning\/?/, '');
     return this.mediaService.signUpload(`history-learning/${folder}`);
   }
 }

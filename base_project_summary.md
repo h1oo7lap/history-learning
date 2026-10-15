@@ -1,6 +1,6 @@
 # Base Project — History Learning Platform ✅
 
-**Cập nhật lần cuối**: 2026-10-12 — Week 4 Lượt A hoàn thành (block-based content backend)
+**Cập nhật lần cuối**: 2026-10-15 — Week 4 hoàn thành toàn diện (Lượt A, B, C, D: Block-based Content, Public Lessons & Renderer, Admin Block Editor, Quizzes Admin CRUD, CI Pipeline & Test Suite)
 
 ---
 
@@ -483,7 +483,7 @@ TOPIC_NOT_FOUND, PERIOD_NOT_FOUND, CHARACTER_NOT_FOUND, EVENT_NOT_FOUND, SLUG_TA
 LESSON_NOT_FOUND, LESSON_NOT_PUBLISHED
 
 # Quiz
-QUIZ_NOT_FOUND, QUIZ_NOT_PUBLISHED, QUIZ_TIME_EXPIRED, NO_OPEN_ATTEMPT
+QUIZ_NOT_FOUND, QUIZ_ALREADY_EXISTS, QUIZ_NOT_PUBLISHED, QUIZ_TIME_EXPIRED, NO_OPEN_ATTEMPT
 
 # Missions
 MISSION_NOT_FOUND, MISSION_NOT_COMPLETED, MISSION_ALREADY_CLAIMED
@@ -502,23 +502,26 @@ PUBLISH_VALIDATION_FAILED
 
 ## Tổng hợp Test Coverage
 
-| Loại | File | Số tests |
-|---|---|---|
-| Unit | `paginate.spec.ts` | 9 |
-| Unit | `slugify.spec.ts` | 16 |
-| Unit | `html.spec.ts` | 19 |
-| Unit | `youtube.spec.ts` | 17 |
-| Unit | `app.controller.spec.ts` | 1 |
-| Unit | `lessons.service.spec.ts` | 31 |
-| E2E | `auth.e2e-spec.ts` | 17 |
-| E2E | `users.e2e-spec.ts` | 8 |
-| E2E | `topics.e2e-spec.ts` | 29 |
-| E2E | `periods.e2e-spec.ts` | 31 |
-| E2E | `characters.e2e-spec.ts` | 30 |
-| E2E | `events.e2e-spec.ts` | 29 |
-| E2E | `lessons.e2e-spec.ts` | 32 |
-| E2E | `app.e2e-spec.ts` | 1 |
-| **Tổng** | | **270 tests** |
+| Loại | Package | File | Số tests |
+|---|---|---|---|
+| Unit | `apps/api` | `paginate.spec.ts` | 9 |
+| Unit | `apps/api` | `slugify.spec.ts` | 16 |
+| Unit | `apps/api` | `html.spec.ts` | 19 |
+| Unit | `apps/api` | `youtube.spec.ts` | 17 |
+| Unit | `apps/api` | `app.controller.spec.ts` | 1 |
+| Unit | `apps/api` | `lessons.service.spec.ts` | 31 |
+| Unit | `apps/api` | `quizzes.service.spec.ts` | 16 |
+| Unit | `apps/api` | `admin-quizzes.controller.spec.ts` | 6 |
+| Unit | `apps/web` | `format.spec.ts` | 8 |
+| E2E | `apps/api` | `auth.e2e-spec.ts` | 17 |
+| E2E | `apps/api` | `users.e2e-spec.ts` | 8 |
+| E2E | `apps/api` | `topics.e2e-spec.ts` | 29 |
+| E2E | `apps/api` | `periods.e2e-spec.ts` | 31 |
+| E2E | `apps/api` | `characters.e2e-spec.ts` | 30 |
+| E2E | `apps/api` | `events.e2e-spec.ts` | 29 |
+| E2E | `apps/api` | `lessons.e2e-spec.ts` | 32 |
+| E2E | `apps/api` | `app.e2e-spec.ts` | 1 |
+| **Tổng** | | **17 test files** | **310 tests (100% pass)** |
 
 ---
 
@@ -547,63 +550,178 @@ PUBLISH_VALIDATION_FAILED
 
 ---
 
-## Week 4 Lượt A Exit Criteria ✅
+## ✅ Đã hoàn thành (Week 4 — Lượt A: Block-based Content Backend & Shared Schemas)
 
-- [x] **Migration**: `contentJson JSONB` thêm vào bảng `lessons` (nullable, backward-compat) ✅
-- [x] **Schema shared**: `ContentJsonSchema` — 4 block types (text/image/audio/video) với `z.discriminatedUnion` ✅
-  - `id` duy nhất trong cùng bài (superRefine), tối đa 100 blocks, text ≤10.000 chars
-  - URL image/audio: `https` + `res.cloudinary.com` + cloud name path validation
-  - `youtubeId`: regex `^[A-Za-z0-9_-]{11}$`
-  - Kích thước JSON ≤ `CONTENT.LESSON_CONTENT_MAX_BYTES` (200 KB)
-- [x] **`extractYoutubeId`**: xuất từ shared, nhận watch/youtu.be/embed/shorts/live → trả ID 11 ký tự hoặc null ✅
-- [x] **`blocksToHtml`**: text → `<p>`, escape HTML trước, áp `**bold**`/`*italic*`, image/audio/video bị bỏ qua ✅
-- [x] **`blocksToPlainText`** + **`hasTextContent`**: AI/search tiếp tục dùng `content` (không đổi) ✅
-- [x] **LessonsService**: khi `contentJson` gửi lên → bỏ qua `content` client, tự sinh HTML + validate Cloudinary cloud name ✅
-- [x] **LessonsService**: khi `contentJson=null` → quay về legacy HTML mode (sanitizeContent) ✅
-- [x] **Publish rule**: bài chỉ có ảnh/video/audio (không có text block) → 422 PUBLISH_VALIDATION_FAILED ✅
-- [x] **List endpoints**: không trả `content`/`contentJson` (dùng `select`) ✅
-- [x] **Detail endpoints** (admin + public): trả `contentJson` đầy đủ ✅
-- [x] **Unit tests**: 93/93 pass (19 html + 17 youtube + 31 service + 26 khác) ✅
-- [x] **E2e tests**: 185/185 pass (32 lessons mới + 153 cũ) ✅
+### Schema & Database Migration
+- Thêm cột `contentJson JSONB` vào bảng `lessons` (migration `lesson_content_json`), nullable và tương thích ngược 100% với các bài học dùng `content` (HTML) cũ.
 
----
+### packages/shared (`schemas/lesson.ts`)
+- **`ContentJsonSchema`**: Discriminated union định nghĩa 4 loại block (`text`, `image`, `audio`, `video`):
+  - `id`: CUID/UUID duy nhất trong cùng bài học (`superRefine`).
+  - Giới hạn tối đa 100 blocks, payload kích thước ≤ 200 KB (`CONTENT.LESSON_CONTENT_MAX_BYTES`).
+  - `text`: Độ dài ≤ 10.000 ký tự, hỗ trợ cú pháp markdown inline (`**bold**`, `*italic*`).
+  - `image`: URL giao thức `https` trỏ tới `res.cloudinary.com` kèm validate đúng cloud name của dự án; trường `alt` (bắt buộc) và `caption` (tuỳ chọn).
+  - `audio`: URL Cloudinary audio, trường `title` (tuỳ chọn).
+  - `video`: Lưu `youtubeId` 11 ký tự regex `^[A-Za-z0-9_-]{11}$`.
+- **`extractYoutubeId`**: Tiện ích chuẩn hoá trích xuất YouTube ID từ mọi dạng URL (watch, youtu.be, embed, shorts, live) hoặc trả về null nếu không hợp lệ.
+- **`blocksToHtml`**: Tự động chuyển đổi các text blocks thành HTML (`<p>`, escape HTML an toàn, convert `**bold**`/`*italic*`), bỏ qua image/audio/video (render riêng trên client).
+- **`blocksToPlainText`** & **`hasTextContent`**: Trích xuất văn bản thuần cho AI và full-text search, kiểm tra bài học có nội dung chữ thật sự.
 
-## ✅ Đã hoàn thành (Week 4 — Lượt C)
-
-### Form admin + Upload: Block Editor
-
-- **`components/content/BlockEditor.tsx`**: drag-drop block editor với 4 loại block
-  - `text` — textarea, markdown inline hints
-  - `image` — drag-drop hoặc chọn → Cloudinary signed upload (XHR + progress bar)
-  - `audio` — chọn MP3/OGG/WAV → Cloudinary upload (resource_type=video), max 20MB
-  - `video` — URL/ID YouTube → `extractYoutubeId()` → thumbnail preview
-  - ↑↓ buttons di chuyển blocks, ✕ xoá block
-- **Admin lessons form**: toggle `HTML / 🧱 Block Editor`, lưu vào `content` hoặc `contentJson`
-- **`lib/api-client.ts`**: thêm `put<T>` method
-
-### QuizzesModule — Admin CRUD
-
-- **Backend** (`apps/api/src/quizzes/`):
-  - `quizzes.service.ts`: adminFindAll (paginated), adminFindOne, adminCreate (1 quiz/lesson), adminUpdate, adminDelete, adminSetQuestions (atomic transaction), findPublishedByLessonId
-  - `admin-quizzes.controller.ts`: REST CRUD + `PUT /:id/questions`
-  - `quizzes.module.ts`: wired up với providers + exports
-- **Frontend** (`apps/web/`):
-  - `features/admin/api.ts`: types + `quizzesAdminApi`
-  - `features/admin/hooks.ts`: `useAdminQuizzes`, `useCreateQuiz`, `useUpdateQuiz`, `useDeleteQuiz`, `useSetQuizQuestions`
-  - `app/(admin)/admin/quizzes/page.tsx`: DataTable + QuizForm dialog + QuestionsDialog (inline QuestionEditor + AnswerEditor)
+### apps/api (`LessonsService` & Controller)
+- **Hybrid Content Processing**:
+  - Khi client gửi `contentJson`: Server bỏ qua `content` thô từ client, tự động sinh HTML an toàn qua `blocksToHtml` và trích xuất plain text vào trường `content` để lưu trữ cho tìm kiếm và AI. Đồng thời validate nghiêm ngặt Cloudinary cloud name.
+  - Khi client gửi `contentJson = null`: Quay về legacy HTML mode, áp dụng `sanitizeContent()`.
+- **Quy tắc xuất bản (Publish Validation Rule)**: Bài học phải có ít nhất 1 khối `text` chứa nội dung hợp lệ. Bài chỉ có ảnh/video/audio mà không có chữ sẽ bị từ chối với lỗi `422 PUBLISH_VALIDATION_FAILED`.
+- **Phân tách DTO**:
+  - Endpoints danh sách (public + admin): Tối ưu payload, không trả `content` hay `contentJson` (dùng Prisma `select`).
+  - Endpoints chi tiết: Trả đầy đủ `contentJson` cho client render.
 
 ---
 
-## Bước tiếp theo (Week 4 — Lượt D)
+## ✅ Đã hoàn thành (Week 4 — Lượt B: Public Lessons & Student Block Renderer)
 
-1. **Lượt B** — Renderer học sinh: hiển thị `contentJson` blocks trong `app/lessons/[slug]/page.tsx`
-   - Text block: render markdown inline (**bold**, *italic*), xuống dòng = `<p>`
-   - Image block: `<img>` có alt + caption
-   - Audio block: HTML5 `<audio controls>`
-   - Video block: YouTube embed `<iframe>`
-2. **Lượt C** — Form admin + Upload: drag-drop block editor, signed upload Cloudinary, `extractYoutubeId` ở frontend
-3. **QuizzesModule** — Admin CRUD cho quizzes + questions + answers
-4. **Deploy** — Vercel (web) + Render (api) + Neon/Supabase (DB)
+### Student Block Renderer (`apps/web/components/content/BlockRenderer.tsx`)
+- Trình render khối nhẹ, tối ưu hiệu năng không phụ thuộc thư viện markdown nặng bên ngoài:
+  - **Inline Parser**: Tự xây parser xử lý `**in đậm**` (`<strong>`) và `*in nghiêng*` (`<em>`).
+  - **`TextBlock`**: Tách dòng thành các thẻ `<p className="lesson-paragraph">` kèm render inline styles.
+  - **`ImageBlock`**: Thẻ `<figure>` + `<img>` responsive, lazy loading, decoding async, kèm `<figcaption>`.
+  - **`AudioBlock`**: Giao diện phát âm thanh HTML5 `<audio controls>` với tiêu đề và icon trực quan.
+  - **`VideoBlock`**: Nhúng YouTube bảo mật cao qua domain `www.youtube-nocookie.com`, tỷ lệ khung hình 16:9 responsive.
+  - **`LegacyContent`**: Chế độ tương thích ngược render HTML an toàn qua `DOMPurify` (`lib/sanitize.ts`).
+
+### Trang danh mục bài học (`apps/web/app/lessons/page.tsx`)
+- Server Component kết hợp Incremental Static Regeneration (ISR `revalidate: 30s`).
+- Bộ lọc tích hợp:
+  - Lọc theo Khối lớp (`gradeId`), Chủ đề (`topicId`), Độ khó (`difficulty`: Cơ bản / Trung bình / Nâng cao).
+  - Ô tìm kiếm từ khoá tức thì (`search`).
+  - Phân trang server-side linh hoạt (12 bài/trang).
+- Giao diện thẻ bài học (`LessonCard`):
+  - Ảnh bìa thumbnail chất lượng cao với fallback placeholder.
+  - Badge độ khó (xanh lá / cam / đỏ), thời lượng đọc ước tính (⏱ phút).
+  - Tags chủ đề và khối lớp trực quan, hiệu ứng hover mượt mà.
+
+### Trang chi tiết bài học (`apps/web/app/lessons/[slug]/page.tsx`)
+- Dynamic Metadata & OpenGraph: Tự động trích xuất tiêu đề, mô tả tóm tắt và thumbnail bài học cho SEO và chia sẻ mạng xã hội.
+- Breadcrumbs điều hướng: `Trang chủ › Bài học › [Tiêu đề bài học]`.
+- Hero header: Tiêu đề lớn, tóm tắt, huy hiệu độ khó, thời lượng, danh sách lớp học, tags giai đoạn và chủ đề lịch sử.
+- Layout 2 cột hiện đại:
+  - Cột chính: Khối nội dung bài học qua `BlockRenderer`, danh sách Nhân vật lịch sử (hiển thị vai trò trong bài học), danh sách Sự kiện liên quan.
+  - Sidebar: Bảng thông tin tóm tắt bài học và nút CTA chuyển tiếp vào bài kiểm tra / dashboard.
+
+### Mở rộng Design System & Configuration
+- `apps/web/app/globals.css`: Bổ sung toàn bộ design tokens cho bài học, lưới card responsive, audio player, video 16:9 iframe, badges độ khó.
+- `apps/web/next.config.ts`: Cấu hình whitelist `images.remotePatterns` cho Cloudinary (`res.cloudinary.com`) và YouTube (`img.youtube.com`).
+- `apps/web/features/lessons/`: Khai báo types và client hooks (`lessonsApi`, `useLessons`, `useLessonBySlug`).
+
+---
+
+## ✅ Đã hoàn thành (Week 4 — Lượt C: Admin Block Editor & Quizzes Admin CRUD)
+
+### Admin Visual Block Editor (`apps/web/components/content/BlockEditor.tsx`)
+- Giao diện soạn thảo dạng khối trực quan cho quản trị viên:
+  - Hỗ trợ thêm/xoá/di chuyển thứ tự (nút ↑ / ↓) linh hoạt cho cả 4 loại khối.
+  - **Khối Văn bản (Text)**: Textarea tự giãn, bộ đếm ký tự (tối đa 10.000 ký tự), bảng hướng dẫn cú pháp markdown inline (`**đậm**`, `*nghiêng*`).
+  - **Khối Hình ảnh (Image)**: Kéo-thả hoặc duyệt file tải lên trực tiếp Cloudinary (signed upload qua `POST /api/media/sign`), thanh tiến trình phần trăm thực tế (XMLHttpRequest progress).
+  - **Khối Âm thanh (Audio)**: Tải lên file âm thanh MP3/OGG/WAV lên Cloudinary (`resource_type=video`, dung lượng tối đa 20MB).
+  - **Khối Video (YouTube)**: Hỗ trợ dán đường link YouTube bất kỳ hoặc mã 11 ký tự; tự động trích xuất mã qua `extractYoutubeId()` và hiển thị xem trước thumbnail ngay lập tức.
+
+### Trang quản lý bài học Admin (`apps/web/app/(admin)/admin/lessons/page.tsx`)
+- Quản lý danh sách bài học qua `DataTable` với phân trang, tìm kiếm và lọc trạng thái (DRAFT / PUBLISHED / ARCHIVED).
+- Modal tạo và chỉnh sửa bài học toàn diện:
+  - Chuyển đổi linh hoạt giữa 2 chế độ: **`🧱 Trình soạn thảo khối (Khuyên dùng)`** và **`Mã nguồn HTML (Legacy)`**.
+  - Quản lý đa quan hệ với dữ liệu thực: Chọn nhiều Lớp học (`Grades`), Chủ đề (`Topics`), Giai đoạn (`Periods`).
+  - Bộ ghép quan hệ Nhân vật lịch sử kèm theo ô nhập vai trò cụ thể trong bài học.
+  - Bộ ghép quan hệ Sự kiện lịch sử liên quan.
+  - Kiểm tra điều kiện xuất bản ngay tại giao diện trước khi lưu.
+
+### QuizzesModule — Backend Admin CRUD (`apps/api/src/quizzes/`)
+- **`QuizzesService`**:
+  - `adminFindAll`: Phân trang, tìm kiếm theo tiêu đề, lọc trạng thái, kèm số lượng câu hỏi và thông tin bài học.
+  - `adminFindOne`: Lấy chi tiết quiz kèm danh sách câu hỏi và các đáp án theo thứ tự `order`.
+  - `adminCreate`: Tạo quiz mới cho bài học với ràng buộc nghiệp vụ duy nhất 1 quiz trên 1 bài học (nếu đã có báo lỗi `409 QUIZ_ALREADY_EXISTS`).
+  - `adminUpdate`: Cập nhật tiêu đề, mô tả, điểm đạt (`passScore`), thời gian làm bài (`timeLimit`), số lần làm bài tối đa (`maxAttempts`), trạng thái (`status`).
+  - `adminDelete`: Xoá quiz khỏi hệ thống.
+  - `adminSetQuestions`: Phương thức lưu nguyên tử (atomic transaction) toàn bộ câu hỏi và đáp án cho quiz (`prisma.$transaction`), tự động tính toán lại thứ tự, xoá câu hỏi cũ và tạo câu hỏi + đáp án mới.
+  - `findPublishedByLessonId`: Endpoint hỗ trợ xem quiz đã xuất bản theo bài học.
+- **`AdminQuizzesController`**:
+  - Bảo vệ bởi `@Roles('ADMIN')` trên toàn bộ controller.
+  - `GET /api/admin/quizzes`, `POST /api/admin/quizzes`
+  - `GET /api/admin/quizzes/:id`, `PATCH /api/admin/quizzes/:id`, `DELETE /api/admin/quizzes/:id`
+  - `PUT /api/admin/quizzes/:id/questions` (cập nhật danh sách câu hỏi & đáp án).
+- **Unit Tests**:
+  - `quizzes.service.spec.ts`: 16 test cases kiểm thử logic nghiệp vụ quiz.
+  - `admin-quizzes.controller.spec.ts`: 6 test cases kiểm thử controller endpoints.
+
+### QuizzesModule — Admin UI (`apps/web/app/(admin)/admin/quizzes/page.tsx`)
+- Quản lý danh sách quiz qua `DataTable`: hiển thị tiêu đề, bài học liên kết, số câu hỏi, điểm đạt %, thời gian làm bài, trạng thái.
+- Dialog tạo/sửa thông tin chung quiz với chọn bài học liên kết.
+- Dialog quản lý câu hỏi & đáp án chuyên sâu (`QuestionsDialog`):
+  - Thêm, sửa, xoá câu hỏi; hỗ trợ 2 loại câu hỏi: Trắc nghiệm (`MULTIPLE_CHOICE`) và Đúng/Sai (`TRUE_FALSE`).
+  - Nhập nội dung câu hỏi, điểm số, phần giải thích chi tiết cho từng câu.
+  - Quản lý các lựa chọn đáp án: nội dung đáp án, đánh dấu đáp án đúng (`isCorrect`).
+  - Lưu toàn bộ thay đổi câu hỏi và đáp án qua 1 lần gọi API nguyên tử (`PUT /questions`).
+
+---
+
+## ✅ Đã hoàn thành (Week 4 — Lượt D: CI/CD Pipeline, Web Tests, Refinement & Agent Skills)
+
+### CI/CD Pipeline (`.github/workflows/ci.yml`)
+- Tích hợp GitHub Actions CI tự động hoá quy trình kiểm thử và chất lượng code:
+  - Khởi tạo container dịch vụ `postgres:16` trong workflow, tự động bật sẵn các extension `unaccent` và `pg_trgm`.
+  - Thực thi quy trình nghiêm ngặt:
+    1. Cài đặt pnpm & caching `node_modules`
+    2. Build package `@history-learning/shared`
+    3. Typecheck toàn bộ workspace (`pnpm typecheck`)
+    4. Lint mã nguồn (`pnpm lint`)
+    5. Chạy unit tests backend & frontend (`pnpm --filter api test`, `pnpm --filter web test`)
+    6. Chạy integration/e2e tests backend (`pnpm --filter api test:e2e`)
+    7. Build ứng dụng frontend Next.js (`pnpm --filter web build`)
+
+### Web Unit Testing & Utilities
+- Bổ sung file kiểm thử `apps/web/lib/format.spec.ts` (8 test cases pass 100%) kiểm tra định dạng thời gian học, ngày tháng tiếng Việt và các tiện ích hiển thị.
+
+### Cải tiến UI & Fix Lỗi Hệ Thống
+- Nâng cấp `DataTable` và `EntityForm` hỗ trợ dialog responsive tốt hơn, tránh layout shift khi mở modal.
+- Chuẩn hoá trang đăng nhập `LoginForm`, thông báo lỗi rõ ràng từ API envelope.
+- Sửa cấu hình `prisma.config.ts`, loại bỏ fallback URL sai chuẩn để đảm bảo an toàn biến môi trường.
+
+### Chuẩn hoá Quy trình với Hệ thống Agent Skills (`.agents/skills/`)
+- Xây dựng 4 bộ kỹ năng quy chuẩn tài liệu dự án cho các AI coding subagents:
+  - `history-learning-dev`: Quy trình làm việc tổng thể, quy tắc an toàn, pipeline kiểm tra trước khi báo hoàn thành.
+  - `history-learning-backend`: Quy chuẩn kiến trúc NestJS 12, Prisma 7, Zod schemas, quy tắc migrations và e2e test helpers.
+  - `history-learning-frontend`: Hướng dẫn Next.js 16 (App Router), Tailwind 4, TanStack Query, thiết kế giao diện cao cấp và accessibility.
+  - `history-learning-features`: Trạng thái và quy tắc nghiệp vụ các tính năng cốt lõi (Auth, Bài học, Quiz học sinh, Tiến độ, Gamification, AI).
+
+---
+
+## Week 4 Exit Criteria ✅ (Đạt 100%)
+
+- [x] **Lượt A — Backend Block Content**: Schema Prisma migration `contentJson`, shared Zod schemas (`ContentJsonSchema`), các utilities (`extractYoutubeId`, `blocksToHtml`, `blocksToPlainText`, `hasTextContent`), publish validation, unit & e2e tests pass ✅
+- [x] **Lượt B — Public Lessons & Student Renderer**: Server Components `/lessons` & `/lessons/[slug]`, `BlockRenderer` (Text markdown, Image Cloudinary, Audio HTML5, Video YouTube privacy-enhanced), ISR 30s, dynamic metadata SEO/OpenGraph ✅
+- [x] **Lượt C — Admin Block Editor**: Giao diện visual kéo thả `BlockEditor.tsx`, upload ảnh/audio Cloudinary với progress thực, preview YouTube, tích hợp vào Admin Lessons page với chế độ toggle HTML/Block ✅
+- [x] **Lượt C — Quizzes Admin CRUD**: `QuizzesService` + `AdminQuizzesController`, transaction nguyên tử `PUT /:id/questions`, DataTable + QuizForm + QuestionsDialog quản lý inline câu hỏi & đáp án ✅
+- [x] **Lượt D — CI/CD Pipeline**: GitHub Actions CI hoàn chỉnh với PostgreSQL container (`unaccent` + `pg_trgm`), chuỗi kiểm tra build -> typecheck -> lint -> test -> e2e -> web build xanh 100% ✅
+- [x] **Lượt D — Test Coverage**: Tổng số tests tăng lên **310 tests** (115 API unit + 8 Web unit + 187 API e2e), tỷ lệ vượt qua 100% ✅
+- [x] **Lượt D — Agent Skills**: 4 skills chuẩn hoá trong `.agents/skills/` hỗ trợ phát triển nhất quán ✅
+
+---
+
+## Bước tiếp theo (Week 5 — Student Quiz & Learning Progress)
+
+1. **Lượt làm Quiz cho học sinh (Student Quiz Flow)**:
+   - API bắt đầu làm bài: `POST /api/quizzes/:id/start` → sinh bản ghi `QuizAttempt`, tính thời gian bắt đầu và kết thúc (`startedAt`, `expiresAt`).
+   - Màn hình làm quiz tương tác cho học sinh: đếm ngược đồng hồ thời gian, giao diện chọn đáp án một lựa chọn hoặc đúng/sai, cảnh báo khi sắp hết giờ.
+   - API nộp bài và chấm điểm ở Server: `POST /api/quizzes/attempts/:id/submit` (chấm điểm độc lập tại server, tính tỷ lệ % đúng, so sánh `passScore`, đánh giá trạng thái PASSED / FAILED, lưu kết quả). Tuyệt đối không gửi đáp án đúng cho client trước khi nộp bài.
+   - Màn hình xem lại kết quả: hiển thị điểm, tổng số câu đúng, xem lại từng câu hỏi kèm giải thích chi tiết cho câu sai.
+2. **Tiến độ học tập (`LessonProgress`)**:
+   - Lưu trữ trạng thái hoàn thành bài học: `POST /api/lessons/:id/complete` (upsert theo `userId, lessonId`).
+   - Tự động ghi nhận hoàn thành bài học khi học sinh hoàn thành bài học và vượt qua quiz tương ứng.
+3. **Student Dashboard thật**:
+   - Kết nối dữ liệu thực tế từ database thay cho dữ liệu mẫu: số bài đã hoàn thành, điểm quiz gần nhất, gợi ý bài học kế tiếp theo lớp đã chọn.
+4. **Chuẩn bị hạ tầng Triển khai (Deployment)**:
+   - Frontend Next.js → Vercel (kèm cấu hình proxy API).
+   - Backend API NestJS → Render / Railway (khu vực Singapore).
+   - Database PostgreSQL → Supabase / Neon (Singapore, bật sẵn extensions `unaccent`, `pg_trgm`).
 
 ---
 
@@ -619,13 +737,19 @@ pnpm dev:web   # port 3000
 ## Chạy tests
 
 ```bash
+# Toàn bộ Unit tests (API + Web)
+pnpm test
+
 # Unit tests API
 pnpm --filter api test
 
+# Unit tests Web
+pnpm --filter web test
+
 # E2E tests API (cần TEST_DATABASE_URL)
-TEST_DATABASE_URL=postgresql://... pnpm --filter api test:e2e
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/history_learning_test pnpm --filter api test:e2e
 
-# Chỉ chạy topics tests (nhanh hơn)
-TEST_DATABASE_URL=postgresql://... pnpm --filter api exec vitest run --config ./vitest.config.e2e.ts test/topics.e2e-spec.ts
-
+# Typecheck & Lint
+pnpm typecheck
+pnpm lint
 ```

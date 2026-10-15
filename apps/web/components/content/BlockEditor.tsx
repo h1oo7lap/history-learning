@@ -71,20 +71,28 @@ function useCloudinaryUpload(folder: string, accept: string, maxMb = 5) {
 
   const upload = useCallback(
     async (file: File): Promise<string | null> => {
-      const allowedTypes = accept.split(',').map((t) => t.trim());
-      if (!allowedTypes.some((t) => file.type.match(t.replace('*', '.*')))) {
-        setError('Dinh dang file khong duoc ho tro');
+      const allowedTokens = accept.split(',').map((t) => t.trim().toLowerCase());
+      const fileExt = '.' + (file.name.split('.').pop() || '').toLowerCase();
+      const fileType = (file.type || '').toLowerCase();
+
+      // Check MIME type or file extension
+      const isMimeMatch = fileType ? allowedTokens.some((t) => fileType.match(t.replace('*', '.*'))) : false;
+      const isExtMatch = allowedTokens.includes(fileExt);
+      const isAudioMatch = accept.includes('audio') && ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.webm'].includes(fileExt);
+      const isImageMatch = accept.includes('image') && ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(fileExt);
+
+      if (!isMimeMatch && !isExtMatch && !isAudioMatch && !isImageMatch) {
+        setError('Định dạng file không được hỗ trợ');
         return null;
       }
       if (file.size > maxMb * 1024 * 1024) {
-        setError(`File qua lon. Toi da ${maxMb}MB`);
+        setError(`File quá lớn. Tối đa ${maxMb}MB`);
         return null;
       }
       setError(null);
       setUploading(true);
       setProgress(0);
       try {
-        const resourceType = file.type.startsWith('image/') ? 'image' : 'video';
         const sign = await api.post<CloudinarySignResponse>('media/sign', { folder });
         const formData = new FormData();
         formData.append('file', file);
@@ -93,23 +101,36 @@ function useCloudinaryUpload(folder: string, accept: string, maxMb = 5) {
         formData.append('signature', sign.signature);
         formData.append('folder', sign.folder);
 
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${sign.cloudName}/${resourceType}/upload`;
+        // Use auto endpoint so Cloudinary handles image, audio, video automatically
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${sign.cloudName}/auto/upload`;
         const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
           });
           xhr.addEventListener('load', () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
-            else reject(new Error('Upload that bai'));
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch {
+                reject(new Error('Phản hồi từ máy chủ không hợp lệ'));
+              }
+            } else {
+              try {
+                const errData = JSON.parse(xhr.responseText);
+                reject(new Error(errData?.error?.message || `Upload thất bại (${xhr.status})`));
+              } catch {
+                reject(new Error(`Upload thất bại (${xhr.status})`));
+              }
+            }
           });
-          xhr.addEventListener('error', () => reject(new Error('Loi mang khi upload')));
+          xhr.addEventListener('error', () => reject(new Error('Lỗi mạng khi upload')));
           xhr.open('POST', uploadUrl);
           xhr.send(formData);
         });
         return result.secure_url;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Upload that bai');
+        setError(err instanceof Error ? err.message : 'Upload thất bại');
         return null;
       } finally {
         setUploading(false);
@@ -252,47 +273,173 @@ function AudioBlockEditor({
   block: AudioBlock;
   onUpdate: (b: AudioBlock) => void;
 }) {
+  const [mode, setMode] = useState<'upload' | 'url'>('upload');
+  const [urlInput, setUrlInput] = useState(block.url || '');
   const { upload, uploading, progress, error, setError } = useCloudinaryUpload(
     'lessons/audio',
-    'audio/mpeg,audio/ogg,audio/wav,audio/*',
+    'audio/mpeg,audio/ogg,audio/wav,audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm',
     20,
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     const url = await upload(file);
-    if (url) onUpdate({ ...block, url });
+    if (url) {
+      setUrlInput(url);
+      onUpdate({ ...block, url });
+    }
+  };
+
+  const handleUrlApply = () => {
+    const val = urlInput.trim();
+    if (val !== block.url) {
+      onUpdate({ ...block, url: val });
+    }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       <div>
-        <label className="label" style={{ fontSize: '0.78rem' }}>Tieu de (tuy chon)</label>
-        <input className="input" placeholder="Tieu de file am thanh..." value={block.title ?? ''} onChange={(e) => onUpdate({ ...block, title: e.target.value })} style={{ fontSize: '0.82rem' }} />
+        <label className="label" style={{ fontSize: '0.78rem' }}>Tiêu đề âm thanh (tùy chọn)</label>
+        <input
+          className="input"
+          placeholder="Ví dụ: Lời kể của nhân chứng, bản thu âm lịch sử..."
+          value={block.title ?? ''}
+          onChange={(e) => onUpdate({ ...block, title: e.target.value })}
+          style={{ fontSize: '0.82rem' }}
+        />
       </div>
 
       {block.url ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <audio controls src={block.url} style={{ width: '100%', height: 40 }} />
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { onUpdate({ ...block, url: '' }); setError(null); }} style={{ alignSelf: 'flex-start', fontSize: '0.8rem' }}>
-            🗑️ Xoa file am thanh
-          </button>
-        </div>
-      ) : uploading ? (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--surface-2)' }}>
-          <div style={{ width: '100%', height: 4, borderRadius: 999, background: 'var(--border)', overflow: 'hidden', marginBottom: '0.4rem' }}>
-            <div style={{ width: `${progress}%`, height: '100%', background: 'var(--brand-500)', transition: 'width 0.2s' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--surface-2)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--foreground)' }}>🎵 Tệp âm thanh đã chọn:</span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setUrlInput('');
+                onUpdate({ ...block, url: '' });
+                setError(null);
+              }}
+              style={{ fontSize: '0.75rem', color: '#dc2626' }}
+            >
+              🗑️ Xóa âm thanh
+            </button>
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--muted)', margin: 0 }}>Dang tai len... {progress}%</p>
+          <audio controls src={block.url} style={{ width: '100%', height: 40 }} />
+          <div style={{ fontSize: '0.72rem', color: 'var(--muted)', wordBreak: 'break-all' }}>
+            {block.url}
+          </div>
         </div>
       ) : (
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()} style={{ fontSize: '0.8rem' }}>
-          🎵 Chon file am thanh (MP3, OGG, WAV · Max 20MB)
-        </button>
+        <>
+          {/* Mode switch */}
+          <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.4rem' }}>
+            <button
+              type="button"
+              onClick={() => setMode('upload')}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: mode === 'upload' ? '2px solid var(--brand-500)' : '2px solid transparent',
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.78rem',
+                fontWeight: mode === 'upload' ? 600 : 400,
+                color: mode === 'upload' ? 'var(--brand-500)' : 'var(--muted)',
+                cursor: 'pointer',
+              }}
+            >
+              📤 Tải lên file
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('url')}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: mode === 'url' ? '2px solid var(--brand-500)' : '2px solid transparent',
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.78rem',
+                fontWeight: mode === 'url' ? 600 : 400,
+                color: mode === 'url' ? 'var(--brand-500)' : 'var(--muted)',
+                cursor: 'pointer',
+              }}
+            >
+              🔗 Nhập URL trực tiếp
+            </button>
+          </div>
+
+          {mode === 'upload' ? (
+            uploading ? (
+              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--surface-2)' }}>
+                <div style={{ width: '100%', height: 4, borderRadius: 999, background: 'var(--border)', overflow: 'hidden', marginBottom: '0.4rem' }}>
+                  <div style={{ width: `${progress}%`, height: '100%', background: 'var(--brand-500)', transition: 'width 0.2s' }} />
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--muted)', margin: 0 }}>Đang tải lên... {progress}%</p>
+              </div>
+            ) : (
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => inputRef.current?.click()}
+                  style={{ fontSize: '0.8rem', width: '100%', justifyContent: 'center', border: '1px dashed var(--border)', padding: '0.75rem' }}
+                >
+                  🎵 Chọn file âm thanh (MP3, WAV, OGG, M4A · Tối đa 20MB)
+                </button>
+              </div>
+            )
+          ) : (
+            <div>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <input
+                  className="input"
+                  placeholder="https://res.cloudinary.com/.../audio.mp3"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onBlur={handleUrlApply}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleUrlApply();
+                    }
+                  }}
+                  style={{ fontSize: '0.82rem', flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleUrlApply}
+                  style={{ fontSize: '0.78rem' }}
+                >
+                  Áp dụng
+                </button>
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                URL Cloudinary hợp lệ bắt đầu bằng https://res.cloudinary.com/...
+              </p>
+            </div>
+          )}
+        </>
       )}
 
-      {error && <p className="field-error">{error}</p>}
-      <input ref={inputRef} type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+      {error && (
+        <div style={{ padding: '0.5rem', background: 'rgb(239 68 68 / 0.1)', borderRadius: 'var(--radius-sm)', border: '1px solid rgb(239 68 68 / 0.2)' }}>
+          <p className="field-error" style={{ margin: 0, fontSize: '0.78rem' }}>⚠️ {error}</p>
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="audio/mpeg,audio/ogg,audio/wav,audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = '';
+        }}
+      />
     </div>
   );
 }
