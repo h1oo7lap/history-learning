@@ -41,3 +41,55 @@ export function formatTime(minutes: number): string {
 export function truncate(str: string, max: number): string {
   return str.length <= max ? str : str.slice(0, max - 1) + '…';
 }
+
+/** Difficulty mapping */
+export type DifficultyCode = 'EASY' | 'MEDIUM' | 'HARD';
+
+export const DIFFICULTY_LABELS: Record<DifficultyCode | string, string> = {
+  EASY: 'Cơ bản',
+  MEDIUM: 'Trung bình',
+  HARD: 'Nâng cao',
+};
+
+export function formatDifficulty(difficulty?: string | null): string {
+  if (!difficulty) return 'Chưa xác định';
+  return DIFFICULTY_LABELS[difficulty] ?? difficulty;
+}
+
+/** Format grade code/name to user-friendly label (e.g. GRADE_4 -> "Lớp 4") */
+export function formatGrade(grade?: { name?: string; code?: string } | string | null): string {
+  if (!grade) return '';
+  if (typeof grade === 'string') {
+    const match = grade.match(/\d+/);
+    return match ? `Lớp ${match[0]}` : grade;
+  }
+  if (grade.name) return grade.name;
+  if (grade.code) {
+    const match = grade.code.match(/\d+/);
+    return match ? `Lớp ${match[0]}` : grade.code;
+  }
+  return '';
+}
+
+/**
+ * Tối ưu hóa URL ảnh Cloudinary: tự động định dạng WebP/AVIF (f_auto),
+ * nén thông minh (q_auto) và giới hạn chiều rộng (w_<width>).
+ * Giữ nguyên nếu là ảnh bên ngoài hoặc đã có transformation.
+ */
+export function optimizeCloudinaryUrl(url?: string | null, width = 640): string {
+  if (!url) return '';
+  if (!url.includes('res.cloudinary.com')) return url;
+
+  const uploadIndex = url.indexOf('/upload/');
+  if (uploadIndex === -1) return url;
+
+  const prefix = url.slice(0, uploadIndex + 8);
+  const rest = url.slice(uploadIndex + 8);
+
+  if (rest.startsWith('f_auto') || rest.includes('f_auto,q_auto')) {
+    return url;
+  }
+
+  return `${prefix}f_auto,q_auto,w_${width}/${rest}`;
+}
+

@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import Link from 'next/link';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button } from './Button';
@@ -7,7 +8,9 @@ export interface ErrorStateProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;
   description?: string;
   onRetry?: () => void;
+  retryHref?: string;
   retryLabel?: string;
+  children?: React.ReactNode;
 }
 
 export const ErrorState = forwardRef<HTMLDivElement, ErrorStateProps>(
@@ -17,7 +20,9 @@ export const ErrorState = forwardRef<HTMLDivElement, ErrorStateProps>(
       title = 'Đã có lỗi xảy ra',
       description = 'Không thể tải được dữ liệu vào lúc này. Vui lòng thử lại sau ít phút.',
       onRetry,
+      retryHref,
       retryLabel = 'Thử lại',
+      children,
       ...props
     },
     ref
@@ -42,6 +47,15 @@ export const ErrorState = forwardRef<HTMLDivElement, ErrorStateProps>(
             <span>{retryLabel}</span>
           </Button>
         )}
+        {retryHref && (
+          <Button asChild variant="secondary" size="sm" className="gap-2">
+            <Link href={retryHref}>
+              <RefreshCw size={14} aria-hidden="true" />
+              <span>{retryLabel}</span>
+            </Link>
+          </Button>
+        )}
+        {children}
       </div>
     );
   }

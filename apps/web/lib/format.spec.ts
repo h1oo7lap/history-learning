@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { formatNumber, formatTime, truncate, formatDate, formatRelativeTime } from './format';
+import {
+  formatNumber,
+  formatTime,
+  truncate,
+  formatDate,
+  formatRelativeTime,
+  formatDifficulty,
+  formatGrade,
+  optimizeCloudinaryUrl,
+} from './format';
 
 describe('format utilities', () => {
   describe('formatNumber', () => {
@@ -54,4 +63,40 @@ describe('format utilities', () => {
       expect(formatRelativeTime('2026-05-15T11:59:30.000Z')).toBe('vừa xong');
     });
   });
+
+  describe('formatDifficulty', () => {
+    it('maps EASY, MEDIUM, HARD to Vietnamese labels', () => {
+      expect(formatDifficulty('EASY')).toBe('Cơ bản');
+      expect(formatDifficulty('MEDIUM')).toBe('Trung bình');
+      expect(formatDifficulty('HARD')).toBe('Nâng cao');
+    });
+
+    it('handles undefined or null', () => {
+      expect(formatDifficulty(undefined)).toBe('Chưa xác định');
+      expect(formatDifficulty(null)).toBe('Chưa xác định');
+    });
+  });
+
+  describe('formatGrade', () => {
+    it('formats grade string and objects', () => {
+      expect(formatGrade('GRADE_4')).toBe('Lớp 4');
+      expect(formatGrade({ name: 'Lớp 10' })).toBe('Lớp 10');
+      expect(formatGrade({ code: 'GRADE_12' })).toBe('Lớp 12');
+    });
+  });
+
+  describe('optimizeCloudinaryUrl', () => {
+    it('injects transformation into Cloudinary URLs', () => {
+      const url = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
+      expect(optimizeCloudinaryUrl(url, 640)).toBe(
+        'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_640/sample.jpg'
+      );
+    });
+
+    it('leaves non-cloudinary URLs untouched', () => {
+      const external = 'https://example.com/image.png';
+      expect(optimizeCloudinaryUrl(external)).toBe(external);
+    });
+  });
 });
+
