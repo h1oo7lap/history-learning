@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 import { useMe } from '@/features/auth/hooks';
 import { authApi } from '@/features/auth/api';
 import { Loader2 } from 'lucide-react';
@@ -44,19 +45,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100dvh', flexDirection: 'column', gap: '1rem',
-      }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 12,
-          background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Loader2 size={26} color="white" style={{ animation: 'spin 1s linear infinite' }} />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-paper text-ink">
+        <div className="w-12 h-12 rounded-md bg-seal text-paper flex items-center justify-center shadow-card">
+          <Loader2 size={24} className="animate-spin" aria-hidden="true" />
         </div>
-        <span style={{ color: 'var(--muted)', fontSize: '0.9375rem' }}>Đang tải...</span>
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <span className="text-sm font-sans text-muted">Đang tải thông tin tài khoản...</span>
       </div>
     );
   }
@@ -64,9 +57,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-paper text-ink">
       <Navbar />
-      <main>{children}</main>
-    </>
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
   );
 }
+

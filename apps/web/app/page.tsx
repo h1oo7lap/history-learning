@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { GraduationCap, BookOpen, Zap, Trophy, Users, Star, ArrowRight } from 'lucide-react';
 import { cookies } from 'next/headers';
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 
 export default async function HomePage() {
   const cookieStore = await cookies();
@@ -8,39 +10,8 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ─── Navbar (public version) ─── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(255,255,255,0.85)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div className="container-page">
-          <div style={{ display: 'flex', alignItems: 'center', height: 64, gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 8,
-                background: 'linear-gradient(135deg, var(--brand-500), var(--brand-700))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <GraduationCap size={18} color="white" />
-              </div>
-              <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '1.0625rem' }}>
-                Học Lịch Sử
-              </span>
-            </div>
-            <div style={{ flex: 1 }} />
-            {!isAuthenticated ? (
-              <>
-                <Link href="/login" id="home-login-btn" className="btn btn-ghost btn-sm">Đăng nhập</Link>
-                <Link href="/register" id="home-register-btn" className="btn btn-primary btn-sm">Bắt đầu miễn phí</Link>
-              </>
-            ) : (
-              <Link href="/dashboard" id="home-dashboard-btn" className="btn btn-primary btn-sm">Bảng điều khiển</Link>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* ─── Navbar dùng chung ─── */}
+      <Navbar />
 
       {/* ─── Hero ─── */}
       <section style={{
@@ -240,19 +211,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ─── Footer ─── */}
-      <footer style={{
-        background: 'var(--surface)',
-        borderTop: '1px solid var(--border)',
-        padding: '2rem 0',
-        textAlign: 'center',
-        color: 'var(--muted)',
-        fontSize: '0.9rem',
-      }}>
-        <div className="container-page">
-          <p>© 2026 Học Lịch Sử. Được xây dựng với ❤️ cho học sinh Việt Nam.</p>
-        </div>
-      </footer>
+      {/* ─── Footer dùng chung ─── */}
+      <Footer />
     </>
   );
 }

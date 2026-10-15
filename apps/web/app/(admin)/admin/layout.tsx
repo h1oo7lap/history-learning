@@ -1,13 +1,26 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useMe } from '@/features/auth/hooks';
 import { Loader2, ShieldX } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/cn';
+
+const ADMIN_LINKS = [
+  { href: '/admin/users', label: 'Người dùng' },
+  { href: '/admin/topics', label: 'Chủ đề' },
+  { href: '/admin/periods', label: 'Giai đoạn' },
+  { href: '/admin/characters', label: 'Nhân vật' },
+  { href: '/admin/events', label: 'Sự kiện' },
+  { href: '/admin/lessons', label: 'Bài học' },
+  { href: '/admin/quizzes', label: 'Quiz' },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: user, isLoading, isError } = useMe();
 
   useEffect(() => {
@@ -18,9 +31,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
-        <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: 'var(--brand-500)' }} />
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3 bg-paper text-ink">
+        <div className="w-12 h-12 rounded-md bg-seal text-paper flex items-center justify-center shadow-card">
+          <Loader2 size={24} className="animate-spin" aria-hidden="true" />
+        </div>
+        <span className="text-sm font-sans text-muted">Đang xác thực quyền quản trị...</span>
       </div>
     );
   }
@@ -30,77 +45,72 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Forbidden for non-admin
   if (user.role !== 'ADMIN') {
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100dvh', gap: '1rem', textAlign: 'center', padding: '2rem',
-      }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%',
-          background: 'rgb(239 68 68 / 0.1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <ShieldX size={36} color="var(--error)" />
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-8 bg-paper text-ink">
+        <div className="w-16 h-16 rounded-full bg-danger/10 text-danger flex items-center justify-center">
+          <ShieldX size={32} aria-hidden="true" />
         </div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>Không có quyền truy cập</h1>
-        <p style={{ color: 'var(--muted)', maxWidth: 400 }}>
-          Bạn không có quyền truy cập vào trang quản trị. Chỉ quản trị viên mới có thể vào đây.
+        <h1 className="font-serif text-2xl font-bold tracking-tight text-ink">
+          Không có quyền truy cập
+        </h1>
+        <p className="text-sm text-muted max-w-md leading-relaxed">
+          Bạn không có quyền truy cập vào trang quản trị. Khu vực này chỉ dành riêng cho quản trị viên.
         </p>
-        <Link href="/dashboard" className="btn btn-primary">
-          Về trang chủ
-        </Link>
+        <Button asChild variant="primary" size="md">
+          <Link href="/dashboard">Về trang chủ</Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100dvh' }}>
+    <div className="flex min-h-screen bg-paper text-ink font-sans">
       {/* Admin sidebar */}
-      <aside style={{
-        width: 240, flexShrink: 0,
-        background: 'var(--surface)',
-        borderRight: '1px solid var(--border)',
-        padding: '1.5rem 0',
-        position: 'sticky', top: 0, height: '100dvh',
-        overflowY: 'auto',
-      }}>
-        <div style={{ padding: '0 1.25rem 1.5rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
-          <Link href="/admin" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1rem', color: 'var(--foreground)' }}>
-              ⚙️ Quản trị
-            </div>
+      <aside className="w-60 shrink-0 bg-card border-r border-line py-6 sticky top-0 h-screen overflow-y-auto">
+        <div className="px-5 pb-5 border-b border-line mb-3">
+          <Link href="/admin" className="block text-ink hover:text-seal transition-colors">
+            <span className="font-serif font-bold text-lg tracking-tight block">
+              Quản trị hệ thống
+            </span>
+            <span className="text-xs text-muted">History Learning CMS</span>
           </Link>
         </div>
-        {[
-          { href: '/admin/users', label: '👥 Người dùng' },
-          { href: '/admin/topics', label: '📂 Chủ đề' },
-          { href: '/admin/periods', label: '🕰️ Giai đoạn' },
-          { href: '/admin/characters', label: '🧑‍💼 Nhân vật' },
-          { href: '/admin/events', label: '📅 Sự kiện' },
-          { href: '/admin/lessons', label: '📖 Bài học' },
-          { href: '/admin/quizzes', label: '🧩 Quiz' },
-          { href: '/admin/missions', label: '🎯 Nhiệm vụ' },
-          { href: '/admin/cards', label: '🃏 Thẻ lịch sử' },
-        ].map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            style={{
-              display: 'block', padding: '0.625rem 1.25rem',
-              fontSize: '0.9rem', color: 'var(--foreground)',
-              textDecoration: 'none',
-              transition: 'background 0.1s',
-            }}
-          >
-            {label}
-          </Link>
-        ))}
+
+        <nav aria-label="Menu quản trị" className="space-y-0.5 px-3">
+          {ADMIN_LINKS.map(({ href, label }) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/');
+
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'flex items-center h-10 px-3 rounded-md text-sm transition-colors',
+                  isActive
+                    ? 'bg-paper text-seal font-semibold border-l-2 border-seal shadow-card'
+                    : 'text-ink-soft hover:bg-paper hover:text-ink font-medium'
+                )}
+              >
+                {label}
+              </Link>
+            );
+          })}
+
+          <div className="pt-4 mt-4 border-t border-line/60">
+            <Link
+              href="/dashboard"
+              className="flex items-center h-10 px-3 rounded-md text-sm text-muted hover:text-ink hover:bg-paper transition-colors"
+            >
+              ← Về trang học sinh
+            </Link>
+          </div>
+        </nav>
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, padding: '2rem', overflowX: 'auto' }}>
+      <main className="flex-1 p-6 md:p-8 overflow-x-auto bg-paper">
         {children}
       </main>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
