@@ -1,29 +1,20 @@
-# Tự kiểm tra trước khi báo xong
+# Tự kiểm tra trước khi báo xong (áp dụng khi làm cả trang/component)
 
-## Nhìn bằng mắt (chụp 360 / 768 / 1440 bằng Playwright, mở ảnh xem)
-- [ ] Nhìn thoáng qua có giống "sách/tạp chí lịch sử" hay giống template SaaS? Nếu giống template: tìm gradient, bo góc lớn, lưới thẻ giống nhau, hero căn giữa.
-- [ ] Có đúng một ý tưởng thị giác chính, một vùng nhấn seal lớn?
-- [ ] Chữ tiêu đề serif, thân đủ lớn, dấu tiếng Việt hiển thị đẹp, không bị cắt.
+## Nhìn bằng mắt (chụp 360 / 768 / 1440, mở ảnh xem)
+- [ ] Giống "sách/tạp chí lịch sử" hay giống template SaaS? Nếu giống template: tìm gradient, bo góc lớn, lưới thẻ giống nhau, hero căn giữa.
+- [ ] Một ý tưởng thị giác chính; có 1-2 chi tiết bản sắc (references/signature-elements.md) và không quá tay.
+- [ ] Tiêu đề serif, thân đủ lớn, dấu tiếng Việt đẹp, không bị cắt.
 - [ ] Khoảng cách theo thang 4px, các khối thẳng hàng, không có khoảng trắng dọc bất thường.
 - [ ] Không cuộn ngang ở 360px; vùng chạm ≥ 44px.
-- [ ] Trang này nhìn đồng bộ với trang khác (cùng navbar, nút, thẻ, nhãn).
-
+- [ ] Đồng bộ với các trang đã chuyển (cùng navbar, nút, thẻ, nhãn, khoảng cách).
 ## Trạng thái
-- [ ] Đang tải (skeleton đúng hình), rỗng (có hướng dẫn), lỗi (có thử lại), không có dữ liệu thì mục ẩn gọn.
-- [ ] Ảnh hỏng/không có: có ảnh dự phòng, khung không giật.
-- [ ] Form: lỗi từng ô, nút đang gửi, thành công có phản hồi.
-
+- [ ] Đang tải (skeleton đúng hình), rỗng (có hướng dẫn), lỗi (có thử lại). Ảnh hỏng/không có: có ảnh dự phòng, khung không giật. Form: lỗi từng ô, nút đang gửi, thành công có phản hồi.
 ## Nội dung
-- [ ] Không số liệu/khẩu hiệu bịa. Không mã nội bộ lộ ra ("GRADE_4", "PUBLISHED").
-- [ ] Văn bản tiếng Việt tự nhiên, nhất quán thuật ngữ (bài học, kiểm tra, giai đoạn).
-
+- [ ] Không số liệu/khẩu hiệu bịa; không mã nội bộ lộ ra; không liên kết tới trang chưa có; thuật ngữ nhất quán (bài học, kiểm tra, giai đoạn).
 ## Truy cập
-- [ ] Tab qua toàn trang đúng thứ tự, vòng focus thấy rõ.
-- [ ] Tương phản AA (dùng token đã kiểm tra); không truyền đạt thông tin chỉ bằng màu.
-- [ ] Một h1, thứ tự h2/h3 đúng; ảnh có alt; nút/liên kết có tên rõ.
-
+- [ ] Tab đúng thứ tự, vòng focus thấy rõ; tương phản AA; không truyền đạt chỉ bằng màu; một h1, thứ tự h2/h3 đúng; ảnh có alt.
 ## Mã
-- [ ] `bash .agents/skills/history-learning-frontend/scripts/audit-ui.sh` không còn lỗi trong file đã sửa.
-- [ ] `pnpm --filter web lint`, `typecheck`, `build` đều qua.
-- [ ] Không thêm class vào globals.css; không `any`; không setState trong effect; không style inline cho màu/khoảng cách.
-- [ ] Báo cáo: file đổi, ảnh trước/sau, điều chưa làm.
+- [ ] `node .agents/skills/history-learning-frontend/scripts/audit-ui.mjs <file đã sửa>` sạch.
+- [ ] `pnpm --filter web lint`, `typecheck`, `build`, `test` qua.
+- [ ] Xóa class cũ trong globals.css thuộc phần đã chuyển (grep xác nhận không còn dùng).
+- [ ] Báo cáo: file đổi, ảnh chụp, điều chưa làm.

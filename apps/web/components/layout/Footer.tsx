@@ -37,7 +37,7 @@ export function Footer() {
               Danh sách bài học
             </Link>
             <Link
-              href="/login"
+              href="/profile"
               className="text-ink-soft hover:text-seal transition-colors font-medium"
             >
               Tài khoản

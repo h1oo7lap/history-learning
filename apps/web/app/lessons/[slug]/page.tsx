@@ -1,7 +1,24 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import {
+  Clock,
+  GraduationCap,
+  Calendar,
+  ArrowLeft,
+  Users,
+  Bookmark,
+  Info,
+  ChevronRight,
+} from 'lucide-react';
 import { BlockRenderer, LegacyContent } from '@/components/content/BlockRenderer';
+import { extractHeadingsFromContentJson, injectHeadingIds } from '@/lib/headings';
+import { TableOfContents } from '@/components/lessons/TableOfContents';
+import { LessonImage } from '@/components/lessons/LessonImage';
+import { Card } from '@/components/ui/Card';
+import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { formatDifficulty, formatGrade } from '@/lib/format';
 import type { PublicLessonDetail } from '@/features/lessons/api';
 
 // ─── Data fetching (Server Component) ──────────────────────────
@@ -31,6 +48,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const lesson = await fetchLesson(slug);
   if (!lesson) return { title: 'Bài học không tồn tại' };
+
   return {
     title: lesson.title,
     description: lesson.summary ?? undefined,
@@ -46,16 +64,10 @@ export async function generateMetadata({
 
 // ─── Helpers ───────────────────────────────────────────────────
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  EASY: 'Cơ bản',
-  MEDIUM: 'Trung bình',
-  HARD: 'Nâng cao',
-};
-
-const DIFFICULTY_COLORS: Record<string, string> = {
-  EASY: '#10b981',
-  MEDIUM: '#f59e0b',
-  HARD: '#ef4444',
+const difficultyBadgeVariant: Record<string, BadgeVariant> = {
+  EASY: 'success',
+  MEDIUM: 'warning',
+  HARD: 'danger',
 };
 
 // ─── Page component ─────────────────────────────────────────────
@@ -68,172 +80,254 @@ export default async function LessonPage({
   const { slug } = await params;
   const lesson = await fetchLesson(slug);
 
-  if (!lesson) notFound();
+  if (!lesson) {
+    notFound();
+  }
 
-  const difficultyLabel = DIFFICULTY_LABELS[lesson.difficulty] ?? lesson.difficulty;
-  const difficultyColor = DIFFICULTY_COLORS[lesson.difficulty] ?? 'var(--muted)';
+  const difficultyVariant = difficultyBadgeVariant[lesson.difficulty] ?? 'default';
+  const difficultyLabel = formatDifficulty(lesson.difficulty);
 
-  const topics = lesson.topics.map((t) => t.topic);
-  const periods = lesson.periods.map((p) => p.period);
-  const grades = lesson.grades.map((g) => g.grade);
+  const topics = lesson.topics?.map((t) => t.topic) ?? [];
+  const periods = lesson.periods?.map((p) => p.period) ?? [];
+  const grades = lesson.grades?.map((g) => g.grade) ?? [];
+
+  // Extract headings for Table of Contents
+  const { headings, processedHtml } = lesson.contentJson
+    ? { headings: extractHeadingsFromContentJson(lesson.contentJson), processedHtml: '' }
+    : injectHeadingIds(lesson.content ?? '');
+
+  const primaryGrade = grades[0];
+  const primaryGradeLabel = primaryGrade ? formatGrade(primaryGrade) : null;
 
   return (
-    <div className="lesson-page">
-      {/* ── Breadcrumb ── */}
-      <nav className="lesson-breadcrumb" aria-label="Breadcrumb">
-        <Link href="/" className="lesson-breadcrumb-link">Trang chủ</Link>
-        <span className="lesson-breadcrumb-sep" aria-hidden="true">›</span>
-        <Link href="/lessons" className="lesson-breadcrumb-link">Bài học</Link>
-        <span className="lesson-breadcrumb-sep" aria-hidden="true">›</span>
-        <span className="lesson-breadcrumb-current">{lesson.title}</span>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10 space-y-8">
+      {/* ─── Breadcrumb ─── */}
+      <nav aria-label="Breadcrumb" className="text-sm text-muted">
+        <ol className="flex items-center flex-wrap gap-1.5">
+          <li>
+            <Link
+              href="/"
+              className="text-muted hover:text-seal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-sm"
+            >
+              Trang chủ
+            </Link>
+          </li>
+          <li aria-hidden="true" className="text-muted/60">
+            <ChevronRight size={14} />
+          </li>
+          <li>
+            <Link
+              href="/lessons"
+              className="text-muted hover:text-seal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-sm"
+            >
+              Bài học
+            </Link>
+          </li>
+          {primaryGradeLabel && (
+            <>
+              <li aria-hidden="true" className="text-muted/60">
+                <ChevronRight size={14} />
+              </li>
+              <li>
+                <Link
+                  href={`/lessons?gradeId=${primaryGrade.id}`}
+                  className="text-muted hover:text-seal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-sm"
+                >
+                  {primaryGradeLabel}
+                </Link>
+              </li>
+            </>
+          )}
+          <li aria-hidden="true" className="text-muted/60">
+            <ChevronRight size={14} />
+          </li>
+          <li
+            aria-current="page"
+            className="text-ink font-medium truncate max-w-[200px] sm:max-w-xs md:max-w-sm"
+            title={lesson.title}
+          >
+            {lesson.title}
+          </li>
+        </ol>
       </nav>
 
-      <div className="lesson-layout">
-        {/* ── Main content ── */}
-        <main className="lesson-main" id="lesson-content">
-          {/* Hero */}
-          <header className="lesson-header">
-            {lesson.thumbnail && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={lesson.thumbnail}
-                alt={lesson.title}
-                className="lesson-thumbnail"
-              />
-            )}
+      {/* ─── Two-column layout: Reading Column + Sidebar ─── */}
+      <div className="flex flex-col lg:flex-row items-start justify-center gap-10 lg:gap-12">
+        {/* ─── Main reading column (max-w-[68ch]) ─── */}
+        <main id="lesson-content" className="w-full max-w-[68ch] mx-auto lg:mx-0 flex-1 min-w-0">
+          {/* Header */}
+          <header className="mb-8 space-y-4">
+            {/* Meta badges row */}
+            <div className="flex items-center flex-wrap gap-2.5 sm:gap-3 text-xs sm:text-sm text-muted">
+              <Badge variant={difficultyVariant}>{difficultyLabel}</Badge>
 
-            <div className="lesson-meta-row">
-              {/* Difficulty badge */}
-              <span
-                className="lesson-difficulty-badge"
-                style={{ background: difficultyColor + '20', color: difficultyColor, borderColor: difficultyColor + '40' }}
-              >
-                {difficultyLabel}
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <Clock size={15} className="text-muted/80 shrink-0" aria-hidden="true" />
+                <span>{lesson.estimatedTime} phút đọc</span>
               </span>
 
-              {/* Estimated time */}
-              <span className="lesson-meta-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                </svg>
-                {lesson.estimatedTime} phút
-              </span>
-
-              {/* Grades */}
               {grades.length > 0 && (
-                <span className="lesson-meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" />
-                  </svg>
-                  {grades.map((g) => g.name).join(', ')}
+                <span className="inline-flex items-center gap-1.5">
+                  <GraduationCap size={16} className="text-muted/80 shrink-0" aria-hidden="true" />
+                  <span>{grades.map((g) => formatGrade(g)).join(', ')}</span>
+                </span>
+              )}
+
+              {periods.length > 0 && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar size={15} className="text-muted/80 shrink-0" aria-hidden="true" />
+                  <span>{periods.map((p) => p.name).join(', ')}</span>
                 </span>
               )}
             </div>
 
-            <h1 className="lesson-title">{lesson.title}</h1>
+            {/* Title */}
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-[40px] font-bold text-ink leading-[1.25] tracking-tight">
+              {lesson.title}
+            </h1>
 
+            {/* Summary */}
             {lesson.summary && (
-              <p className="lesson-summary">{lesson.summary}</p>
+              <p className="text-base sm:text-lg leading-relaxed text-ink-soft font-serif italic border-l-2 border-bronze/60 pl-4 py-1">
+                {lesson.summary}
+              </p>
             )}
 
-            {/* Taxonomy tags */}
-            {(topics.length > 0 || periods.length > 0) && (
-              <div className="lesson-tags">
-                {topics.map((t) => (
-                  <span key={t.id} className="lesson-tag lesson-tag--topic">
-                    {t.name}
-                  </span>
-                ))}
-                {periods.map((p) => (
-                  <span key={p.id} className="lesson-tag lesson-tag--period">
-                    📅 {p.name}
-                  </span>
-                ))}
+            {/* Cover image (fixed aspect ratio, fallback placeholder, LCP priority) */}
+            {lesson.thumbnail && (
+              <div className="pt-2">
+                <LessonImage src={lesson.thumbnail} alt={lesson.title} />
               </div>
             )}
           </header>
 
-          {/* ── Content blocks ── */}
-          <article className="lesson-article">
+          {/* Mobile Table of Contents (collapsible drawer, hidden on desktop) */}
+          <TableOfContents headings={headings} className="lg:hidden" />
+
+          {/* ─── Article content ─── */}
+          <article className="prose-history">
             {lesson.contentJson ? (
               <BlockRenderer contentJson={lesson.contentJson} />
             ) : (
-              <LegacyContent html={lesson.content} />
+              <LegacyContent html={processedHtml} />
             )}
           </article>
 
-          {/* ── Related characters ── */}
-          {lesson.characters.length > 0 && (
-            <section className="lesson-section" aria-labelledby="characters-heading">
-              <h2 id="characters-heading" className="lesson-section-title">
-                <span aria-hidden="true">👤</span> Nhân vật lịch sử
-              </h2>
-              <div className="lesson-character-list">
+          {/* ─── End of lesson actions ─── */}
+          <footer className="border-t border-line mt-12 pt-8 flex items-center justify-between flex-wrap gap-4">
+            <Link
+              href="/lessons"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
+            >
+              <Button variant="secondary" size="md">
+                <ArrowLeft size={16} aria-hidden="true" />
+                <span>Quay lại danh sách bài học</span>
+              </Button>
+            </Link>
+          </footer>
+        </main>
+
+        {/* ─── Sidebar column (desktop sticky, mobile complementary cards) ─── */}
+        <aside
+          aria-label="Thông tin bài học bổ sung"
+          className="w-full lg:w-72 xl:w-80 shrink-0 space-y-6"
+        >
+          {/* Desktop Table of Contents (sticky, hidden on mobile) */}
+          <TableOfContents headings={headings} className="hidden lg:block" />
+
+          {/* Lesson Information Card */}
+          <Card className="p-5 shadow-card">
+            <div className="flex items-center gap-2 pb-3 mb-3 border-b border-line text-sm font-semibold text-ink">
+              <Info size={18} className="text-seal shrink-0" aria-hidden="true" />
+              <span>Thông tin bài học</span>
+            </div>
+
+            <dl className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted">Độ khó</dt>
+                <dd>
+                  <Badge variant={difficultyVariant}>{difficultyLabel}</Badge>
+                </dd>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted">Thời gian đọc</dt>
+                <dd className="font-medium text-ink">{lesson.estimatedTime} phút</dd>
+              </div>
+
+              {grades.length > 0 && (
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted shrink-0">Lớp học</dt>
+                  <dd className="font-medium text-ink text-right">
+                    {grades.map((g) => formatGrade(g)).join(', ')}
+                  </dd>
+                </div>
+              )}
+
+              {periods.length > 0 && (
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted shrink-0">Giai đoạn</dt>
+                  <dd className="font-medium text-ink text-right">
+                    {periods.map((p) => p.name).join(', ')}
+                  </dd>
+                </div>
+              )}
+
+              {topics.length > 0 && (
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted shrink-0">Chủ đề</dt>
+                  <dd className="font-medium text-ink text-right">
+                    {topics.map((t) => t.name).join(', ')}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </Card>
+
+          {/* Related Characters Card (only displayed when data exists) */}
+          {lesson.characters && lesson.characters.length > 0 && (
+            <Card className="p-5 shadow-card">
+              <div className="flex items-center gap-2 pb-3 mb-3 border-b border-line text-sm font-semibold text-ink">
+                <Users size={18} className="text-seal shrink-0" aria-hidden="true" />
+                <span>Nhân vật lịch sử</span>
+              </div>
+
+              <div className="space-y-2.5">
                 {lesson.characters.map(({ character, role }) => (
-                  <div key={character.id} className="lesson-character-card">
-                    <span className="lesson-character-name">{character.name}</span>
-                    {role && <span className="lesson-character-role">{role}</span>}
+                  <div
+                    key={character.id}
+                    className="p-3 rounded-md border border-line bg-card/60 transition-colors"
+                  >
+                    <div className="font-medium text-sm text-ink">{character.name}</div>
+                    {role && (
+                      <div className="text-xs text-muted mt-1 leading-snug">{role}</div>
+                    )}
                   </div>
                 ))}
               </div>
-            </section>
+            </Card>
           )}
 
-          {/* ── Related events ── */}
-          {lesson.events.length > 0 && (
-            <section className="lesson-section" aria-labelledby="events-heading">
-              <h2 id="events-heading" className="lesson-section-title">
-                <span aria-hidden="true">📌</span> Sự kiện liên quan
-              </h2>
-              <ul className="lesson-event-list">
+          {/* Related Events Card (only displayed when data exists) */}
+          {lesson.events && lesson.events.length > 0 && (
+            <Card className="p-5 shadow-card">
+              <div className="flex items-center gap-2 pb-3 mb-3 border-b border-line text-sm font-semibold text-ink">
+                <Bookmark size={18} className="text-seal shrink-0" aria-hidden="true" />
+                <span>Sự kiện liên quan</span>
+              </div>
+
+              <ul className="space-y-2 text-sm">
                 {lesson.events.map(({ event }) => (
-                  <li key={event.id} className="lesson-event-item">
+                  <li
+                    key={event.id}
+                    className="p-3 rounded-md border border-line bg-card/60 font-medium text-ink leading-snug"
+                  >
                     {event.name}
                   </li>
                 ))}
               </ul>
-            </section>
+            </Card>
           )}
-        </main>
-
-        {/* ── Sidebar ── */}
-        <aside className="lesson-sidebar" aria-label="Thông tin bài học">
-          <div className="lesson-sidebar-card">
-            <h2 className="lesson-sidebar-title">Thông tin bài học</h2>
-
-            <dl className="lesson-info-list">
-              <div className="lesson-info-row">
-                <dt>Độ khó</dt>
-                <dd style={{ color: difficultyColor, fontWeight: 600 }}>{difficultyLabel}</dd>
-              </div>
-              <div className="lesson-info-row">
-                <dt>Thời gian ước tính</dt>
-                <dd>{lesson.estimatedTime} phút</dd>
-              </div>
-              {grades.length > 0 && (
-                <div className="lesson-info-row">
-                  <dt>Lớp học</dt>
-                  <dd>{grades.map((g) => g.name).join(', ')}</dd>
-                </div>
-              )}
-              {topics.length > 0 && (
-                <div className="lesson-info-row">
-                  <dt>Chủ đề</dt>
-                  <dd>{topics.map((t) => t.name).join(', ')}</dd>
-                </div>
-              )}
-              {periods.length > 0 && (
-                <div className="lesson-info-row">
-                  <dt>Giai đoạn</dt>
-                  <dd>{periods.map((p) => p.name).join(', ')}</dd>
-                </div>
-              )}
-            </dl>
-
-            <Link href="/dashboard" className="btn btn-primary btn-full" style={{ marginTop: '1.25rem' }}>
-              Bắt đầu học
-            </Link>
-          </div>
         </aside>
       </div>
     </div>
