@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { formatGrade } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Danh sách bài học',
@@ -16,15 +17,47 @@ export const metadata: Metadata = {
     'Khám phá tất cả bài học lịch sử Việt Nam qua các triều đại và giai đoạn dựng nước, giữ nước hào hùng.',
 };
 
-// ─── Data Fetching ──────────────────────────────────────────────
+// ─── Data Types ─────────────────────────────────────────────────
+
+interface GradeOption {
+  id: string;
+  name: string;
+  code: string;
+  displayOrder: number;
+}
+
+interface EducationLevelOption {
+  id: string;
+  name: string;
+  code: string;
+  displayOrder: number;
+  grades: GradeOption[];
+}
 
 interface FetchResult {
   data: PaginatedLessons | null;
   error: boolean;
 }
 
+// ─── Data Fetching ──────────────────────────────────────────────
+
+async function fetchEducationLevels(): Promise<EducationLevelOption[]> {
+  const baseUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
+  try {
+    const res = await fetch(`${baseUrl}/api/education-levels`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const body = await res.json();
+    return body.success && Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}
+
 async function fetchLessons(searchParams: Record<string, string>): Promise<FetchResult> {
-  if (searchParams.simulate_error === '1') {
+  // Chỉ kích hoạt giả lập lỗi khi kiểm thử trong dev
+  if (process.env.NODE_ENV !== 'production' && searchParams.simulate_error === '1') {
     return { data: null, error: true };
   }
 
@@ -35,6 +68,11 @@ async function fetchLessons(searchParams: Record<string, string>): Promise<Fetch
   if (searchParams.pageSize) qs.set('pageSize', searchParams.pageSize ?? '12');
   if (searchParams.search) qs.set('search', searchParams.search);
   if (searchParams.difficulty) qs.set('difficulty', searchParams.difficulty);
+
+  // Lọc theo lớp: đồng bộ ?grade= lên URL, gửi gradeId cho API
+  const gradeId = searchParams.grade || searchParams.gradeId;
+  if (gradeId) qs.set('gradeId', gradeId);
+
   if (!qs.has('pageSize')) qs.set('pageSize', '12');
 
   try {
@@ -64,13 +102,26 @@ export default async function LessonsPage({
   searchParams: Promise<Record<string, string>>;
 }) {
   const sp = await searchParams;
-  const { data, error } = await fetchLessons(sp);
+  const [lessonsResult, educationLevels] = await Promise.all([
+    fetchLessons(sp),
+    fetchEducationLevels(),
+  ]);
+  const { data, error } = lessonsResult;
 
   const search = sp.search ?? '';
   const difficulty = sp.difficulty ?? '';
+  const selectedGrade = sp.grade || sp.gradeId || '';
+
+  // Tìm lớp được chọn để hiển thị nhãn thân thiện (ví dụ "Lớp 4")
+  const allGrades = educationLevels.flatMap((lvl) => lvl.grades);
+  const selectedGradeObj = allGrades.find(
+    (g) => g.id === selectedGrade || g.code === selectedGrade
+  );
+  const selectedGradeLabel = selectedGradeObj ? formatGrade(selectedGradeObj) : '';
+
   const currentPage = data?.page ?? 1;
   const totalPages = data?.totalPages ?? 1;
-  const hasFilter = Boolean(search || difficulty);
+  const hasFilter = Boolean(search || difficulty || selectedGrade);
 
   // Tạo URL cho phân trang
   const buildPageUrl = (pageNumber: number) => {
@@ -100,7 +151,7 @@ export default async function LessonsPage({
       >
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           {/* Ô tìm kiếm */}
-          <div className="sm:col-span-6 relative">
+          <div className="sm:col-span-4 relative">
             <Search
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
@@ -111,10 +162,31 @@ export default async function LessonsPage({
               type="search"
               name="search"
               defaultValue={search}
-              placeholder="Tìm bài học, nhân vật, sự kiện..."
+              placeholder="Tìm bài học, nhân vật..."
               className="pl-9"
               aria-label="Tìm kiếm bài học"
             />
+          </div>
+
+          {/* Lọc theo lớp học */}
+          <div className="sm:col-span-3">
+            <Select
+              id="lesson-grade-select"
+              name="grade"
+              defaultValue={selectedGrade}
+              aria-label="Lọc theo lớp học"
+            >
+              <option value="">Tất cả các lớp</option>
+              {educationLevels.map((lvl) => (
+                <optgroup key={lvl.id} label={lvl.name}>
+                  {lvl.grades.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {formatGrade(g)}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </Select>
           </div>
 
           {/* Lọc độ khó */}
@@ -133,7 +205,7 @@ export default async function LessonsPage({
           </div>
 
           {/* Nút hành động */}
-          <div className="sm:col-span-3 flex items-center gap-2">
+          <div className="sm:col-span-2 flex items-center gap-2">
             <Button
               type="submit"
               variant="primary"
@@ -141,7 +213,7 @@ export default async function LessonsPage({
               id="lesson-search-btn"
               className="flex-1"
             >
-              Lọc bài học
+              Lọc
             </Button>
 
             {hasFilter && (
@@ -172,6 +244,11 @@ export default async function LessonsPage({
           <div className="flex items-center justify-between text-sm text-muted">
             <p>
               Có <strong className="font-semibold text-ink">{data.total}</strong> bài học
+              {selectedGradeLabel && (
+                <span>
+                  {' '}thuộc <strong className="font-semibold text-ink">{selectedGradeLabel}</strong>
+                </span>
+              )}
               {search && (
                 <span>
                   {' '}cho từ khóa &ldquo;<span className="text-ink font-medium">{search}</span>&rdquo;
@@ -192,7 +269,7 @@ export default async function LessonsPage({
               title={hasFilter ? 'Không tìm thấy bài học phù hợp' : 'Chưa có bài học nào được xuất bản'}
               description={
                 hasFilter
-                  ? 'Không tìm thấy bài học nào khớp với bộ lọc đang chọn. Bạn hãy thử đổi từ khóa tìm kiếm hoặc xóa bộ lọc.'
+                  ? 'Không tìm thấy bài học nào khớp với bộ lọc đang chọn. Bạn hãy thử chọn lớp khác, đổi từ khóa tìm kiếm hoặc xóa bộ lọc.'
                   : 'Nội dung các bài học lịch sử đang được biên soạn và sẽ sớm ra mắt.'
               }
               action={
@@ -232,32 +309,8 @@ export default async function LessonsPage({
                 </Button>
               )}
 
-              {/* Các số trang */}
-              <div className="hidden sm:flex items-center gap-1.5">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-                  const isCurrent = p === currentPage;
-                  return (
-                    <Button
-                      key={p}
-                      asChild={!isCurrent}
-                      variant={isCurrent ? 'primary' : 'ghost'}
-                      size="sm"
-                      aria-current={isCurrent ? 'page' : undefined}
-                      id={`pagination-page-${p}`}
-                      className="w-9 h-9 p-0"
-                    >
-                      {isCurrent ? (
-                        <span>{p}</span>
-                      ) : (
-                        <Link href={buildPageUrl(p)}>{p}</Link>
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              {/* Mobile text phân trang */}
-              <span className="sm:hidden text-xs text-muted">
+              {/* Thông tin số trang */}
+              <span className="text-xs sm:text-sm text-muted font-medium">
                 {currentPage} / {totalPages}
               </span>
 

@@ -5,8 +5,7 @@ import {
   GraduationCap,
   BookOpen,
   ArrowRight,
-  Compass,
-  CheckSquare,
+  Layers,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -113,7 +112,9 @@ export default async function HomePage({
   const isAuthenticated = cookieStore.has('access_token');
 
   const sp = await searchParams;
-  const simulateError = sp.simulate_error === '1';
+  // Chỉ kích hoạt giả lập lỗi trong môi trường phát triển (không kích hoạt trong production)
+  const isDev = process.env.NODE_ENV !== 'production';
+  const simulateError = isDev && sp.simulate_error === '1';
 
   const { educationLevels, latestLessons, periods, error } = await fetchHomeData(simulateError);
 
@@ -248,7 +249,7 @@ export default async function HomePage({
               </div>
             </section>
 
-            {/* ─── 2. Chọn lớp của bạn: Lớp 4-12 nhóm theo cấp học ─── */}
+            {/* ─── 2. Chọn lớp của bạn: Lớp 4-12 nhóm theo cấp học, link /lessons?grade=<id> ─── */}
             {educationLevels.length > 0 && (
               <section aria-labelledby="grade-selection-title" className="space-y-6">
                 <div>
@@ -277,7 +278,7 @@ export default async function HomePage({
                           {level.grades.map((grade) => (
                             <Link
                               key={grade.id}
-                              href="/lessons"
+                              href={`/lessons?grade=${grade.id}`}
                               className="p-3 text-center rounded-md border border-line bg-paper/60 hover:bg-card hover:border-bronze/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
                               title={`Xem bài học ${grade.name}`}
                             >
@@ -368,7 +369,7 @@ export default async function HomePage({
               </section>
             )}
 
-            {/* ─── 5. Giới thiệu các tính năng THẬT đã có ─── */}
+            {/* ─── 5. Giới thiệu các tính năng THẬT học sinh dùng được hôm nay ─── */}
             <section aria-labelledby="features-title" className="space-y-6">
               <div>
                 <div className="h-[5px] w-16 border-y border-bronze" aria-hidden="true" />
@@ -380,37 +381,26 @@ export default async function HomePage({
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="p-6 shadow-card space-y-3">
                   <div className="w-10 h-10 rounded-md bg-seal/10 text-seal flex items-center justify-center">
                     <BookOpen size={22} aria-hidden="true" />
                   </div>
                   <h3 className="font-serif text-lg font-bold text-ink">Bài học đa phương tiện</h3>
                   <p className="text-sm text-muted leading-relaxed">
-                    Nội dung bài đọc được biên soạn cẩn trọng, tích hợp tranh ảnh tư liệu, lược đồ lịch
-                    sử, âm thanh và video tài liệu trực quan giúp kiến thức trở nên sinh động.
+                    Nội dung bài đọc được biên soạn cẩn trọng bám sát SGK, tích hợp tranh ảnh tư liệu, lược đồ lịch
+                    sử, âm thanh và video tài liệu trực quan giúp việc học lịch sử trở nên sinh động và sâu sắc.
                   </p>
                 </Card>
 
                 <Card className="p-6 shadow-card space-y-3">
                   <div className="w-10 h-10 rounded-md bg-bronze/10 text-bronze-ink flex items-center justify-center">
-                    <Compass size={22} aria-hidden="true" />
+                    <Layers size={22} aria-hidden="true" />
                   </div>
-                  <h3 className="font-serif text-lg font-bold text-ink">Biên niên sử & Nhân vật</h3>
+                  <h3 className="font-serif text-lg font-bold text-ink">Phân loại theo khối lớp & độ khó</h3>
                   <p className="text-sm text-muted leading-relaxed">
-                    Hệ thống tư liệu bài học được phân định theo từng giai đoạn lịch sử dựng nước và giữ
-                    nước, gắn liền với các anh hùng và sự kiện tiêu biểu của dân tộc.
-                  </p>
-                </Card>
-
-                <Card className="p-6 shadow-card space-y-3">
-                  <div className="w-10 h-10 rounded-md bg-success/10 text-success flex items-center justify-center">
-                    <CheckSquare size={22} aria-hidden="true" />
-                  </div>
-                  <h3 className="font-serif text-lg font-bold text-ink">Ôn tập & Kiểm tra</h3>
-                  <p className="text-sm text-muted leading-relaxed">
-                    Hệ thống câu hỏi trắc nghiệm sau bài học do thầy cô biên soạn giúp học sinh củng cố và
-                    ghi nhớ vững vàng các mốc kiến thức trọng tâm.
+                    Hệ thống bài học được phân chia rõ ràng theo từng khối lớp từ lớp 4 đến lớp 12 cùng các cấp độ
+                    cơ bản, trung bình và nâng cao, giúp học sinh nhanh chóng tra cứu và học đúng trọng tâm.
                   </p>
                 </Card>
               </div>
