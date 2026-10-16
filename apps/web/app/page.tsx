@@ -1,218 +1,457 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GraduationCap, BookOpen, Zap, Trophy, Users, Star, ArrowRight } from 'lucide-react';
 import { cookies } from 'next/headers';
+import {
+  GraduationCap,
+  BookOpen,
+  ArrowRight,
+  Compass,
+  CheckSquare,
+} from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { LessonCard } from '@/components/lessons/LessonCard';
+import { optimizeCloudinaryUrl } from '@/lib/format';
+import type { PublicLessonSummary } from '@/features/lessons/api';
 
-export default async function HomePage() {
+export const metadata: Metadata = {
+  title: 'Học Lịch Sử - Nền tảng học lịch sử Việt Nam',
+  description:
+    'Học lịch sử Việt Nam qua các bài học đa phương tiện, niên biểu các thời kỳ và hệ thống câu hỏi củng cố dành cho học sinh từ lớp 4 đến lớp 12.',
+};
+
+// ─── Data Types ─────────────────────────────────────────────────
+
+interface GradeItem {
+  id: string;
+  name: string;
+  code: string;
+  displayOrder: number;
+}
+
+interface EducationLevelItem {
+  id: string;
+  name: string;
+  code: string;
+  displayOrder: number;
+  grades: GradeItem[];
+}
+
+interface PeriodItem {
+  id: string;
+  name: string;
+  slug: string;
+  startYear: number | null;
+  endYear: number | null;
+  displayOrder: number;
+}
+
+// ─── Helpers ───────────────────────────────────────────────────
+
+function formatPeriodYears(startYear: number | null, endYear: number | null): string {
+  if (startYear === null && endYear === null) return '';
+  const fmt = (y: number) => (y < 0 ? `${Math.abs(y)} TCN` : `${y}`);
+  if (startYear !== null && endYear !== null) return `${fmt(startYear)} – ${fmt(endYear)}`;
+  if (startYear !== null) return `Từ ${fmt(startYear)}`;
+  if (endYear !== null) return `Đến ${fmt(endYear)}`;
+  return '';
+}
+
+// ─── Data Fetching ──────────────────────────────────────────────
+
+interface HomeData {
+  educationLevels: EducationLevelItem[];
+  latestLessons: PublicLessonSummary[];
+  periods: PeriodItem[];
+  error: boolean;
+}
+
+async function fetchHomeData(simulateError: boolean): Promise<HomeData> {
+  if (simulateError) {
+    return { educationLevels: [], latestLessons: [], periods: [], error: true };
+  }
+
+  const baseUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
+
+  try {
+    const [levelsRes, lessonsRes, periodsRes] = await Promise.all([
+      fetch(`${baseUrl}/api/education-levels`, { next: { revalidate: 3600 } }),
+      fetch(`${baseUrl}/api/lessons?pageSize=6`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/api/periods`, { next: { revalidate: 3600 } }),
+    ]);
+
+    if (!levelsRes.ok && !lessonsRes.ok) {
+      return { educationLevels: [], latestLessons: [], periods: [], error: true };
+    }
+
+    const levelsBody = levelsRes.ok ? await levelsRes.json() : null;
+    const lessonsBody = lessonsRes.ok ? await lessonsRes.json() : null;
+    const periodsBody = periodsRes.ok ? await periodsRes.json() : null;
+
+    return {
+      educationLevels: levelsBody?.success && Array.isArray(levelsBody.data) ? levelsBody.data : [],
+      latestLessons: lessonsBody?.success && lessonsBody.data?.items ? lessonsBody.data.items : [],
+      periods: periodsBody?.success && periodsBody.data?.items ? periodsBody.data.items : [],
+      error: false,
+    };
+  } catch {
+    return { educationLevels: [], latestLessons: [], periods: [], error: true };
+  }
+}
+
+// ─── Page Component ─────────────────────────────────────────────
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
   const cookieStore = await cookies();
   const isAuthenticated = cookieStore.has('access_token');
 
+  const sp = await searchParams;
+  const simulateError = sp.simulate_error === '1';
+
+  const { educationLevels, latestLessons, periods, error } = await fetchHomeData(simulateError);
+
+  // Chọn bài học nổi bật có thumbnail cho khung ảnh tư liệu bên phải Hero
+  const featuredLesson = latestLessons.find((l) => l.thumbnail) ?? latestLessons[0];
+
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-paper">
       {/* ─── Navbar dùng chung ─── */}
       <Navbar />
 
-      {/* ─── Hero ─── */}
-      <section style={{
-        background: 'linear-gradient(160deg, #f0f4ff 0%, #faf5ff 50%, #f0f4ff 100%)',
-        padding: 'clamp(4rem, 10vw, 8rem) 0',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Background decoration */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.06,
-          backgroundImage: 'radial-gradient(circle at 2px 2px, var(--brand-500) 1px, transparent 0)',
-          backgroundSize: '32px 32px',
-        }} />
-
-        <div className="container-page" style={{ position: 'relative' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.375rem 1rem',
-            background: 'var(--brand-50)', border: '1.5px solid var(--brand-200)',
-            borderRadius: 100, marginBottom: '1.5rem',
-            fontSize: '0.875rem', fontWeight: 600, color: 'var(--brand-700)',
-          }}>
-            <Star size={14} fill="currentColor" /> Nền tảng học lịch sử số 1 Việt Nam
+      {/* ─── Nội dung chính ─── */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 space-y-16 sm:space-y-20">
+        {/* Trường hợp API lỗi */}
+        {error ? (
+          <div className="py-12">
+            <ErrorState
+              title="Không thể tải nội dung trang chủ"
+              description="Hệ thống không thể kết nối tới máy chủ dữ liệu vào lúc này. Vui lòng thử lại sau ít phút."
+              retryHref="/"
+              retryLabel="Tải lại trang"
+            />
           </div>
+        ) : (
+          <>
+            {/* ─── 1. Hero: Căn trái, tiêu đề serif, tư liệu thật bên phải ─── */}
+            <section
+              aria-labelledby="hero-title"
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center"
+            >
+              <div className="lg:col-span-7 space-y-5 text-left">
+                <div className="space-y-2">
+                  <div className="h-[5px] w-16 border-y border-bronze" aria-hidden="true" />
+                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-bronze-ink">
+                    Sử liệu & Chương trình phổ thông
+                  </p>
+                </div>
 
-          <h1 style={{
-            fontSize: 'clamp(2.25rem, 8vw, 4.5rem)',
-            fontWeight: 900, lineHeight: 1.1,
-            marginBottom: '1.5rem',
-            letterSpacing: '-0.03em',
-          }}>
-            Học lịch sử{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, var(--brand-500), #8b5cf6)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-              theo cách thú vị
-            </span>
-          </h1>
+                <h1
+                  id="hero-title"
+                  className="font-serif text-3xl sm:text-4xl lg:text-[44px] font-bold text-ink leading-[1.2] tracking-tight"
+                >
+                  Học lịch sử Việt Nam
+                  <br className="hidden sm:inline" /> theo từng giai đoạn
+                </h1>
 
-          <p style={{
-            fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
-            color: 'var(--muted)', maxWidth: 600,
-            margin: '0 auto 2.5rem',
-            lineHeight: 1.7,
-          }}>
-            Khám phá lịch sử Việt Nam qua các bài học tương tác, quiz thử thách và hệ thống 
-            thu thập thẻ nhân vật hấp dẫn. Dành cho học sinh từ lớp 4 đến lớp 12.
-          </p>
+                <p className="text-base sm:text-lg text-ink-soft leading-relaxed max-w-xl">
+                  Hệ thống bài học đa phương tiện, niên biểu các thời kỳ và tư liệu lịch sử chọn lọc
+                  dành cho học sinh từ lớp 4 đến lớp 12.
+                </p>
 
-          <div style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {!isAuthenticated ? (
-              <Link href="/register" id="hero-register-btn" className="btn btn-primary btn-lg">
-                Bắt đầu miễn phí <ArrowRight size={18} />
-              </Link>
-            ) : (
-              <Link href="/dashboard" id="hero-dashboard-btn" className="btn btn-primary btn-lg">
-                Tiếp tục học <ArrowRight size={18} />
-              </Link>
+                <div className="flex items-center gap-3 pt-2 flex-wrap">
+                  <Link
+                    href={isAuthenticated ? '/lessons' : '/register'}
+                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
+                  >
+                    <Button variant="primary" size="lg" className="gap-2">
+                      <span>Bắt đầu học</span>
+                      <ArrowRight size={18} aria-hidden="true" />
+                    </Button>
+                  </Link>
+                  <Link
+                    href="/lessons"
+                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
+                  >
+                    <Button variant="secondary" size="lg">
+                      <span>Xem bài học</span>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Khung hình ảnh tư liệu thật bên phải (hoặc niên biểu tóm tắt) */}
+              <div className="lg:col-span-5">
+                {featuredLesson ? (
+                  <div className="w-full max-w-md mx-auto lg:max-w-none">
+                    <figure className="group rounded-md border border-line bg-card p-3 shadow-card transition-colors hover:border-bronze/60">
+                      <Link
+                        href={`/lessons/${featuredLesson.slug}`}
+                        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-sm"
+                      >
+                        <div className="relative aspect-[16/10] overflow-hidden rounded-sm bg-paper border border-line">
+                          {featuredLesson.thumbnail ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={optimizeCloudinaryUrl(featuredLesson.thumbnail, 800)}
+                              alt={featuredLesson.title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted">
+                              <BookOpen size={40} className="text-muted/60 mb-2" aria-hidden="true" />
+                              <span className="font-serif text-sm">Tư liệu lịch sử</span>
+                            </div>
+                          )}
+                        </div>
+                        <figcaption className="mt-3 px-1">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-bronze-ink">
+                            Bài học nổi bật
+                          </p>
+                          <p className="font-serif text-base font-semibold text-ink line-clamp-1 group-hover:text-seal transition-colors">
+                            {featuredLesson.title}
+                          </p>
+                          <p className="text-[13px] leading-5 text-muted line-clamp-2 mt-1 font-sans">
+                            {featuredLesson.summary || 'Khám phá trang sử hào hùng của dân tộc Việt Nam.'}
+                          </p>
+                        </figcaption>
+                      </Link>
+                    </figure>
+                  </div>
+                ) : (
+                  <div className="w-full max-w-md mx-auto lg:max-w-none rounded-md border border-line bg-card p-5 shadow-card">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-bronze-ink mb-3">
+                      Tiến trình lịch sử
+                    </p>
+                    <ol className="relative ml-2 border-l border-line space-y-4">
+                      {periods.slice(0, 4).map((p) => (
+                        <li key={p.id} className="relative pl-5">
+                          <span
+                            className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-seal"
+                            aria-hidden="true"
+                          />
+                          <p className="font-serif text-sm font-semibold text-seal">
+                            {formatPeriodYears(p.startYear, p.endYear)}
+                          </p>
+                          <p className="text-xs text-ink-soft">{p.name}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ─── 2. Chọn lớp của bạn: Lớp 4-12 nhóm theo cấp học ─── */}
+            {educationLevels.length > 0 && (
+              <section aria-labelledby="grade-selection-title" className="space-y-6">
+                <div>
+                  <div className="h-[5px] w-16 border-y border-bronze" aria-hidden="true" />
+                  <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-bronze-ink">
+                    Chương trình giáo dục
+                  </p>
+                  <h2
+                    id="grade-selection-title"
+                    className="mt-1 font-serif text-2xl md:text-[28px] text-ink"
+                  >
+                    Chọn lớp của bạn
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {educationLevels.map((level) => (
+                    <Card key={level.id} className="p-5 shadow-card flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 pb-3 mb-4 border-b border-line">
+                          <GraduationCap size={20} className="text-seal shrink-0" aria-hidden="true" />
+                          <h3 className="font-serif text-lg font-bold text-ink">{level.name}</h3>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {level.grades.map((grade) => (
+                            <Link
+                              key={grade.id}
+                              href="/lessons"
+                              className="p-3 text-center rounded-md border border-line bg-paper/60 hover:bg-card hover:border-bronze/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+                              title={`Xem bài học ${grade.name}`}
+                            >
+                              <span className="block font-medium text-sm text-ink">{grade.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                <p className="text-xs text-muted">
+                  Nội dung được phân bổ theo khung chương trình sách giáo khoa Lịch sử Việt Nam từ lớp 4 đến lớp 12.
+                </p>
+              </section>
             )}
-            <Link href="/lessons" id="hero-browse-btn" className="btn btn-outline btn-lg">
-              Xem bài học
-            </Link>
-          </div>
 
-          {/* Stats */}
-          <div style={{
-            display: 'flex', gap: 'clamp(2rem, 5vw, 4rem)',
-            justifyContent: 'center', flexWrap: 'wrap',
-            marginTop: '3.5rem', paddingTop: '2.5rem',
-            borderTop: '1px solid var(--border)',
-          }}>
-            {[
-              { value: '1,200+', label: 'Học sinh đang học' },
-              { value: '50+', label: 'Bài học chất lượng' },
-              { value: '200+', label: 'Câu hỏi quiz' },
-            ].map(stat => (
-              <div key={stat.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 800, color: 'var(--brand-600)' }}>
-                  {stat.value}
+            {/* ─── 3. Dòng thời gian các giai đoạn (nếu có dữ liệu) ─── */}
+            {periods.length > 0 && (
+              <section aria-labelledby="periods-title" className="space-y-6">
+                <div>
+                  <div className="h-[5px] w-16 border-y border-bronze" aria-hidden="true" />
+                  <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-bronze-ink">
+                    Tiến trình lịch sử
+                  </p>
+                  <h2 id="periods-title" className="mt-1 font-serif text-2xl md:text-[28px] text-ink">
+                    Các thời kỳ dựng nước và giữ nước
+                  </h2>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-                  {stat.label}
+
+                <div className="flex overflow-x-auto pb-3 gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible">
+                  {periods.map((p) => {
+                    const years = formatPeriodYears(p.startYear, p.endYear);
+                    return (
+                      <div
+                        key={p.id}
+                        className="min-w-[200px] sm:min-w-0 p-4 rounded-md border border-line bg-card shadow-card flex flex-col justify-between"
+                      >
+                        {years && (
+                          <span className="block font-serif text-xs font-semibold text-seal mb-1">
+                            {years}
+                          </span>
+                        )}
+                        <h3 className="font-serif font-bold text-ink text-base line-clamp-1">
+                          {p.name}
+                        </h3>
+                      </div>
+                    );
+                  })}
                 </div>
+              </section>
+            )}
+
+            {/* ─── 4. Bài học mới: Tối đa 6 LessonCard (ẩn nếu rỗng) ─── */}
+            {latestLessons.length > 0 && (
+              <section aria-labelledby="latest-lessons-title" className="space-y-6">
+                <div className="flex items-end justify-between flex-wrap gap-4">
+                  <div>
+                    <div className="h-[5px] w-16 border-y border-bronze" aria-hidden="true" />
+                    <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-bronze-ink">
+                      Khám phá tư liệu
+                    </p>
+                    <h2
+                      id="latest-lessons-title"
+                      className="mt-1 font-serif text-2xl md:text-[28px] text-ink"
+                    >
+                      Bài học mới nhất
+                    </h2>
+                  </div>
+
+                  <Link
+                    href="/lessons"
+                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-sm"
+                  >
+                    <Button variant="ghost" size="sm" className="text-seal hover:text-seal-dark gap-1.5">
+                      <span>Xem tất cả bài học</span>
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {latestLessons.map((lesson) => (
+                    <LessonCard key={lesson.id} lesson={lesson} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ─── 5. Giới thiệu các tính năng THẬT đã có ─── */}
+            <section aria-labelledby="features-title" className="space-y-6">
+              <div>
+                <div className="h-[5px] w-16 border-y border-bronze" aria-hidden="true" />
+                <p className="mt-3 text-sm font-semibold uppercase tracking-wide text-bronze-ink">
+                  Phương pháp học tập
+                </p>
+                <h2 id="features-title" className="mt-1 font-serif text-2xl md:text-[28px] text-ink">
+                  Nội dung học lịch sử trọng tâm
+                </h2>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ─── Features ─── */}
-      <section style={{ padding: 'clamp(4rem, 8vw, 6rem) 0', background: 'var(--background)' }}>
-        <div className="container-page">
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.5rem)', fontWeight: 800, marginBottom: '0.75rem' }}>
-              Tại sao chọn Học Lịch Sử?
-            </h2>
-            <p style={{ color: 'var(--muted)', fontSize: '1.0625rem', maxWidth: 520, margin: '0 auto' }}>
-              Được thiết kế theo chương trình giáo dục quốc gia, kết hợp công nghệ hiện đại
-            </p>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="p-6 shadow-card space-y-3">
+                  <div className="w-10 h-10 rounded-md bg-seal/10 text-seal flex items-center justify-center">
+                    <BookOpen size={22} aria-hidden="true" />
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-ink">Bài học đa phương tiện</h3>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Nội dung bài đọc được biên soạn cẩn trọng, tích hợp tranh ảnh tư liệu, lược đồ lịch
+                    sử, âm thanh và video tài liệu trực quan giúp kiến thức trở nên sinh động.
+                  </p>
+                </Card>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '1.25rem',
-          }}>
-            {[
-              {
-                icon: BookOpen, color: 'var(--brand-500)', bg: 'var(--brand-50)',
-                title: 'Bài học theo chương trình',
-                desc: 'Nội dung bám sát SGK, được biên soạn bởi giáo viên có kinh nghiệm. Phân chia theo lớp và chủ đề rõ ràng.',
-              },
-              {
-                icon: Zap, color: '#f59e0b', bg: '#fffbeb',
-                title: 'Quiz thử thách',
-                desc: 'Kiểm tra kiến thức sau mỗi bài học với hệ thống quiz đa dạng. Nhận điểm EXP khi hoàn thành.',
-              },
-              {
-                icon: Trophy, color: '#10b981', bg: '#ecfdf5',
-                title: 'Thu thập thẻ lịch sử',
-                desc: 'Mở khóa thẻ nhân vật và sự kiện lịch sử độc đáo. Xây dựng bộ sưu tập riêng của bạn.',
-              },
-              {
-                icon: Star, color: '#8b5cf6', bg: '#f5f3ff',
-                title: 'Hệ thống cấp độ',
-                desc: 'Tích lũy EXP, lên cấp và hoàn thành nhiệm vụ hàng ngày để duy trì thói quen học tập.',
-              },
-              {
-                icon: Users, color: '#ec4899', bg: '#fdf2f8',
-                title: 'Phù hợp lớp 4–12',
-                desc: 'Nội dung được cá nhân hóa theo lớp học. Từ tiểu học đến THPT, đều có bài học phù hợp.',
-              },
-              {
-                icon: GraduationCap, color: 'var(--brand-600)', bg: 'var(--brand-50)',
-                title: 'AI hỗ trợ học tập',
-                desc: 'Hỏi AI về bất kỳ sự kiện hay nhân vật lịch sử nào. Nhận giải thích chi tiết ngay lập tức.',
-              },
-            ].map(({ icon: Icon, color, bg, title, desc }) => (
-              <div key={title} className="card card-hover" style={{ padding: '1.5rem' }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 12,
-                  background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '1rem',
-                }}>
-                  <Icon size={24} color={color} />
-                </div>
-                <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '1.0625rem' }}>{title}</h3>
-                <p style={{ color: 'var(--muted)', fontSize: '0.9375rem', lineHeight: 1.6 }}>{desc}</p>
+                <Card className="p-6 shadow-card space-y-3">
+                  <div className="w-10 h-10 rounded-md bg-bronze/10 text-bronze-ink flex items-center justify-center">
+                    <Compass size={22} aria-hidden="true" />
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-ink">Biên niên sử & Nhân vật</h3>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Hệ thống tư liệu bài học được phân định theo từng giai đoạn lịch sử dựng nước và giữ
+                    nước, gắn liền với các anh hùng và sự kiện tiêu biểu của dân tộc.
+                  </p>
+                </Card>
+
+                <Card className="p-6 shadow-card space-y-3">
+                  <div className="w-10 h-10 rounded-md bg-success/10 text-success flex items-center justify-center">
+                    <CheckSquare size={22} aria-hidden="true" />
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-ink">Ôn tập & Kiểm tra</h3>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Hệ thống câu hỏi trắc nghiệm sau bài học do thầy cô biên soạn giúp học sinh củng cố và
+                    ghi nhớ vững vàng các mốc kiến thức trọng tâm.
+                  </p>
+                </Card>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </section>
 
-      {/* ─── CTA ─── */}
-      <section style={{
-        padding: 'clamp(4rem, 8vw, 6rem) 0',
-        background: 'linear-gradient(135deg, var(--brand-600), #7c3aed)',
-        textAlign: 'center',
-        color: 'white',
-      }}>
-        <div className="container-page">
-          <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.5rem)', fontWeight: 800, marginBottom: '1rem' }}>
-            Sẵn sàng bắt đầu chưa?
-          </h2>
-          <p style={{ fontSize: '1.0625rem', opacity: 0.85, marginBottom: '2rem', maxWidth: 480, margin: '0 auto 2rem' }}>
-            Tham gia ngay hôm nay. Miễn phí hoàn toàn, không cần thẻ tín dụng.
-          </p>
-          {!isAuthenticated ? (
-            <Link href="/register" id="cta-register-btn" style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.875rem 2rem',
-              background: 'white', color: 'var(--brand-700)',
-              borderRadius: 12, fontWeight: 700, fontSize: '1.0625rem',
-              textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              transition: 'transform 0.15s ease',
-            }}>
-              Tạo tài khoản miễn phí <ArrowRight size={20} />
-            </Link>
-          ) : (
-            <Link href="/dashboard" id="cta-dashboard-btn" style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.875rem 2rem',
-              background: 'white', color: 'var(--brand-700)',
-              borderRadius: 12, fontWeight: 700, fontSize: '1.0625rem',
-              textDecoration: 'none',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              transition: 'transform 0.15s ease',
-            }}>
-              Đến bảng điều khiển <ArrowRight size={20} />
-            </Link>
-          )}
-        </div>
-      </section>
+            {/* ─── 6. Lời mời hành động cuối trang ─── */}
+            <section className="rounded-lg border border-line bg-card p-8 sm:p-12 text-center shadow-card space-y-4">
+              <div className="h-[5px] w-16 border-y border-bronze mx-auto" aria-hidden="true" />
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink">
+                Sẵn sàng khám phá lịch sử nước nhà?
+              </h2>
+              <p className="text-sm sm:text-base text-muted max-w-lg mx-auto leading-relaxed">
+                Bắt đầu hành trình tìm hiểu những trang sử vẻ vang của dân tộc Việt Nam qua từng bài học
+                chọn lọc ngay hôm nay.
+              </p>
+              <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+                <Link
+                  href={isAuthenticated ? '/lessons' : '/register'}
+                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
+                >
+                  <Button variant="primary" size="lg" className="gap-2">
+                    <span>Bắt đầu học ngay</span>
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </Button>
+                </Link>
+                <Link
+                  href="/lessons"
+                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
+                >
+                  <Button variant="secondary" size="lg">
+                    <span>Xem toàn bộ bài học</span>
+                  </Button>
+                </Link>
+              </div>
+            </section>
+          </>
+        )}
+      </main>
 
       {/* ─── Footer dùng chung ─── */}
       <Footer />
-    </>
+    </div>
   );
 }

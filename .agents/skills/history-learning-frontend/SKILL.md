@@ -17,8 +17,8 @@ Mục tiêu: giao diện cho học sinh lớp 4-12 học lịch sử. Cảm giá
 - `scripts/audit-ui.mjs`: quét lỗi phổ biến, chạy mọi hệ điều hành: `node .agents/skills/history-learning-frontend/scripts/audit-ui.mjs <file hoặc thư mục>`.
 
 ## Trạng thái chuyển đổi (CẬP NHẬT dòng này khi xong một bước)
-Đã xong: font + `@theme` token; bộ `components/ui`; Navbar/Footer/layout dùng chung; trang `/lessons` + `LessonCard`.
-Còn lại, theo thứ tự: đọc bài `/lessons/[slug]` → trang chủ → đăng nhập/đăng ký/quên mật khẩu → onboarding chọn lớp + profile → dashboard → admin → dọn `globals.css` (mục tiêu < 200 dòng).
+Đã xong: font + `@theme` token; bộ `components/ui`; Navbar/Footer/layout dùng chung; trang `/lessons` + `LessonCard`; đọc bài `/lessons/[slug]`; trang chủ.
+Còn lại, theo thứ tự: đăng nhập/đăng ký/quên mật khẩu → onboarding chọn lớp + profile → dashboard → admin → dọn `globals.css` (mục tiêu < 200 dòng).
 Trang chưa chuyển vẫn còn class cũ và tông tím xanh; đó là việc cần làm, không phải mẫu để bắt chước. Trang mẫu tham chiếu: `/lessons` và `components/ui/*`.
 
 ## Hướng thiết kế

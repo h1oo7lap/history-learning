@@ -33,7 +33,7 @@ export function LessonImage({ src, alt, className }: LessonImageProps) {
         aria-hidden={!showFallback}
       >
         <BookOpen size={40} className="text-muted/50 mb-2" aria-hidden="true" />
-        <span className="text-xs font-serif text-muted">Tư liệu lịch sử</span>
+        <span className="text-[13px] font-serif text-muted">Tư liệu lịch sử</span>
       </div>
 
       {optimizedSrc && !hasError && (

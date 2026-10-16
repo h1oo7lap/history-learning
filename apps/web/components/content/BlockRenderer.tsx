@@ -14,7 +14,6 @@ import { optimizeCloudinaryUrl } from '@/lib/format';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { cn } from '@/lib/cn';
 import { slugifyText } from '@/lib/headings';
-import type { HeadingItem } from '@/lib/headings';
 
 // ─── Inline Markdown parser ─────────────────────────────────────
 // Handles **bold** and *italic*
@@ -225,7 +224,7 @@ function ImageBlockRenderer({ block }: { block: ImageBlock }) {
         {/* Placeholder fallback */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-muted/60 select-none">
           <BookOpen size={36} className="text-muted/50 mb-1.5" aria-hidden="true" />
-          <span className="text-xs font-serif text-muted">
+          <span className="text-[13px] font-serif text-muted">
             {block.alt || 'Hình ảnh tư liệu'}
           </span>
         </div>
@@ -248,7 +247,7 @@ function ImageBlockRenderer({ block }: { block: ImageBlock }) {
         )}
       </div>
       {block.caption && (
-        <figcaption className="px-4 py-2.5 text-center text-sm text-muted bg-paper/50 border-t border-line font-sans">
+        <figcaption className="px-4 py-2.5 text-center text-[13px] leading-5 text-muted bg-paper/50 border-t border-line font-sans">
           {block.caption}
         </figcaption>
       )}
