@@ -15,6 +15,7 @@ import { BlockRenderer, LegacyContent } from '@/components/content/BlockRenderer
 import { extractHeadingsFromContentJson, injectHeadingIds } from '@/lib/headings';
 import { TableOfContents } from '@/components/lessons/TableOfContents';
 import { LessonImage } from '@/components/lessons/LessonImage';
+import { LessonProgressControl } from '@/components/lessons/LessonProgressControl';
 import { Card } from '@/components/ui/Card';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -224,6 +225,7 @@ export default async function LessonPage({
                 <span>Quay lại danh sách bài học</span>
               </Button>
             </Link>
+            <LessonProgressControl lessonId={lesson.id} />
           </footer>
         </main>
 

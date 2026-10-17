@@ -93,3 +93,15 @@ export function optimizeCloudinaryUrl(url?: string | null, width = 640): string 
   return `${prefix}f_auto,q_auto,w_${width}/${rest}`;
 }
 
+/** Progress status mapping to friendly Vietnamese labels */
+export const PROGRESS_STATUS_LABELS: Record<string, string> = {
+  IN_PROGRESS: 'Đang học',
+  COMPLETED: 'Đã học',
+  NOT_STARTED: 'Chưa học',
+};
+
+export function formatProgressStatus(status?: string | null): string {
+  if (!status) return '';
+  return PROGRESS_STATUS_LABELS[status] ?? status;
+}
+

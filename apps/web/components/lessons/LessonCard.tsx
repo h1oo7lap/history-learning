@@ -9,6 +9,7 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDifficulty, formatGrade, optimizeCloudinaryUrl } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { LessonProgressBadge } from './LessonProgressBadge';
 
 export interface LessonCardProps {
   lesson: PublicLessonSummary;
@@ -101,15 +102,18 @@ export function LessonCard({ lesson, className }: LessonCardProps) {
             </div>
           )}
 
-          {/* Cuối thẻ: thời gian đọc + độ khó bằng chữ */}
-          <div className="pt-3 border-t border-line/50 flex items-center justify-between text-xs text-muted mt-auto">
-            <span className="inline-flex items-center gap-1 font-medium">
+          {/* Cuối thẻ: thời gian đọc + độ khó bằng chữ + tiến độ */}
+          <div className="pt-3 border-t border-line/50 flex items-center justify-between text-xs text-muted mt-auto gap-2">
+            <span className="inline-flex items-center gap-1 font-medium shrink-0">
               <Clock size={13} aria-hidden="true" />
               <span>{lesson.estimatedTime} phút</span>
             </span>
-            <Badge variant={badgeVariant} dot>
-              {difficultyLabel}
-            </Badge>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <LessonProgressBadge lessonId={lesson.id} />
+              <Badge variant={badgeVariant} dot>
+                {difficultyLabel}
+              </Badge>
+            </div>
           </div>
         </div>
       </Card>

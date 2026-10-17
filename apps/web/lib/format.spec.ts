@@ -8,6 +8,7 @@ import {
   formatDifficulty,
   formatGrade,
   optimizeCloudinaryUrl,
+  formatProgressStatus,
 } from './format';
 
 describe('format utilities', () => {
@@ -96,6 +97,20 @@ describe('format utilities', () => {
     it('leaves non-cloudinary URLs untouched', () => {
       const external = 'https://example.com/image.png';
       expect(optimizeCloudinaryUrl(external)).toBe(external);
+    });
+  });
+
+  describe('formatProgressStatus', () => {
+    it('maps IN_PROGRESS and COMPLETED to user-friendly Vietnamese labels', () => {
+      expect(formatProgressStatus('IN_PROGRESS')).toBe('Đang học');
+      expect(formatProgressStatus('COMPLETED')).toBe('Đã học');
+      expect(formatProgressStatus('NOT_STARTED')).toBe('Chưa học');
+    });
+
+    it('handles empty or unknown status gracefully', () => {
+      expect(formatProgressStatus(undefined)).toBe('');
+      expect(formatProgressStatus(null)).toBe('');
+      expect(formatProgressStatus('UNKNOWN')).toBe('UNKNOWN');
     });
   });
 });
