@@ -1,0 +1,118 @@
+import {
+  slugColumn,
+  statusColumn,
+  dateColumn,
+} from '@/components/admin-crud';
+import type { ColumnDef } from '@/components/admin-crud';
+import type { Lesson } from '@/features/admin/api';
+import { DifficultyBadge } from './DifficultyBadge';
+
+export const lessonTitleColumn: ColumnDef<Lesson> = {
+  key: 'title',
+  header: 'Bài học',
+  render: (item) => (
+    <div style={{ maxWidth: 300 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {item.thumbnail && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={item.thumbnail}
+            alt=""
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 6,
+              objectFit: 'cover',
+              flexShrink: 0,
+            }}
+          />
+        )}
+        <div>
+          <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.title}</div>
+          {item.summary && (
+            <div
+              style={{
+                color: 'var(--muted)',
+                fontSize: '0.8rem',
+                marginTop: '0.1rem',
+                maxWidth: 240,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {item.summary}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const difficultyColumn: ColumnDef<Lesson> = {
+  key: 'difficulty',
+  header: 'Độ khó',
+  render: (item) => <DifficultyBadge difficulty={item.difficulty} />,
+};
+
+export const gradeTagsColumn: ColumnDef<Lesson> = {
+  key: 'grades',
+  header: 'Lớp',
+  render: (item) => (
+    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+      {item.grades.length > 0 ? (
+        item.grades.slice(0, 3).map((g) => (
+          <span
+            key={g.gradeId}
+            style={{
+              padding: '0.1rem 0.4rem',
+              borderRadius: 4,
+              background: 'var(--surface-2)',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {g.grade.code || g.grade.name}
+          </span>
+        ))
+      ) : (
+        <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
+      )}
+      {item.grades.length > 3 && (
+        <span
+          style={{
+            padding: '0.1rem 0.4rem',
+            borderRadius: 4,
+            background: 'var(--surface-2)',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            color: 'var(--muted)',
+          }}
+        >
+          +{item.grades.length - 3}
+        </span>
+      )}
+    </div>
+  ),
+};
+
+export const timeColumn: ColumnDef<Lesson> = {
+  key: 'estimatedTime',
+  header: 'Thời gian',
+  nowrap: true,
+  render: (item) => (
+    <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>⏱ {item.estimatedTime} phút</span>
+  ),
+};
+
+export const lessonColumns: ColumnDef<Lesson>[] = [
+  lessonTitleColumn,
+  slugColumn<Lesson>(),
+  difficultyColumn,
+  gradeTagsColumn,
+  timeColumn,
+  statusColumn<Lesson>(),
+  dateColumn<Lesson>(),
+];
