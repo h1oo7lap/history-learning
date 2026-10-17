@@ -10,7 +10,7 @@ export type PaginationDto = z.infer<typeof PaginationSchema>;
 
 // ---- ID param ----
 export const IdParamSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().trim().min(1, 'ID không được để trống'),
 });
 export type IdParamDto = z.infer<typeof IdParamSchema>;
 

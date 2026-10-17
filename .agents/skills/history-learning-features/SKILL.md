@@ -27,9 +27,13 @@ Chỉ ghi "hệ thống phải hành xử thế nào". Trạng thái (đã có/c
 - Q9 `passed` = phần trăm ≥ `passScore`. Điểm và phần trăm tính ở server.
 - Q10 Xem lại kết quả chỉ sau khi đã nộp (`ATTEMPT_NOT_SUBMITTED`); lúc này mới có đáp án đúng và giải thích.
 - Q11 EXP/thẻ không thuộc phạm vi v1.
+- Q12 Chỉ làm được quiz khi người dùng đã COMPLETED bài học gắn với quiz đó; chưa thì 403 `LESSON_NOT_COMPLETED`. ADMIN được bỏ qua để xem thử.
+- Q13 `GET /api/quizzes` (đã đăng nhập) trả danh sách quiz kèm trạng thái mỗi quiz: LOCKED (chưa học xong bài), AVAILABLE, DONE (kèm điểm lần gần nhất). Mặc định lọc theo lớp của người dùng. Quiz LOCKED vẫn hiện, kèm bài cần học để mở khóa; không lộ câu hỏi.
+- Q14 Cho phép làm lại nhiều lần; kết quả hiển thị là lần nộp gần nhất.
 
 ## Tiến độ học
 - P1 `LessonProgress` duy nhất theo (userId, lessonId); ghi bằng upsert, lặp lại không đổi kết quả.
+- P3 Bắt đầu: `POST /api/lessons/:id/start` tạo hoặc giữ IN_PROGRESS, không bao giờ hạ COMPLETED. Hoàn thành: `POST /api/lessons/:id/complete`, `completedAt` chỉ ghi lần đầu, gọi lặp lại trả cùng kết quả. Chỉ bài PUBLISHED. `GET` tiến độ của tôi theo bài hoặc danh sách.
 - P2 Dashboard chỉ tổng hợp dữ liệu thật (bài đã học, điểm quiz gần nhất), không số liệu giả.
 
 ## AI hỏi đáp

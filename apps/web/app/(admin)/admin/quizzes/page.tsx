@@ -960,7 +960,7 @@ export default function AdminQuizzesPage() {
         entityLabel="Quiz"
         entityIcon="🧩"
         searchPlaceholder="Tìm quiz..."
-        createLabel="+ Tạo quiz"
+        createLabel="Tạo quiz"
         onCreate={resource.openCreate}
         renderActions={(item) => (
           <>

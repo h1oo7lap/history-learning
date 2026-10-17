@@ -15,3 +15,4 @@ export * from './schemas/lesson';
 export * from './schemas/quiz';
 export * from './schemas/gamification';
 export * from './schemas/ai';
+export * from './schemas/progress';
