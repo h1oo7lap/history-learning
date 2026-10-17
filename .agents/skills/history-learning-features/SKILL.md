@@ -29,6 +29,7 @@ Chỉ ghi "hệ thống phải hành xử thế nào". Trạng thái (đã có/c
 - Q11 EXP/thẻ không thuộc phạm vi v1.
 - Q12 Chỉ làm được quiz khi người dùng đã COMPLETED bài học gắn với quiz đó; chưa thì 403 `LESSON_NOT_COMPLETED`. ADMIN được bỏ qua để xem thử.
 - Q13 `GET /api/quizzes` (đã đăng nhập) trả danh sách quiz kèm trạng thái mỗi quiz: LOCKED (chưa học xong bài), AVAILABLE, DONE (kèm điểm lần gần nhất). Mặc định lọc theo lớp của người dùng. Quiz LOCKED vẫn hiện, kèm bài cần học để mở khóa; không lộ câu hỏi.
+- Q15 Quiz là khu riêng (tab "Quiz" trên navbar, `/quiz`), KHÔNG nhúng vào trang bài học. Trang bài học không hiện khối quiz. Vào làm quiz chỉ qua danh sách ở tab Quiz; quiz LOCKED hiện kèm đường dẫn tới bài cần học.
 - Q14 Cho phép làm lại nhiều lần; kết quả hiển thị là lần nộp gần nhất.
 
 ## Tiến độ học
