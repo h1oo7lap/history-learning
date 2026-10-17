@@ -1,41 +1,48 @@
 ---
 name: history-learning-dev
-description: Quy trình và quy tắc an toàn cho dự án History Learning (monorepo NestJS + Next.js). Dùng khi làm tính năng mới, thay đổi lớn, đụng schema/kiến trúc, hoặc cần báo cáo đầy đủ. Với sửa lỗi nhỏ thì chỉ áp dụng mục 'Sửa lỗi nhỏ'.
+description: Cách làm việc và quy tắc an toàn chung cho dự án History Learning (monorepo). Dùng cho mọi việc code: tính năng mới, đổi lớn, đụng schema/kiến trúc, hoặc sửa lỗi nhỏ (xem BƯỚC 0).
 ---
-# Quy trình chung
+# Cách làm việc
 
-## Cấu trúc repo
-`apps/api` (NestJS 12 + Prisma 7), `apps/web` (Next.js 16), `packages/shared` (Zod, enum, hằng số). Schema Prisma gốc: `apps/api/prisma/schema.prisma`. Tài liệu: `SPEC.md`. Khi làm backend đọc skill history-learning-backend; khi làm giao diện đọc history-learning-frontend; khi làm tính năng còn thiếu đọc history-learning-features.
+## BƯỚC 0: xác định cỡ việc (làm trước mọi thứ khác)
+- **Nhỏ** = yêu cầu nêu rõ thay đổi cụ thể (đổi màu, bỏ/ẩn thành phần, sửa chữ, sửa lỗi, 1-4 file, không đổi schema/API). Làm NGAY: grep tìm file, sửa, chạy lint+typecheck của phần đó, báo 2-3 dòng. KHÔNG đọc references, KHÔNG lập kế hoạch, KHÔNG chụp ảnh, KHÔNG chạy audit/build/e2e, KHÔNG báo cáo dài, KHÔNG đọc thêm skill khác.
+- **Lớn** = tính năng mới, logic nghiệp vụ, đổi schema/API/kiến trúc, nhiều trang. Theo mục "Việc lớn".
+- Nghi ngờ thì coi là nhỏ. Người dùng nói "chỉ đổi X" nghĩa là chỉ đổi X, không dọn thêm, không refactor, không "tiện tay".
+- Chỉ làm đúng điều được yêu cầu: nếu thấy việc khác đáng sửa, ghi một dòng ở cuối báo cáo, không tự làm.
 
-## Sửa lỗi nhỏ (ưu tiên, làm gọn)
-Áp dụng khi: sửa lỗi, lỗi lint/type/CI, đổi chữ, chỉnh style nhỏ, 1-3 file, không đổi schema hay API công khai.
-- Làm thẳng: tìm nguyên nhân, sửa, chạy đúng lệnh kiểm tra liên quan (lint/typecheck hoặc test của phần đó). KHÔNG cần đề xuất phương án, KHÔNG chờ duyệt, KHÔNG chạy toàn bộ bộ kiểm tra.
-- Sửa nguyên nhân gốc, không tắt rule/bỏ test để qua.
-- Báo cáo 2-3 dòng: lỗi do đâu, đã sửa gì (file), đã chạy lệnh gì.
-- Chỉ dừng hỏi khi cách sửa đúng cần đổi schema, đổi hành vi API, hoặc có nhiều hướng với hậu quả khác nhau.
-Các quy tắc an toàn bên dưới vẫn áp dụng.
+Tài liệu dự án: `SPEC.md` (muốn gì), `PROGRESS.md` (đang có gì). Skill này không ghi trạng thái. Phiên bản thư viện lấy từ `package.json`, không theo trí nhớ. Backend: skill history-learning-backend. Giao diện: history-learning-frontend. Quy tắc nghiệp vụ: history-learning-features.
 
-## Cách làm một việc lớn (tính năng mới, đổi cấu trúc)
-1. **Đọc trước**: file liên quan và một module tương tự đã có (mẫu: lessons, quizzes). Liệt kê file sẽ tạo/sửa.
-2. **Với tính năng mới hoặc thay đổi schema/kiến trúc**: trình bày phương án ngắn (dữ liệu, API, màn hình, rủi ro) rồi DỪNG chờ duyệt. Việc nhỏ (sửa lỗi, đổi chữ, lint) thì làm luôn.
-3. Làm đúng phạm vi được giao. Không sửa file ngoài phạm vi, không refactor tiện tay, không đổi phiên bản thư viện.
-4. Test viết cùng hoặc trước code. Không xóa/bỏ qua test cũ cho pass.
-5. Kiểm tra rồi mới báo xong.
+## Việc nhỏ: chi tiết
+- Làm thẳng: tìm nguyên nhân gốc, sửa, chạy đúng lệnh kiểm tra của phần đó. Không đề xuất phương án, không chạy toàn bộ bộ kiểm tra.
+- Không tắt rule, không bỏ test để qua.
+- Báo cáo 2-3 dòng: nguyên nhân, file đã sửa, lệnh đã chạy.
+- Chỉ dừng hỏi khi cách sửa đúng cần đổi schema, đổi hành vi API, hoặc có nhiều hướng hậu quả khác nhau.
+
+## Việc lớn: giữ quyền kiểm soát cho người dùng
+Mỗi lần giao việc chỉ làm MỘT lượt (một lát cắt có thể review và commit riêng). Không làm lấn sang lượt sau.
+1. **Đọc trước**: file liên quan và một module tương tự đã có. Liệt kê file sẽ tạo/sửa.
+2. **Dừng chờ duyệt** nếu là tính năng có logic nghiệp vụ, đổi schema/API/kiến trúc. Kế hoạch gồm: dữ liệu, API, các quy tắc nghiệp vụ sẽ cài (đánh số theo skill features), rủi ro. Giao diện thuần thì làm thẳng.
+3. **Test trước hoặc cùng code**: mỗi quy tắc nghiệp vụ trong skill features có ít nhất một test mang mã quy tắc (ví dụ `Q4: submit lần hai trả kết quả cũ`).
+4. Đúng phạm vi: không sửa file ngoài phạm vi, không refactor tiện tay, không đổi phiên bản thư viện, không đổi hành vi module khác.
+5. Kiểm tra rồi mới báo xong; không khẳng định "chạy được" khi chưa chạy.
 
 ## Quy tắc an toàn
-- Không commit, không push, không tạo/đổi nhánh nếu người dùng chưa yêu cầu.
-- Không commit `.env`, khóa API, mật khẩu thật. Giá trị mẫu chỉ ở `.env.example`.
+- Không commit, push, tạo/đổi nhánh khi chưa được yêu cầu.
+- Không commit `.env`, khóa API, mật khẩu. Giá trị mẫu chỉ ở `.env.example`.
 - Không dùng lệnh phá hủy (`prisma migrate reset`, `db push --force-reset`, `rm -rf`, `git reset --hard`) khi chưa hỏi.
-- Không thêm fallback che lỗi cấu hình (ví dụ URL DB mặc định trong `prisma.config.ts`); thiếu biến môi trường phải báo lỗi rõ.
-- Không đặt file rác ở gốc repo (schema.prisma, init.sql, thư mục lạ).
+- Không thêm fallback che lỗi cấu hình; thiếu biến môi trường phải báo lỗi rõ.
+- Không đặt file rác ở gốc repo.
 
-## Kiểm tra trước khi báo xong
-`pnpm --filter @history-learning/shared build` · `pnpm typecheck` · `pnpm lint` · `pnpm --filter api test` · `pnpm --filter api test:e2e` · `pnpm --filter web build`.
-CI (GitHub Actions) chạy đúng các bước này; nếu CI đỏ, đọc log thật rồi sửa nguyên nhân, không tắt bước kiểm tra.
+## Kiểm tra: tương xứng với thay đổi
+- Sửa nhỏ: lint/typecheck/test của phần đã sửa.
+- Backend: build `shared`, `pnpm --filter api test`, và e2e của module liên quan (chạy toàn bộ e2e trước khi báo xong lượt).
+- Frontend: `pnpm --filter web lint`, `typecheck`, test liên quan; `build` khi đổi route/layout.
+- Đổi schema hoặc kiến trúc: toàn bộ lệnh như CI (shared build, typecheck, lint, api test, api test:e2e, web build).
+CI đỏ: đọc log thật, sửa nguyên nhân, không tắt bước kiểm tra.
 
 ## Mẫu báo cáo (việc lớn)
-- Đã làm gì (1-3 dòng).
-- File đã đổi.
-- Lệnh đã chạy và kết quả (số test pass/fail).
-- Phần chưa làm, rủi ro, việc cần người quyết định.
-Không khẳng định "đã hoạt động" nếu chưa chạy thật.
+1. Đã làm gì (1-3 dòng).
+2. File đã đổi (`git diff --stat`). File ngoài kế hoạch phải nêu lý do.
+3. Bảng quy tắc nghiệp vụ → tên test (nếu có).
+4. Lệnh đã chạy và kết quả thật (số test).
+5. Chưa làm, rủi ro, điều cần người quyết định.

@@ -1,12 +1,12 @@
 ---
 name: history-learning-frontend
-description: Thiết kế và code giao diện (Next.js 16, Tailwind 4, TanStack Query) cho History Learning với phong cách "trang sách sử" nhất quán. Dùng MỖI KHI tạo/sửa trang, component, style, layout, form, hoặc khi giao diện xấu, lệch, nhìn như template AI. Frontend, UI, UX, CSS, Tailwind, responsive, đẹp hơn.
+description: Thiết kế và code giao diện (Next.js, Tailwind, TanStack Query; phiên bản theo package.json) cho History Learning với phong cách "trang sách sử" nhất quán. Dùng khi tạo mới hoặc thiết kế lại trang/component, hoặc khi giao diện xấu, lệch, nhìn như template AI. Chỉnh nhỏ một chỗ (đổi màu, ẩn thành phần) thì chỉ cần mục "Việc nhỏ". Frontend, UI, UX, CSS, Tailwind, responsive, đẹp hơn.
 ---
 # Frontend History Learning
 
 Mục tiêu: giao diện cho học sinh lớp 4-12 học lịch sử. Cảm giác: sách sử được làm đẹp và hiện đại, ấm, dễ đọc, đáng tin. KHÔNG phải landing page SaaS.
 
-**Sửa lỗi nhỏ / chỉnh style 1-2 file:** chỉ cần tuân thủ "Quy tắc cứng", chạy lint + typecheck, báo 2-3 dòng. Bỏ qua phần "Cách làm một trang", chụp ảnh và báo cáo dài.
+**Việc nhỏ (đổi màu/chữ/bố cục một chỗ, ẩn/bỏ thành phần ở một trang, sửa lỗi hiển thị):** chỉ tuân thủ "Quy tắc cứng" cho phần đang sửa (ví dụ đổi màu thì dùng token, không hex). Không đọc references, không chụp ảnh, không chạy audit/build; chỉ `lint` + `typecheck` rồi báo 2-3 dòng. Phần "Cách làm một trang" chỉ dành cho việc LỚN (trang/component mới hoặc thiết kế lại).
 
 Đọc thêm khi cần (không đọc hết mỗi lần):
 - `references/design-system.md`: token màu, font, thang chữ, khối `@theme`.
@@ -16,10 +16,8 @@ Mục tiêu: giao diện cho học sinh lớp 4-12 học lịch sử. Cảm giá
 - `references/review-checklist.md`: tự kiểm tra trước khi báo xong.
 - `scripts/audit-ui.mjs`: quét lỗi phổ biến, chạy mọi hệ điều hành: `node .agents/skills/history-learning-frontend/scripts/audit-ui.mjs <file hoặc thư mục>`.
 
-## Trạng thái chuyển đổi (CẬP NHẬT dòng này khi xong một bước)
-Đã xong: font + `@theme` token; bộ `components/ui`; Navbar/Footer/layout dùng chung; trang `/lessons` (kèm lọc lớp/độ khó/tìm kiếm) + `LessonCard`; đọc bài `/lessons/[slug]`; trang chủ `app/(home)`.
-Còn lại, theo thứ tự: đăng nhập/đăng ký/quên mật khẩu → onboarding chọn lớp + profile → dashboard → admin → dọn `globals.css` (mục tiêu < 200 dòng).
-Trang chưa chuyển vẫn còn class cũ và tông tím xanh; đó là việc cần làm, không phải mẫu để bắt chước. Trang mẫu tham chiếu: `/lessons` và `components/ui/*`.
+## Trang mẫu
+Trạng thái chuyển đổi các trang xem `PROGRESS.md`. Trang chưa chuyển vẫn còn class cũ, đó là việc cần làm, không phải mẫu. Trang mẫu tham chiếu: `/lessons` và `components/ui/*`.
 
 ## Hướng thiết kế
 - Nền giấy ấm, chữ mực, MỘT màu nhấn đỏ son dùng tiết chế. Vàng đồng chỉ cho viền/đường kẻ/họa tiết; chữ màu đồng dùng `bronze-ink`.
@@ -50,5 +48,5 @@ Làm thẳng, không cần dừng chờ duyệt kế hoạch (người dùng duy
 3. Viết bằng Tailwind + token, đủ 3 trạng thái dữ liệu, 1-2 chi tiết bản sắc nếu là trang nội dung.
 4. Chạy `audit-ui.mjs` trên file đã sửa; `pnpm --filter web lint`, `typecheck`, `build`, `test`.
 5. Chụp 360/768/1440, TỰ NHÌN ẢNH theo checklist, sửa rồi mới báo.
-6. Xóa class cũ trong `globals.css` thuộc phần đã chuyển (grep xác nhận). Cập nhật dòng "Trạng thái chuyển đổi" ở trên. Không commit.
+6. Xóa class cũ trong `globals.css` thuộc phần đã chuyển (grep xác nhận). Ghi trang đã chuyển vào báo cáo (người dùng cập nhật `PROGRESS.md`). Không commit.
 Báo cáo: file đổi, ảnh chụp, kết quả lệnh, điều chưa làm.

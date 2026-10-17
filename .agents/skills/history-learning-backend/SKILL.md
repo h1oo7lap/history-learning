@@ -1,6 +1,6 @@
 ---
 name: history-learning-backend
-description: Quy ước backend, dữ liệu và test cho History Learning (NestJS 12, Prisma 7, Zod, Postgres). Dùng khi thêm/sửa module API, schema Zod trong packages/shared, migration Prisma hoặc test e2e.
+description: Quy ước backend, dữ liệu và test cho History Learning (NestJS, Prisma, Zod, Postgres; phiên bản theo package.json). Dùng khi thêm/sửa module API, schema Zod trong packages/shared, migration Prisma hoặc test e2e.
 ---
 # Quy ước backend (đọc trước khi sửa apps/api hoặc packages/shared)
 
@@ -15,13 +15,14 @@ description: Quy ước backend, dữ liệu và test cho History Learning (Nest
 - Không xóa cứng bản ghi có FK Restrict (lesson, topic, period...). "Xóa" = đổi status (ARCHIVED/INACTIVE).
 - Quan hệ nhiều-nhiều: kiểm tra id tồn tại trước khi ghi (trả 400 VALIDATION_ERROR, không để lỗi FK thành 500). Thay thế toàn bộ tập quan hệ trong một lần ghi.
 - Không tin client: sanitize HTML (`sanitizeContent`), kiểm tra URL (https, Cloudinary của dự án), video chỉ lưu youtubeId.
-- Bài học: `contentJson` là nguồn chính khi có; `content` do server sinh (AI/search đọc `content`). Quy tắc publish: có title, có nội dung chữ, ≥1 lớp.
+- Nội dung có cấu trúc phải theo schema chuẩn và được validate ở server. Quy tắc cụ thể: skill history-learning-features.
 - Không sửa `apps/api/prisma/schema.prisma` khi chưa được duyệt. Migration: `prisma migrate dev --create-only`, đọc SQL, rồi mới áp dụng. Migration `search_extensions` là thủ công: nếu Prisma báo drift thì DỪNG và hỏi, không reset DB.
-- Mọi thao tác ghi cho phần thưởng/tiến độ phải idempotent (upsert hoặc createMany skipDuplicates), không bắt lỗi unique bên trong transaction Postgres.
+- Thao tác ghi có thể bị gọi lặp (nộp bài, tiến độ) phải idempotent: upsert/createMany skipDuplicates, hoặc "giành quyền" nguyên tử bằng `updateMany` có điều kiện. Phần giành quyền và phần ghi dữ liệu phụ thuộc phải CÙNG một `$transaction`. Không bắt lỗi unique bên trong transaction Postgres.
 
 ## Test
 - E2E theo mẫu `test/topics.e2e-spec.ts` (`createTestApp`, `clearAuthTables`, cookie admin/user).
 - Không TRUNCATE bảng `grades`/`education_levels` (test khác dùng dữ liệu seed); tạo dữ liệu riêng bằng upsert với mã riêng.
+- Test nghiệp vụ gắn mã quy tắc trong tên test (ví dụ `Q5: ...`).
 - Mỗi tính năng cần: trường hợp thành công, validation sai (400), 401 khi chưa đăng nhập, 403 khi không phải admin, 404, xung đột (409) nếu có.
 - Không xóa hay bỏ qua test cũ để cho pass.
 

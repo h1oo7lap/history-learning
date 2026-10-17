@@ -186,18 +186,18 @@ h6 {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-700) 100%);
-  color: #fff;
-  box-shadow: 0 2px 8px rgb(90 114 247 / 0.35);
+  background: var(--color-seal);
+  color: var(--color-paper);
+  box-shadow: var(--shadow-card);
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgb(90 114 247 / 0.45);
+  background: var(--color-seal-dark);
+  color: var(--color-paper);
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
+  background: var(--color-seal-dark);
 }
 
 .btn-ghost {
