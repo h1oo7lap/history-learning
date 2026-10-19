@@ -27,6 +27,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Bảng điều khiển', authRequired: true },
   { href: '/lessons', label: 'Bài học' },
+  { href: '/quiz', label: 'Quiz', authRequired: true },
 ];
 
 export function Navbar() {
