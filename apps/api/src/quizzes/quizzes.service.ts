@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { PublishStatus, ProgressStatus, QuestionType, PAGINATION } from '@history-learning/shared';
+import {
+  PublishStatus,
+  ProgressStatus,
+  QuestionType,
+  PAGINATION,
+  validateQuizQuestions,
+} from '@history-learning/shared';
 import type {
   CreateQuizDto,
   UpdateQuizDto,
@@ -69,6 +75,14 @@ export class QuizzesService {
   }
 
   async adminCreate(dto: CreateQuizDto) {
+    if (dto.status === PublishStatus.PUBLISHED) {
+      throw new AppError(
+        ErrorCodes.QUIZ_NO_QUESTIONS,
+        422,
+        'Quiz phải có ít nhất 1 câu hỏi hợp lệ để xuất bản',
+      );
+    }
+
     const lesson = await this.prisma.lesson.findUnique({ where: { id: dto.lessonId } });
     if (!lesson) throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Bai hoc khong ton tai');
 
@@ -90,6 +104,11 @@ export class QuizzesService {
 
   async adminUpdate(id: string, dto: UpdateQuizDto) {
     await this.ensureExists(id);
+
+    if (dto.status === PublishStatus.PUBLISHED) {
+      await this.validatePublish(id);
+    }
+
     return this.prisma.quiz.update({
       where: { id },
       data: {
@@ -105,35 +124,100 @@ export class QuizzesService {
 
   async adminDelete(id: string) {
     await this.ensureExists(id);
-    await this.prisma.quiz.delete({ where: { id } });
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const attemptCount = tx.quizAttempt?.count
+          ? await tx.quizAttempt.count({ where: { quizId: id } })
+          : 0;
+        if (attemptCount > 0) {
+          throw new AppError(
+            ErrorCodes.QUIZ_HAS_ATTEMPTS,
+            409,
+            'Không thể xóa quiz đã có lượt làm bài',
+          );
+        }
+        await tx.quiz.delete({ where: { id } });
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2003') {
+        throw new AppError(
+          ErrorCodes.QUIZ_HAS_ATTEMPTS,
+          409,
+          'Không thể xóa quiz đã có lượt làm bài',
+        );
+      }
+      throw err;
+    }
+  }
+
+  async adminPublish(id: string) {
+    await this.ensureExists(id);
+    await this.validatePublish(id);
+    return this.prisma.quiz.update({
+      where: { id },
+      data: { status: PublishStatus.PUBLISHED },
+      include: QUIZ_INCLUDE,
+    });
   }
 
   async adminSetQuestions(quizId: string, questions: QuestionDto[]) {
     await this.ensureExists(quizId);
-    return this.prisma.$transaction(async (tx) => {
-      await tx.question.deleteMany({ where: { quizId } });
-      for (let qi = 0; qi < questions.length; qi++) {
-        const q = questions[qi];
-        await tx.question.create({
-          data: {
-            quizId,
-            content: q.content,
-            type: q.type,
-            points: q.points ?? 1,
-            explanation: q.explanation ?? null,
-            displayOrder: q.displayOrder ?? qi,
-            answers: {
-              create: q.answers.map((a, ai) => ({
-                content: a.content,
-                isCorrect: a.isCorrect,
-                displayOrder: a.displayOrder ?? ai,
-              })),
+
+    const valResult = validateQuizQuestions(questions);
+    if (!valResult.success) {
+      throw new AppError(
+        ErrorCodes.VALIDATION_ERROR,
+        400,
+        valResult.errors.join('; '),
+      );
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const attemptCount = tx.quizAttempt?.count
+          ? await tx.quizAttempt.count({ where: { quizId } })
+          : 0;
+        if (attemptCount > 0) {
+          throw new AppError(
+            ErrorCodes.QUIZ_HAS_ATTEMPTS,
+            409,
+            'Không thể thay đổi câu hỏi của quiz đã có lượt làm bài',
+          );
+        }
+
+        await tx.question.deleteMany({ where: { quizId } });
+        for (let qi = 0; qi < questions.length; qi++) {
+          const q = questions[qi]!;
+          await tx.question.create({
+            data: {
+              quizId,
+              content: q.content,
+              type: q.type,
+              points: q.points ?? 1,
+              explanation: q.explanation ?? null,
+              displayOrder: q.displayOrder ?? qi,
+              answers: {
+                create: q.answers.map((a, ai) => ({
+                  content: a.content,
+                  isCorrect: a.isCorrect,
+                  displayOrder: a.displayOrder ?? ai,
+                })),
+              },
             },
-          },
-        });
+          });
+        }
+        return tx.quiz.findUnique({ where: { id: quizId }, include: QUIZ_INCLUDE });
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2003') {
+        throw new AppError(
+          ErrorCodes.QUIZ_HAS_ATTEMPTS,
+          409,
+          'Không thể thay đổi câu hỏi của quiz đã có lượt làm bài',
+        );
       }
-      return tx.quiz.findUnique({ where: { id: quizId }, include: QUIZ_INCLUDE });
-    });
+      throw err;
+    }
   }
 
   async findPublishedByLessonId(lessonId: string) {
@@ -143,6 +227,38 @@ export class QuizzesService {
     });
     if (!quiz) throw new AppError(ErrorCodes.QUIZ_NOT_FOUND, 404, 'Quiz khong ton tai hoac chua xuat ban');
     return quiz;
+  }
+
+  private async validatePublish(quizId: string) {
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        questions: {
+          include: { answers: true },
+          orderBy: { displayOrder: 'asc' },
+        },
+      },
+    });
+    if (!quiz) {
+      throw new AppError(ErrorCodes.QUIZ_NOT_FOUND, 404, 'Quiz khong ton tai');
+    }
+
+    if (!quiz.questions || quiz.questions.length === 0) {
+      throw new AppError(
+        ErrorCodes.QUIZ_NO_QUESTIONS,
+        422,
+        'Quiz phải có ít nhất 1 câu hỏi hợp lệ để xuất bản',
+      );
+    }
+
+    const valResult = validateQuizQuestions(quiz.questions);
+    if (!valResult.success) {
+      throw new AppError(
+        ErrorCodes.QUIZ_NO_QUESTIONS,
+        422,
+        `Quiz chưa thể xuất bản vì câu hỏi không hợp lệ: ${valResult.errors.join('; ')}`,
+      );
+    }
   }
 
   private async ensureExists(id: string) {

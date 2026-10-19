@@ -15,6 +15,7 @@ describe('AdminQuizzesController', () => {
       adminUpdate: vi.fn(),
       adminDelete: vi.fn(),
       adminSetQuestions: vi.fn(),
+      adminPublish: vi.fn(),
     } as any;
     controller = new AdminQuizzesController(service);
   });
@@ -94,6 +95,16 @@ describe('AdminQuizzesController', () => {
     const result = await controller.setQuestions({ id: 'q-1' }, { questions });
 
     expect(service.adminSetQuestions).toHaveBeenCalledWith('q-1', questions);
+    expect(result).toBe(mockResult);
+  });
+
+  it('Q-ADMIN-PUB: publish calls service.adminPublish', async () => {
+    const mockResult = { id: 'q-1', status: PublishStatus.PUBLISHED };
+    vi.mocked(service.adminPublish).mockResolvedValue(mockResult as any);
+
+    const result = await controller.publish({ id: 'q-1' });
+
+    expect(service.adminPublish).toHaveBeenCalledWith('q-1');
     expect(result).toBe(mockResult);
   });
 });

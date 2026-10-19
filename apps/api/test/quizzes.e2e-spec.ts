@@ -1152,4 +1152,275 @@ describe('Quizzes (e2e)', () => {
       expect(res.body.data.attemptId).toBe(studentAttemptId);
     });
   });
+
+  // =========================================================================
+  // Admin Quizzes Operations
+  // =========================================================================
+  describe('Admin Quizzes (admin operations)', () => {
+    let emptyQuiz: any;
+
+    beforeEach(async () => {
+      const emptyLesson = await prisma.lesson.create({
+        data: {
+          title: 'Bài học cho Quiz Rỗng ' + Date.now(),
+          slug: 'bai-hoc-quiz-rong-' + Date.now(),
+          content: '<p>Nội dung</p>',
+          status: PublishStatus.DRAFT,
+        },
+      });
+
+      emptyQuiz = await prisma.quiz.create({
+        data: {
+          lessonId: emptyLesson.id,
+          title: 'Quiz Bản Nháp Chưa Có Câu Hỏi',
+          description: 'Mô tả quiz',
+          passScore: 60,
+          status: PublishStatus.DRAFT,
+        },
+      });
+    });
+
+    // 1. Q-ADMIN-ATTEMPTS: PUT /questions & DELETE bị chặn 409 khi có attempt
+    it('Q-ADMIN-ATTEMPTS: PUT /api/admin/quizzes/:id/questions trả 409 QUIZ_HAS_ATTEMPTS khi quiz đã có lượt làm bài', async () => {
+      await prisma.quizAttempt.create({
+        data: {
+          userId: studentUser.id,
+          quizId: publishedQuiz.id,
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${publishedQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Câu hỏi mới thay thế?',
+              type: QuestionType.SINGLE_CHOICE,
+              points: 1,
+              answers: [
+                { content: 'A', isCorrect: true, displayOrder: 0 },
+                { content: 'B', isCorrect: false, displayOrder: 1 },
+              ],
+            },
+          ],
+        })
+        .expect(409);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('QUIZ_HAS_ATTEMPTS');
+    });
+
+    it('Q-ADMIN-ATTEMPTS: DELETE /api/admin/quizzes/:id trả 409 QUIZ_HAS_ATTEMPTS khi quiz đã có lượt làm bài', async () => {
+      await prisma.quizAttempt.create({
+        data: {
+          userId: studentUser.id,
+          quizId: publishedQuiz.id,
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .delete(`/api/admin/quizzes/${publishedQuiz.id}`)
+        .set('Cookie', adminCookie)
+        .expect(409);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('QUIZ_HAS_ATTEMPTS');
+    });
+
+    it('Q-ADMIN-ATTEMPTS: PATCH /api/admin/quizzes/:id cho phép sửa tiêu đề, mô tả, passScore, timeLimit khi quiz đã có lượt làm bài', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/admin/quizzes/${publishedQuiz.id}`)
+        .set('Cookie', adminCookie)
+        .send({
+          title: 'Tiêu đề Bạch Đằng cập nhật',
+          passScore: 75,
+          timeLimit: 600,
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.title).toBe('Tiêu đề Bạch Đằng cập nhật');
+      expect(res.body.data.passScore).toBe(75);
+      expect(res.body.data.timeLimit).toBe(600);
+    });
+
+    // 2. Validate theo loại câu hỏi
+    it('Q-ADMIN-VAL-SINGLE: PUT /api/admin/quizzes/:id/questions trả 400 khi câu hỏi SINGLE_CHOICE không có đúng 1 đáp án đúng', async () => {
+      const res = await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${emptyQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Câu hỏi một lựa chọn nhưng có 2 đáp án đúng?',
+              type: QuestionType.SINGLE_CHOICE,
+              points: 1,
+              answers: [
+                { content: 'A', isCorrect: true, displayOrder: 0 },
+                { content: 'B', isCorrect: true, displayOrder: 1 },
+              ],
+            },
+          ],
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('VALIDATION_ERROR');
+    });
+
+    it('Q-ADMIN-VAL-TF: PUT /api/admin/quizzes/:id/questions trả 400 khi câu hỏi TRUE_FALSE không có đúng 2 đáp án hoặc không có 1 đáp án đúng', async () => {
+      // 3 answers
+      const res3 = await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${emptyQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Câu hỏi Đúng/Sai nhưng có 3 đáp án?',
+              type: QuestionType.TRUE_FALSE,
+              points: 1,
+              answers: [
+                { content: 'Đúng', isCorrect: true, displayOrder: 0 },
+                { content: 'Sai', isCorrect: false, displayOrder: 1 },
+                { content: 'Không biết', isCorrect: false, displayOrder: 2 },
+              ],
+            },
+          ],
+        })
+        .expect(400);
+
+      expect(res3.body.success).toBe(false);
+      expect(res3.body.errorCode).toBe('VALIDATION_ERROR');
+
+      // 2 answers but 0 correct
+      const res0 = await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${emptyQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Câu hỏi Đúng/Sai nhưng 0 đáp án đúng?',
+              type: QuestionType.TRUE_FALSE,
+              points: 1,
+              answers: [
+                { content: 'Đúng', isCorrect: false, displayOrder: 0 },
+                { content: 'Sai', isCorrect: false, displayOrder: 1 },
+              ],
+            },
+          ],
+        })
+        .expect(400);
+
+      expect(res0.body.success).toBe(false);
+      expect(res0.body.errorCode).toBe('VALIDATION_ERROR');
+    });
+
+    it('Q-ADMIN-VAL-MULTI: PUT /api/admin/quizzes/:id/questions trả 400 khi câu hỏi MULTIPLE_CHOICE có 0 đáp án đúng', async () => {
+      const res = await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${emptyQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Câu hỏi nhiều lựa chọn nhưng 0 đáp án đúng?',
+              type: QuestionType.MULTIPLE_CHOICE,
+              points: 2,
+              answers: [
+                { content: 'A', isCorrect: false, displayOrder: 0 },
+                { content: 'B', isCorrect: false, displayOrder: 1 },
+                { content: 'C', isCorrect: false, displayOrder: 2 },
+              ],
+            },
+          ],
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('VALIDATION_ERROR');
+    });
+
+    it('Q-ADMIN-VAL-LIMITS: PUT /api/admin/quizzes/:id/questions trả 400 khi câu hỏi có dưới 2 hoặc trên 6 đáp án', async () => {
+      const res1 = await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${emptyQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Chỉ có 1 đáp án?',
+              type: QuestionType.SINGLE_CHOICE,
+              points: 1,
+              answers: [{ content: 'A', isCorrect: true, displayOrder: 0 }],
+            },
+          ],
+        })
+        .expect(400);
+
+      expect(res1.body.success).toBe(false);
+      expect(res1.body.errorCode).toBe('VALIDATION_ERROR');
+    });
+
+    // 3. Publish rule
+    it('Q-ADMIN-PUB: PATCH /api/admin/quizzes/:id với status PUBLISHED trả 422 QUIZ_NO_QUESTIONS khi quiz chưa có câu hỏi', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/admin/quizzes/${emptyQuiz.id}`)
+        .set('Cookie', adminCookie)
+        .send({ status: PublishStatus.PUBLISHED })
+        .expect(422);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('QUIZ_NO_QUESTIONS');
+    });
+
+    it('Q-ADMIN-PUB: POST /api/admin/quizzes/:id/publish trả 422 QUIZ_NO_QUESTIONS khi quiz chưa có câu hỏi', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/admin/quizzes/${emptyQuiz.id}/publish`)
+        .set('Cookie', adminCookie)
+        .expect(422);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('QUIZ_NO_QUESTIONS');
+    });
+
+    it('Q-ADMIN-PUB: PATCH /api/admin/quizzes/:id cho phép đổi status từ PUBLISHED về DRAFT mà không cần validate câu hỏi', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/admin/quizzes/${emptyQuiz.id}`)
+        .set('Cookie', adminCookie)
+        .send({ status: PublishStatus.DRAFT })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe(PublishStatus.DRAFT);
+    });
+
+    it('Q-ADMIN-PUB: POST /api/admin/quizzes/:id/publish thành công 200 khi quiz đã có câu hỏi hợp lệ', async () => {
+      // 1. Thêm câu hỏi hợp lệ
+      await request(app.getHttpServer())
+        .put(`/api/admin/quizzes/${emptyQuiz.id}/questions`)
+        .set('Cookie', adminCookie)
+        .send({
+          questions: [
+            {
+              content: 'Ngô Quyền lãnh đạo chiến thắng Bạch Đằng năm nào?',
+              type: QuestionType.SINGLE_CHOICE,
+              points: 1,
+              answers: [
+                { content: '938', isCorrect: true, displayOrder: 0 },
+                { content: '1077', isCorrect: false, displayOrder: 1 },
+              ],
+            },
+          ],
+        })
+        .expect(200);
+
+      // 2. Publish thành công
+      const res = await request(app.getHttpServer())
+        .post(`/api/admin/quizzes/${emptyQuiz.id}/publish`)
+        .set('Cookie', adminCookie)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe(PublishStatus.PUBLISHED);
+    });
+  });
 });

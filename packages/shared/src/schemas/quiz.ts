@@ -3,21 +3,80 @@ import { QuestionType, PublishStatus } from '../enums';
 import { QUIZ } from '../constants';
 
 export const AnswerSchema = z.object({
-  content: z.string().min(1),
+  content: z.string().min(1, 'Nội dung đáp án không được để trống'),
   isCorrect: z.boolean(),
   displayOrder: z.number().int().default(0),
 });
 export type AnswerDto = z.infer<typeof AnswerSchema>;
 
-export const QuestionSchema = z.object({
-  content: z.string().min(1),
-  type: z.nativeEnum(QuestionType),
-  points: z.number().int().positive().default(1),
-  explanation: z.string().optional().nullable(),
-  displayOrder: z.number().int().default(0),
-  answers: z.array(AnswerSchema).min(QUIZ.ANSWERS_MIN).max(QUIZ.ANSWERS_MAX),
-});
+export const QuestionSchema = z
+  .object({
+    content: z.string().min(1, 'Nội dung câu hỏi không được để trống'),
+    type: z.nativeEnum(QuestionType),
+    points: z.number().int().positive().default(1),
+    explanation: z.string().optional().nullable(),
+    displayOrder: z.number().int().default(0),
+    answers: z
+      .array(AnswerSchema)
+      .min(QUIZ.ANSWERS_MIN, `Mỗi câu hỏi phải có từ ${QUIZ.ANSWERS_MIN} đến ${QUIZ.ANSWERS_MAX} đáp án`)
+      .max(QUIZ.ANSWERS_MAX, `Mỗi câu hỏi phải có từ ${QUIZ.ANSWERS_MIN} đến ${QUIZ.ANSWERS_MAX} đáp án`),
+  })
+  .superRefine((q, ctx) => {
+    const correctCount = q.answers.filter((a) => a.isCorrect).length;
+
+    if (q.type === QuestionType.SINGLE_CHOICE) {
+      if (correctCount !== 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Câu hỏi một lựa chọn (SINGLE_CHOICE) phải có đúng 1 đáp án đúng',
+          path: ['answers'],
+        });
+      }
+    } else if (q.type === QuestionType.TRUE_FALSE) {
+      if (q.answers.length !== 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Câu hỏi Đúng/Sai (TRUE_FALSE) phải có đúng 2 đáp án',
+          path: ['answers'],
+        });
+      }
+      if (correctCount !== 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Câu hỏi Đúng/Sai (TRUE_FALSE) phải có đúng 1 đáp án đúng',
+          path: ['answers'],
+        });
+      }
+    } else if (q.type === QuestionType.MULTIPLE_CHOICE) {
+      if (correctCount < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Câu hỏi nhiều lựa chọn (MULTIPLE_CHOICE) phải có ít nhất 1 đáp án đúng',
+          path: ['answers'],
+        });
+      }
+    }
+  });
 export type QuestionDto = z.infer<typeof QuestionSchema>;
+
+export const SetQuestionsSchema = z.object({
+  questions: z
+    .array(QuestionSchema)
+    .min(QUIZ.QUESTIONS_MIN, `Quiz phải có từ ${QUIZ.QUESTIONS_MIN} đến ${QUIZ.QUESTIONS_MAX} câu hỏi`)
+    .max(QUIZ.QUESTIONS_MAX, `Quiz phải có từ ${QUIZ.QUESTIONS_MIN} đến ${QUIZ.QUESTIONS_MAX} câu hỏi`),
+});
+export type SetQuestionsDto = z.infer<typeof SetQuestionsSchema>;
+
+export function validateQuizQuestions(questions: unknown):
+  | { success: true; data: QuestionDto[] }
+  | { success: false; errors: string[] } {
+  const result = SetQuestionsSchema.safeParse({ questions });
+  if (result.success) {
+    return { success: true, data: result.data.questions };
+  }
+  const errors = result.error.issues.map((i) => i.message);
+  return { success: false, errors };
+}
 
 export const CreateQuizSchema = z.object({
   lessonId: z.string().min(1),

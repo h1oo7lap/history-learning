@@ -23,6 +23,7 @@ function createMockPrisma() {
       deleteMany: vi.fn(),
       create: vi.fn(),
       findMany: vi.fn(),
+      count: vi.fn(),
     },
     user: {
       findUnique: vi.fn(),
@@ -38,6 +39,7 @@ function createMockPrisma() {
       findUniqueOrThrow: vi.fn(),
       create: vi.fn(),
       updateMany: vi.fn(),
+      count: vi.fn(),
     },
     quizAttemptAnswer: {
       createMany: vi.fn(),
@@ -278,6 +280,19 @@ describe('QuizzesService', () => {
       });
       expect(result).toBe(mockCreated);
     });
+
+    it('Q-ADMIN-PUB: adminCreate throws 422 QUIZ_NO_QUESTIONS if created with status PUBLISHED', async () => {
+      await expect(
+        service.adminCreate({
+          lessonId: 'lesson-1',
+          title: 'Quiz 1',
+          status: PublishStatus.PUBLISHED,
+        }),
+      ).rejects.toMatchObject({
+        status: 422,
+        code: ErrorCodes.QUIZ_NO_QUESTIONS,
+      });
+    });
   });
 
   // =========================================================================
@@ -336,6 +351,106 @@ describe('QuizzesService', () => {
       });
       expect(result).toEqual({ id: 'q-1', title: 'Updated' });
     });
+
+    it('Q-ADMIN-ATTEMPTS: adminUpdate allows updating title, description, passScore, timeLimit even when quiz has attempts', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', questions: [] });
+      prisma.quizAttempt.count.mockResolvedValue(5);
+      const updated = { id: 'q-1', title: 'New Title', passScore: 80, timeLimit: 600 };
+      prisma.quiz.update.mockResolvedValue(updated);
+
+      const result = await service.adminUpdate('q-1', {
+        title: 'New Title',
+        passScore: 80,
+        timeLimit: 600,
+      });
+
+      expect(result).toBe(updated);
+      expect(prisma.quiz.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'q-1' },
+          data: expect.objectContaining({ title: 'New Title', passScore: 80, timeLimit: 600 }),
+        }),
+      );
+    });
+
+    it('Q-ADMIN-PUB: adminUpdate allows changing status from PUBLISHED to DRAFT without question validation', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', questions: [] });
+      const updated = { id: 'q-1', status: PublishStatus.DRAFT };
+      prisma.quiz.update.mockResolvedValue(updated);
+
+      const result = await service.adminUpdate('q-1', {
+        status: PublishStatus.DRAFT,
+      });
+
+      expect(result).toBe(updated);
+      expect(prisma.quiz.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'q-1' },
+          data: { status: PublishStatus.DRAFT },
+        }),
+      );
+    });
+
+    it('Q-ADMIN-PUB: adminUpdate throws 422 QUIZ_NO_QUESTIONS when publishing a quiz with 0 questions', async () => {
+      prisma.quiz.findUnique
+        .mockResolvedValueOnce({ id: 'q-1' }) // ensureExists
+        .mockResolvedValueOnce({ id: 'q-1', questions: [] }); // validatePublish
+
+      await expect(
+        service.adminUpdate('q-1', { status: PublishStatus.PUBLISHED }),
+      ).rejects.toMatchObject({
+        status: 422,
+        code: ErrorCodes.QUIZ_NO_QUESTIONS,
+      });
+    });
+
+    it('Q-ADMIN-PUB: adminUpdate throws 422 QUIZ_NO_QUESTIONS when publishing a quiz with invalid questions', async () => {
+      prisma.quiz.findUnique
+        .mockResolvedValueOnce({ id: 'q-1' }) // ensureExists
+        .mockResolvedValueOnce({
+          id: 'q-1',
+          questions: [
+            {
+              content: 'Invalid TF',
+              type: QuestionType.TRUE_FALSE,
+              answers: [{ content: 'A', isCorrect: true, displayOrder: 0 }], // only 1 answer!
+            },
+          ],
+        });
+
+      await expect(
+        service.adminUpdate('q-1', { status: PublishStatus.PUBLISHED }),
+      ).rejects.toMatchObject({
+        status: 422,
+        code: ErrorCodes.QUIZ_NO_QUESTIONS,
+      });
+    });
+
+    it('Q-ADMIN-PUB: adminUpdate succeeds when publishing a quiz with valid questions', async () => {
+      const validQuestions = [
+        {
+          id: 'q-item-1',
+          content: 'Năm diễn ra chiến thắng Bạch Đằng?',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { id: 'a-1', content: '938', isCorrect: true, displayOrder: 0 },
+            { id: 'a-2', content: '1077', isCorrect: false, displayOrder: 1 },
+          ],
+        },
+      ];
+      prisma.quiz.findUnique
+        .mockResolvedValueOnce({ id: 'q-1' }) // ensureExists
+        .mockResolvedValueOnce({ id: 'q-1', questions: validQuestions }); // validatePublish
+
+      const updated = { id: 'q-1', status: PublishStatus.PUBLISHED };
+      prisma.quiz.update.mockResolvedValue(updated);
+
+      const result = await service.adminUpdate('q-1', { status: PublishStatus.PUBLISHED });
+      expect(result).toBe(updated);
+    });
   });
 
   // =========================================================================
@@ -375,6 +490,117 @@ describe('QuizzesService', () => {
 
       await service.adminDelete('q-1');
       expect(prisma.quiz.delete).toHaveBeenCalledWith({ where: { id: 'q-1' } });
+    });
+
+    it('Q-ADMIN-ATTEMPTS: adminDelete throws 409 QUIZ_HAS_ATTEMPTS when quiz has existing attempts', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const txMock = {
+        quizAttempt: {
+          count: vi.fn().mockResolvedValue(3),
+        },
+        quiz: {
+          delete: vi.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(txMock));
+
+      await expect(service.adminDelete('q-1')).rejects.toMatchObject({
+        status: 409,
+        code: ErrorCodes.QUIZ_HAS_ATTEMPTS,
+      });
+      expect(txMock.quiz.delete).not.toHaveBeenCalled();
+    });
+
+    it('Q-ADMIN-ATTEMPTS: adminDelete catches Prisma P2003 error and throws 409 QUIZ_HAS_ATTEMPTS', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const p2003Error: any = new Error('Foreign key violation');
+      p2003Error.code = 'P2003';
+      prisma.$transaction.mockRejectedValue(p2003Error);
+
+      await expect(service.adminDelete('q-1')).rejects.toMatchObject({
+        status: 409,
+        code: ErrorCodes.QUIZ_HAS_ATTEMPTS,
+      });
+    });
+  });
+
+  // =========================================================================
+  // adminPublish
+  // =========================================================================
+  describe('adminPublish', () => {
+    it('Q-ADMIN-PUB: adminPublish throws 404 when quiz not found', async () => {
+      prisma.quiz.findUnique.mockResolvedValue(null);
+
+      await expect(service.adminPublish('q-none')).rejects.toMatchObject({
+        status: 404,
+        code: ErrorCodes.QUIZ_NOT_FOUND,
+      });
+    });
+
+    it('Q-ADMIN-PUB: adminPublish throws 422 QUIZ_NO_QUESTIONS when quiz has 0 questions', async () => {
+      prisma.quiz.findUnique
+        .mockResolvedValueOnce({ id: 'q-1' }) // ensureExists
+        .mockResolvedValueOnce({ id: 'q-1', questions: [] }); // validatePublish
+
+      await expect(service.adminPublish('q-1')).rejects.toMatchObject({
+        status: 422,
+        code: ErrorCodes.QUIZ_NO_QUESTIONS,
+      });
+    });
+
+    it('Q-ADMIN-PUB: adminPublish throws 422 QUIZ_NO_QUESTIONS when quiz has invalid questions', async () => {
+      prisma.quiz.findUnique
+        .mockResolvedValueOnce({ id: 'q-1' }) // ensureExists
+        .mockResolvedValueOnce({
+          id: 'q-1',
+          questions: [
+            {
+              content: 'Invalid Question',
+              type: QuestionType.SINGLE_CHOICE,
+              answers: [
+                { content: 'A', isCorrect: true, displayOrder: 0 },
+                { content: 'B', isCorrect: true, displayOrder: 1 }, // 2 correct answers!
+              ],
+            },
+          ],
+        });
+
+      await expect(service.adminPublish('q-1')).rejects.toMatchObject({
+        status: 422,
+        code: ErrorCodes.QUIZ_NO_QUESTIONS,
+      });
+    });
+
+    it('Q-ADMIN-PUB: adminPublish successfully publishes a quiz with valid questions', async () => {
+      const validQuestions = [
+        {
+          id: 'q-item-1',
+          content: 'Năm nào diễn ra chiến thắng Bạch Đằng?',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { id: 'a-1', content: '938', isCorrect: true, displayOrder: 0 },
+            { id: 'a-2', content: '1077', isCorrect: false, displayOrder: 1 },
+          ],
+        },
+      ];
+      prisma.quiz.findUnique
+        .mockResolvedValueOnce({ id: 'q-1' }) // ensureExists
+        .mockResolvedValueOnce({ id: 'q-1', questions: validQuestions }); // validatePublish
+
+      const updated = { id: 'q-1', status: PublishStatus.PUBLISHED };
+      prisma.quiz.update.mockResolvedValue(updated);
+
+      const result = await service.adminPublish('q-1');
+      expect(result).toBe(updated);
+      expect(prisma.quiz.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'q-1' },
+          data: { status: PublishStatus.PUBLISHED },
+        }),
+      );
     });
   });
 
@@ -495,6 +721,290 @@ describe('QuizzesService', () => {
         },
       });
       expect(result).toEqual({ id: 'q-1', questions: [{ id: 'new-q' }] });
+    });
+
+    it('Q-ADMIN-ATTEMPTS: adminSetQuestions throws 409 QUIZ_HAS_ATTEMPTS when quiz has existing attempts', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const txMock = {
+        quizAttempt: {
+          count: vi.fn().mockResolvedValue(2),
+        },
+        question: {
+          deleteMany: vi.fn(),
+          create: vi.fn(),
+        },
+        quiz: {
+          findUnique: vi.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(txMock));
+
+      const validQuestions = [
+        {
+          content: 'Năm nào diễn ra chiến thắng Bạch Đằng?',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: '938', isCorrect: true, displayOrder: 0 },
+            { content: '1077', isCorrect: false, displayOrder: 1 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', validQuestions)).rejects.toMatchObject({
+        status: 409,
+        code: ErrorCodes.QUIZ_HAS_ATTEMPTS,
+      });
+      expect(txMock.question.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('Q-ADMIN-ATTEMPTS: adminSetQuestions catches Prisma P2003 error and throws 409 QUIZ_HAS_ATTEMPTS', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const p2003Error: any = new Error('Foreign key constraint violation');
+      p2003Error.code = 'P2003';
+      prisma.$transaction.mockRejectedValue(p2003Error);
+
+      const validQuestions = [
+        {
+          content: 'Năm nào diễn ra chiến thắng Bạch Đằng?',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: '938', isCorrect: true, displayOrder: 0 },
+            { content: '1077', isCorrect: false, displayOrder: 1 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', validQuestions)).rejects.toMatchObject({
+        status: 409,
+        code: ErrorCodes.QUIZ_HAS_ATTEMPTS,
+      });
+    });
+
+    it('Q-ADMIN-VAL-SINGLE: adminSetQuestions throws 400 when SINGLE_CHOICE question has 0 correct answers', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const questions = [
+        {
+          content: 'Câu hỏi một lựa chọn không có đáp án đúng',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'Đáp án A', isCorrect: false, displayOrder: 0 },
+            { content: 'Đáp án B', isCorrect: false, displayOrder: 1 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', questions)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    });
+
+    it('Q-ADMIN-VAL-SINGLE: adminSetQuestions throws 400 when SINGLE_CHOICE question has more than 1 correct answer', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const questions = [
+        {
+          content: 'Câu hỏi một lựa chọn nhưng có 2 đáp án đúng',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'Đáp án A', isCorrect: true, displayOrder: 0 },
+            { content: 'Đáp án B', isCorrect: true, displayOrder: 1 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', questions)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    });
+
+    it('Q-ADMIN-VAL-TF: adminSetQuestions throws 400 when TRUE_FALSE question does not have exactly 2 answers', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const questions = [
+        {
+          content: 'Câu hỏi đúng sai nhưng có 3 đáp án',
+          type: QuestionType.TRUE_FALSE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'Đúng', isCorrect: true, displayOrder: 0 },
+            { content: 'Sai', isCorrect: false, displayOrder: 1 },
+            { content: 'Chưa rõ', isCorrect: false, displayOrder: 2 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', questions)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    });
+
+    it('Q-ADMIN-VAL-TF: adminSetQuestions throws 400 when TRUE_FALSE question has 0 or 2 correct answers', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const questions = [
+        {
+          content: 'Câu hỏi đúng sai nhưng cả hai đều đúng',
+          type: QuestionType.TRUE_FALSE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'Đúng', isCorrect: true, displayOrder: 0 },
+            { content: 'Sai', isCorrect: true, displayOrder: 1 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', questions)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    });
+
+    it('Q-ADMIN-VAL-MULTI: adminSetQuestions throws 400 when MULTIPLE_CHOICE question has 0 correct answers', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const questions = [
+        {
+          content: 'Câu hỏi nhiều lựa chọn nhưng 0 đáp án đúng',
+          type: QuestionType.MULTIPLE_CHOICE,
+          points: 2,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'A', isCorrect: false, displayOrder: 0 },
+            { content: 'B', isCorrect: false, displayOrder: 1 },
+            { content: 'C', isCorrect: false, displayOrder: 2 },
+          ],
+        },
+      ];
+
+      await expect(service.adminSetQuestions('q-1', questions)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    });
+
+    it('Q-ADMIN-VAL-MULTI: adminSetQuestions succeeds when MULTIPLE_CHOICE question has multiple correct answers', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      const txMock = {
+        question: {
+          deleteMany: vi.fn(),
+          create: vi.fn(),
+        },
+        quiz: {
+          findUnique: vi.fn().mockResolvedValue({ id: 'q-1', questions: [] }),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(txMock));
+
+      const questions = [
+        {
+          content: 'Các vị tướng thời Trần tham gia kháng chiến chống Nguyên Mông:',
+          type: QuestionType.MULTIPLE_CHOICE,
+          points: 2,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'Trần Hưng Đạo', isCorrect: true, displayOrder: 0 },
+            { content: 'Trần Quang Khải', isCorrect: true, displayOrder: 1 },
+            { content: 'Lý Thường Kiệt', isCorrect: false, displayOrder: 2 },
+          ],
+        },
+      ];
+
+      const res = await service.adminSetQuestions('q-1', questions);
+      expect(res).toBeDefined();
+      expect(txMock.question.create).toHaveBeenCalled();
+    });
+
+    it('Q-ADMIN-VAL-LIMITS: adminSetQuestions throws 400 when question has fewer than 2 answers or more than 6 answers', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+
+      // Case 1: 1 answer (< 2)
+      const qFewAnswers = [
+        {
+          content: 'Câu hỏi quá ít đáp án',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [{ content: 'A', isCorrect: true, displayOrder: 0 }],
+        },
+      ];
+      await expect(service.adminSetQuestions('q-1', qFewAnswers)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+
+      // Case 2: 7 answers (> 6)
+      const qManyAnswers = [
+        {
+          content: 'Câu hỏi quá nhiều đáp án',
+          type: QuestionType.SINGLE_CHOICE,
+          points: 1,
+          explanation: null,
+          displayOrder: 0,
+          answers: [
+            { content: 'A', isCorrect: true, displayOrder: 0 },
+            { content: 'B', isCorrect: false, displayOrder: 1 },
+            { content: 'C', isCorrect: false, displayOrder: 2 },
+            { content: 'D', isCorrect: false, displayOrder: 3 },
+            { content: 'E', isCorrect: false, displayOrder: 4 },
+            { content: 'F', isCorrect: false, displayOrder: 5 },
+            { content: 'G', isCorrect: false, displayOrder: 6 },
+          ],
+        },
+      ];
+      await expect(service.adminSetQuestions('q-1', qManyAnswers)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    });
+
+    it('Q-ADMIN-VAL-LIMITS: adminSetQuestions throws 400 when quiz has 0 questions or more than 50 questions', async () => {
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+
+      // Case 1: 0 questions
+      await expect(service.adminSetQuestions('q-1', [])).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+
+      // Case 2: 51 questions
+      const singleQ = {
+        content: 'Câu hỏi mẫu',
+        type: QuestionType.SINGLE_CHOICE,
+        points: 1,
+        explanation: null,
+        displayOrder: 0,
+        answers: [
+          { content: 'A', isCorrect: true, displayOrder: 0 },
+          { content: 'B', isCorrect: false, displayOrder: 1 },
+        ],
+      };
+      const fiftyOneQuestions = Array.from({ length: 51 }, (_, i) => ({
+        ...singleQ,
+        displayOrder: i,
+      }));
+
+      await expect(service.adminSetQuestions('q-1', fiftyOneQuestions)).rejects.toMatchObject({
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
     });
   });
 

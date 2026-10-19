@@ -18,22 +18,13 @@ import {
   type CreateQuizDto,
   UpdateQuizSchema,
   type UpdateQuizDto,
-  QuestionSchema,
+  SetQuestionsSchema,
+  type SetQuestionsDto,
   IdParamSchema,
   type IdParamDto,
-  QUIZ,
 } from '@history-learning/shared';
-import { z } from 'zod';
 import { Roles } from '../common/decorators/roles';
 import { QuizzesService } from './quizzes.service';
-
-const SetQuestionsSchema = z.object({
-  questions: z
-    .array(QuestionSchema)
-    .min(QUIZ.QUESTIONS_MIN)
-    .max(QUIZ.QUESTIONS_MAX),
-});
-type SetQuestionsDto = z.infer<typeof SetQuestionsSchema>;
 
 @ApiTags('Admin / Quizzes')
 @ApiBearerAuth()
@@ -94,5 +85,14 @@ export class AdminQuizzesController {
     @Body(new ZodValidationPipe(SetQuestionsSchema)) body: SetQuestionsDto,
   ) {
     return this.quizzesService.adminSetQuestions(id, body.questions);
+  }
+
+  @Post(':id/publish')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Admin: publish quiz' })
+  async publish(
+    @Param(new ZodValidationPipe(IdParamSchema)) { id }: IdParamDto,
+  ) {
+    return this.quizzesService.adminPublish(id);
   }
 }
