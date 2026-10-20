@@ -14,6 +14,8 @@ export interface FieldDef {
   label: string;
   /** Field type */
   type: FieldType;
+  /** Cloudinary folder for image uploads (e.g. 'characters', 'topics') */
+  folder?: string;
   /** Placeholder text */
   placeholder?: string;
   /** Is this field required? */
@@ -246,7 +248,7 @@ export function EntityForm<T extends object>({
           <ImageUploader
             value={String(form[field.name] ?? '')}
             onChange={(url) => updateField(field.name, url)}
-            folder="characters"
+            folder={field.folder || 'characters'}
           />
         ) : (
           <input

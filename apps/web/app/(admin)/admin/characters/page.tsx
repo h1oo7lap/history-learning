@@ -42,9 +42,10 @@ const FIELDS: FieldDef[] = [
   },
   {
     name: 'avatar',
-    label: 'URL Ảnh đại diện',
-    type: 'url',
-    placeholder: 'https://example.com/avatar.jpg',
+    label: 'Ảnh đại diện',
+    type: 'image',
+    folder: 'characters',
+    hint: 'Tải ảnh lên từ máy hoặc nhập link URL',
   },
   {
     name: 'birthYear',

@@ -49,7 +49,7 @@ export function ImageUploader({
   folder = 'uploads',
   maxSizeMb = 5,
   accept = 'image/jpeg,image/png,image/webp',
-  label = 'Hình ảnh',
+  label,
   hint,
   disabled = false,
 }: ImageUploaderProps) {
