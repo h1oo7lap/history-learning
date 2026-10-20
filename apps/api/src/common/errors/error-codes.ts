@@ -48,6 +48,7 @@ export const ErrorCodes = {
 
   // AI
   AI_UNAVAILABLE: 'AI_UNAVAILABLE',
+  AI_RATE_LIMITED: 'AI_RATE_LIMITED',
 
   // Publish validation
   PUBLISH_VALIDATION_FAILED: 'PUBLISH_VALIDATION_FAILED',

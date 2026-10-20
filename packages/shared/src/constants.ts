@@ -38,6 +38,10 @@ export const QUIZ = {
 export const AI = {
   MAX_MESSAGE_LENGTH: 500,
   MIN_MESSAGE_LENGTH: 1,
+  MAX_HISTORY_MESSAGES: 4,
+  MAX_MODEL_MESSAGE_LENGTH: 2000,
+  DEFAULT_REFUSAL_MESSAGE: 'Mình chưa tìm thấy thông tin phù hợp trong các bài học hiện có.',
+  AI_REFUSAL_MESSAGE: 'Mình chưa tìm thấy đủ thông tin trong các bài học hiện có.',
 } as const;
 
 export const SEARCH = {
