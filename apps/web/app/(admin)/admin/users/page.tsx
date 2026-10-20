@@ -142,13 +142,30 @@ export default function AdminUsersPage() {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<UserStatus | ''>('');
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   // Pagination states
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
+  const handleSearchChange = (val: string) => {
+    setSearchInput(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearch(val);
+      setPage(1);
+    }, 300);
+  };
+
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       setSearch(searchInput);
       setPage(1);
     }
@@ -161,6 +178,15 @@ export default function AdminUsersPage() {
 
   const handleRoleChange = (val: string) => {
     setRoleFilter(val as UserRole | '');
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearch('');
+    setSearchInput('');
+    setStatusFilter('');
+    setRoleFilter('');
     setPage(1);
   };
 
@@ -209,7 +235,7 @@ export default function AdminUsersPage() {
           className="input"
           placeholder="🔍 Tìm kiếm tên, email..."
           value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           onKeyDown={handleSearchKeyDown}
           style={{ maxWidth: 280, flex: '1 1 200px' }}
         />
@@ -234,10 +260,10 @@ export default function AdminUsersPage() {
           <option value="INACTIVE">Vô hiệu hóa</option>
           <option value="BANNED">Đã khóa</option>
         </select>
-        {(search || statusFilter || roleFilter) && (
+        {(search || searchInput || statusFilter || roleFilter) && (
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => { setSearch(''); setSearchInput(''); setStatusFilter(''); setRoleFilter(''); setPage(1); }}
+            onClick={handleClearFilters}
           >
             ✕ Xóa bộ lọc
           </button>
