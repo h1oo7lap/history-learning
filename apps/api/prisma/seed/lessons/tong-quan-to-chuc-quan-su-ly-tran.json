@@ -1,0 +1,41 @@
+{
+  "title": "[Lưu trữ] Tổng quan tổ chức quân sự và vũ trang thời Lý - Trần",
+  "slug": "tong-quan-to-chuc-quan-su-ly-tran",
+  "summary": "Chuyên đề tư liệu lưu trữ về chính sách Ngụ binh ư nông, cơ cấu bộ binh, thủy binh và trang bị vũ khí cổ truyền thời Lý - Trần.",
+  "thumbnail": "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "HARD",
+  "estimatedTime": 18,
+  "displayOrder": 10,
+  "status": "ARCHIVED",
+  "grades": [
+    "GRADE_7",
+    "GRADE_10"
+  ],
+  "topics": [
+    "doc-lap-va-phong-kien"
+  ],
+  "periods": [
+    "trieu-ly",
+    "trieu-tran"
+  ],
+  "characters": [],
+  "events": [],
+  "media": [],
+  "blocks": [
+    {
+      "id": "tong-quan-to-chuc-quan-su-ly-tran-blk-1",
+      "type": "text",
+      "text": "## 1. Chính sách \"Ngụ binh ư nông\"\n\nNhà Lý và nhà Trần áp dụng chính sách *\"Gửi binh lính ở nhà nông\"*: thời bình cho quân lính luân phiên về quê sản xuất nông nghiệp, khi có biến động chiến tranh lập tức động viên toàn bộ thanh niên lên đường tòng quân."
+    },
+    {
+      "id": "tong-quan-to-chuc-quan-su-ly-tran-blk-2",
+      "type": "text",
+      "text": "## 2. Tổ chức lực lượng\n\n- **Cấm quân:** Đội quân tinh nhuệ túc trực bảo vệ triều đình và Hoàng thành.\n- **Lộ quân:** Lực lượng quân đội đồn trú và phòng thủ tại các lộ, phủ trên toàn quốc."
+    },
+    {
+      "id": "tong-quan-to-chuc-quan-su-ly-tran-blk-3",
+      "type": "text",
+      "text": "## 3. Vũ khí trang bị\n\nBộ binh trang bị giáo mác, đao kiếm, cung nỏ và khiên mây. Thủy quân sử dụng các loại chiến thuyền nhẹ, cơ động, trang bị hỏa hổ và câu liêm chuyên dụng cho việc đánh thủy chiến trên các luồng lạch hiểm trở."
+    }
+  ]
+}

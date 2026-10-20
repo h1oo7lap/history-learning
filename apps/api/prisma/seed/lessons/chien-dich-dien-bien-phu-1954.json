@@ -1,0 +1,57 @@
+{
+  "title": "Chiến dịch Điện Biên Phủ (1954) – Lừng lẫy năm châu, chấn động địa cầu",
+  "slug": "chien-dich-dien-bien-phu-1954",
+  "summary": "Toàn cảnh 56 ngày đêm khoét núi ngủ hầm của quân và dân ta, đập tan tập đoàn cứ điểm quân sự mạnh nhất của thực dân Pháp tại Đông Dương.",
+  "thumbnail": "https://images.unsplash.com/photo-1569974498991-d3c12a504f95?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "HARD",
+  "estimatedTime": 22,
+  "displayOrder": 7,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_5",
+    "GRADE_9",
+    "GRADE_12"
+  ],
+  "topics": [
+    "cac-tran-danh-lich-su",
+    "khang-chien-chong-phap"
+  ],
+  "periods": [
+    "thoi-ky-phap-thuoc"
+  ],
+  "characters": [],
+  "events": [
+    "chien-dich-dien-bien-phu"
+  ],
+  "media": [
+    {
+      "type": "IMAGE",
+      "url": "https://images.unsplash.com/photo-1569974498991-d3c12a504f95?w=1200&auto=format&fit=crop&q=80",
+      "title": "Chiến trường Điện Biên Phủ",
+      "description": "Hình ảnh cứ điểm và chiến hào lịch sử năm 1954",
+      "displayOrder": 1
+    }
+  ],
+  "blocks": [
+    {
+      "id": "chien-dich-dien-bien-phu-1954-blk-1",
+      "type": "text",
+      "text": "## 1. Âm mưu của thực dân Pháp tại Điện Biên Phủ\n\nCuối năm 1953, tướng Nava xây dựng Điện Biên Phủ thành một tập đoàn cứ điểm kiên cố nhất Đông Dương với 49 cứ điểm, 3 phân khu, 2 sân bay quân sự được mệnh danh là *\"pháo đài bất khả xâm phạm\"*."
+    },
+    {
+      "id": "chien-dich-dien-bien-phu-1954-blk-2",
+      "type": "text",
+      "text": "## 2. Quyết định lịch sử chuyển phương châm tác chiến\n\nĐại tướng Võ Nguyên Giáp trên cương vị Chỉ huy trưởng mặt trận đã đưa ra một quyết định khó khăn nhưng sáng suốt nhất trong đời cầm quân: chuyển từ **\"Đánh nhanh, thắng nhanh\"** sang **\"Đánh chắc, tiến chắc\"**."
+    },
+    {
+      "id": "chien-dich-dien-bien-phu-1954-blk-3",
+      "type": "text",
+      "text": "## 3. 56 ngày đêm bão lửa\n\nChiến dịch diễn ra qua ba đợt công kích ác liệt:\n\n- **Đợt 1 (13/3 – 17/3):** Tiêu diệt cụm cứ điểm Him Lam, Độc Lập, bức hàng Bản Kéo.\n- **Đợt 2 (30/3 – 26/4):** Đánh chiếm các cao điểm phía đông (đồi A1, C1, D1...), thắt chặt vòng vây chiến hào.\n- **Đợt 3 (01/5 – 07/5):** Tổng công kích dứt điểm các cứ điểm còn lại. Chiều 7/5/1954, lá cờ \"Quyết chiến Quyết thắng\" tung bay trên nóc hầm tướng Đờ Cát-xtơ-ri, toàn bộ quân Pháp đầu hàng."
+    },
+    {
+      "id": "chien-dich-dien-bien-phu-1954-blk-4",
+      "type": "text",
+      "text": "## 4. Ý nghĩa thời đại\n\nChiến thắng Điện Biên Phủ đã giáng đòn quyết định đập tan ách thống trị của thực dân Pháp, buộc Pháp ký Hiệp định Giơ-ne-vơ lập lại hòa bình ở Đông Dương, trở thành nguồn cổ vũ lớn lao cho phong trào giải phóng dân tộc trên toàn thế giới."
+    }
+  ]
+}

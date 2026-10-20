@@ -1,0 +1,47 @@
+{
+  "title": "Quang Trung và đại thắng mùa xuân Kỷ Dậu 1789 (Ngọc Hồi - Đống Đa)",
+  "slug": "quang-trung-va-dai-thang-ngoc-hoi-dong-da",
+  "summary": "Nghệ thuật quân sự thần tốc của thiên tài quân sự Nguyễn Huệ đánh tan 29 vạn quân Mãn Thanh trong dịp Tết Kỷ Dậu 1789.",
+  "thumbnail": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "MEDIUM",
+  "estimatedTime": 16,
+  "displayOrder": 6,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_5",
+    "GRADE_8",
+    "GRADE_11"
+  ],
+  "topics": [
+    "cac-tran-danh-lich-su",
+    "danh-nhan-lich-su"
+  ],
+  "periods": [],
+  "characters": [
+    {
+      "slug": "quang-trung-nguyen-hue",
+      "role": "Hoàng đế kiêm Tổng chỉ huy chiến dịch"
+    }
+  ],
+  "events": [
+    "tran-ngoc-hoi-dong-da"
+  ],
+  "media": [],
+  "blocks": [
+    {
+      "id": "quang-trung-va-dai-thang-ngoc-hoi-dong-da-blk-1",
+      "type": "text",
+      "text": "## 1. Nguy cơ ngoại xâm từ phương Bắc\n\nCuối năm 1788, vua Lê Chiêu Thống hèn nhát cầu viện triều đình Mãn Thanh. Càn Long sai Tổng đốc Lưỡng Quảng Tôn Sĩ Nghị thống lĩnh 29 vạn quân tràn sang chiếm đóng kinh thành Thăng Long."
+    },
+    {
+      "id": "quang-trung-va-dai-thang-ngoc-hoi-dong-da-blk-2",
+      "type": "text",
+      "text": "## 2. Lên ngôi hoàng đế và hành quân thần tốc\n\nNhận được cấp báo, Nguyễn Huệ làm lễ tế trời đất tại núi Bân (Huế), lên ngôi Hoàng đế lấy niên hiệu **Quang Trung** rồi lập tức dẫn đại quân tiến ra Bắc.\n\nVua tổ chức hành quân với tốc độ thần kỳ: vừa đi vừa tuyển quân và tập luyện, chỉ trong vài ngày đã tới Tam Điệp (Ninh Bình). Tại đây, vua cho tướng sĩ ăn Tết trước và hẹn mùng 7 Tết sẽ vào Thăng Long mở tiệc khải hoàn.\n\n> \"Đánh cho để dài tóc,<br>Đánh cho để đen răng,<br>Đánh cho nó chích luân bất phản,<br>Đánh cho nó phiến giáp bất hoàn,<br>Đánh cho sử tri nam quốc anh hùng chi hữu chủ!\" — *Lời hịch vua Quang Trung*"
+    },
+    {
+      "id": "quang-trung-va-dai-thang-ngoc-hoi-dong-da-blk-3",
+      "type": "text",
+      "text": "## 3. Đêm mùng 4 rạng sáng mùng 5 Tết Kỷ Dậu\n\nQuân Tây Sơn đồng loạt công phá đồn Ngọc Hồi và đồn Khương Thượng (Đống Đa). Tướng giặc Sầm Nghi Đống khiếp sợ thắt cổ tự tử; Tôn Sĩ Nghị hoảng hốt bỏ cả ấn tín tháo chạy qua cầu phao sông Hồng làm cầu đứt, xác giặc trôi nghẽn khúc sông.\n\nĐúng trưa mùng 5 Tết, Hoàng đế Quang Trung trong tấm áo bào xạm đen khói súng dẫn đầu đoàn quân chiến thắng tiến vào Thăng Long giữa tiếng reo hò rực rỡ của muôn dân."
+    }
+  ]
+}

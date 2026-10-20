@@ -1,0 +1,42 @@
+{
+  "title": "Thời đại các Vua Hùng dựng nước – Buổi bình minh dân tộc",
+  "slug": "thoi-dai-cac-vua-hung-dung-nuoc",
+  "summary": "Tìm hiểu về cội nguồn dân tộc, sự tích Con Rồng Cháu Tiên, nhà nước Văn Lang và nền văn minh lúa nước sông Hồng buổi đầu dựng nước.",
+  "thumbnail": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "EASY",
+  "estimatedTime": 10,
+  "displayOrder": 8,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_4",
+    "GRADE_6",
+    "GRADE_10"
+  ],
+  "topics": [
+    "lich-su-viet-nam-co-dai",
+    "van-hoa-nghe-thuat-truyen-thong"
+  ],
+  "periods": [
+    "thoi-ky-hung-vuong"
+  ],
+  "characters": [],
+  "events": [],
+  "media": [],
+  "blocks": [
+    {
+      "id": "thoi-dai-cac-vua-hung-dung-nuoc-blk-1",
+      "type": "text",
+      "text": "## 1. Truyền thuyết Lạc Long Quân và Âu Cơ\n\nTừ ngàn xưa, người Việt luôn tự hào với nguồn gốc **\"Con Rồng Cháu Tiên\"**. Bọc trăm trứng của Mẹ Âu Cơ nở ra một trăm người con, năm mươi người theo cha xuống biển, năm mươi người theo mẹ lên núi, cùng nhau khai phá non sông đất nước."
+    },
+    {
+      "id": "thoi-dai-cac-vua-hung-dung-nuoc-blk-2",
+      "type": "text",
+      "text": "## 2. Nhà nước Văn Lang – Nhà nước đầu tiên\n\nNgười con trưởng được tôn lên làm vua, xưng là **Hùng Vương**, đóng đô tại Phong Châu (Phú Thọ ngày nay), đặt tên nước là **Văn Lang**.\n\n- Vua đứng đầu đất nước, cha truyền con nối.\n- Giúp việc cho vua có các *Lạc hầu*, tướng chỉ huy quân sự là các *Lạc tướng*.\n- Các địa phương chia thành các *bộ*, do Lạc tướng cai quản."
+    },
+    {
+      "id": "thoi-dai-cac-vua-hung-dung-nuoc-blk-3",
+      "type": "text",
+      "text": "## 3. Đời sống vật chất và tinh thần\n\nCư dân Văn Lang đã thuần thục kỹ thuật đúc đồng với biểu tượng đỉnh cao là **Trống đồng Đông Sơn**. Đời sống sinh hoạt phong phú với tục ăn trầu, nhuộm răng đen, làm bánh chưng, bánh giầy trong các dịp lễ hội mừng mùa màng."
+    }
+  ]
+}

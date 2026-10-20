@@ -1,0 +1,63 @@
+{
+  "title": "Hào khí Đông A: Ba lần đại thắng quân xâm lược Mông - Nguyên",
+  "slug": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong",
+  "summary": "Sức mạnh đoàn kết toàn dân tộc dưới triều Trần, từ Hội nghị Diên Hồng đến tài thao lược quân sự của Hưng Đạo Đại Vương Trần Quốc Tuấn.",
+  "thumbnail": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "HARD",
+  "estimatedTime": 20,
+  "displayOrder": 4,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_7",
+    "GRADE_10",
+    "GRADE_11"
+  ],
+  "topics": [
+    "cac-tran-danh-lich-su",
+    "danh-nhan-lich-su",
+    "doc-lap-va-phong-kien"
+  ],
+  "periods": [
+    "trieu-tran"
+  ],
+  "characters": [
+    {
+      "slug": "tran-hung-dao",
+      "role": "Tiết chế Quốc công - Tổng chỉ huy quân đội Đại Việt"
+    }
+  ],
+  "events": [
+    "hoi-nghi-dien-hong"
+  ],
+  "media": [
+    {
+      "type": "IMAGE",
+      "url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=1200&auto=format&fit=crop&q=80",
+      "title": "Hịch tướng sĩ và Hào khí Đông A",
+      "description": "Tinh thần quyết chiến quyết thắng bảo vệ độc lập non sông",
+      "displayOrder": 1
+    }
+  ],
+  "blocks": [
+    {
+      "id": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong-blk-1",
+      "type": "text",
+      "text": "## 1. Đạo quân bách chiến bách thắng Nguyên - Mông\n\nVào thế kỷ XIII, vó ngựa quân Mông Cổ làm rung chuyển cả lục địa Á - Âu, tiêu diệt nhiều quốc gia hùng mạnh từ Trung Hoa đến Đông Âu. Nhưng khi tiến vào bờ cõi Đại Việt (các năm 1258, 1285 và 1287-1288), chúng liên tiếp bị thất bại cay đắng."
+    },
+    {
+      "id": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong-blk-2",
+      "type": "text",
+      "text": "## 2. Hội nghị Bình Than và Hội nghị Diên Hồng\n\nĐiểm tựa làm nên kỳ tích nhà Trần chính là sự đồng lòng trên dưới như một:\n\n- **Hội nghị Diên Hồng (1284):** Thượng hoàng Trần Thánh Tông triệu tập các bô lão cả nước hỏi kế sách: *\"Nên đánh hay nên hòa?\"*. Muôn người cùng một lời đồng thanh hô vang: **\"ĐÁNH!\"**.\n- **Hịch tướng sĩ:** Trần Quốc Tuấn khơi dậy tinh thần yêu nước, lòng căm thù giặc sục sôi của tướng sĩ với quyết tâm \"Sát Thát\"."
+    },
+    {
+      "id": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong-blk-3",
+      "type": "text",
+      "text": "## 3. Nghệ thuật chiến tranh nhân dân độc đáo\n\nNhà Trần áp dụng chiến thuật *\"Vườn không nhà trống\"* khiến quân giặc sa lầy, thiếu lương ăn trầm trọng; sau đó nắm lấy thời cơ phản công thần tốc tiêu diệt các đạo quân tinh nhuệ ở Hàm Tử, Chương Dương, Tây Kết, Vạn Kiếp và đỉnh cao là trận thủy chiến Bạch Đằng năm 1288."
+    },
+    {
+      "id": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong-blk-4",
+      "type": "text",
+      "text": "## 4. Tinh thần đoàn kết là cội nguồn sức mạnh\n\n> \"Vừa rồi Toa Đô, Ô Mã Nhi bốn mặt bao vây, nếu không có vua tôi đồng tâm, anh em hòa mục, cả nước góp sức thì làm sao phá được giặc?\" — *Trần Hưng Đạo*"
+    }
+  ]
+}

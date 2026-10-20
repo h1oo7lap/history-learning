@@ -1,0 +1,96 @@
+{
+  "title": "Kiểm tra nhanh: Chiến thắng Bạch Đằng năm 938",
+  "description": "Đánh giá mức độ nắm vững kiến thức về trận thủy chiến Bạch Đằng.",
+  "timeLimit": 300,
+  "passScore": 70,
+  "status": "PUBLISHED",
+  "questions": [
+    {
+      "content": "Ai là người lãnh đạo quân dân ta làm nên chiến thắng Bạch Đằng năm 938?",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "explanation": "Ngô Quyền là vị chủ tướng chỉ huy trận địa cọc ngầm đánh bại quân Nam Hán.",
+      "displayOrder": 1,
+      "answers": [
+        {
+          "content": "Ngô Quyền",
+          "isCorrect": true,
+          "displayOrder": 1
+        },
+        {
+          "content": "Đinh Bộ Lĩnh",
+          "isCorrect": false,
+          "displayOrder": 2
+        },
+        {
+          "content": "Lý Thường Kiệt",
+          "isCorrect": false,
+          "displayOrder": 3
+        },
+        {
+          "content": "Trần Hưng Đạo",
+          "isCorrect": false,
+          "displayOrder": 4
+        }
+      ]
+    },
+    {
+      "content": "Quân giặc nào bị đánh bại trong trận Bạch Đằng năm 938?",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "explanation": "Quân Nam Hán do Lưu Hoằng Tháo chỉ huy đã bị đại bại trên sông Bạch Đằng.",
+      "displayOrder": 2,
+      "answers": [
+        {
+          "content": "Quân Tống",
+          "isCorrect": false,
+          "displayOrder": 1
+        },
+        {
+          "content": "Quân Nam Hán",
+          "isCorrect": true,
+          "displayOrder": 2
+        },
+        {
+          "content": "Quân Nguyên Mông",
+          "isCorrect": false,
+          "displayOrder": 3
+        },
+        {
+          "content": "Quân Minh",
+          "isCorrect": false,
+          "displayOrder": 4
+        }
+      ]
+    },
+    {
+      "content": "Chiến thắng Bạch Đằng năm 938 có ý nghĩa lịch sử vĩ đại gì?",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "explanation": "Trận thắng chấm dứt hơn 10 thế kỷ bị phong kiến phương Bắc đô hộ.",
+      "displayOrder": 3,
+      "answers": [
+        {
+          "content": "Chấm dứt hơn 1000 năm Bắc thuộc, mở ra kỷ nguyên độc lập",
+          "isCorrect": true,
+          "displayOrder": 1
+        },
+        {
+          "content": "Mở rộng lãnh thổ về phương Nam",
+          "isCorrect": false,
+          "displayOrder": 2
+        },
+        {
+          "content": "Dời đô về Thăng Long",
+          "isCorrect": false,
+          "displayOrder": 3
+        },
+        {
+          "content": "Thành lập nhà Trần",
+          "isCorrect": false,
+          "displayOrder": 4
+        }
+      ]
+    }
+  ]
+}

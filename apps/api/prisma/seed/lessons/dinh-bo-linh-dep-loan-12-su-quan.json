@@ -1,0 +1,54 @@
+{
+  "title": "Đinh Bộ Lĩnh dẹp loạn 12 sứ quân – Thống nhất giang sơn",
+  "slug": "dinh-bo-linh-dep-loan-12-su-quan",
+  "summary": "Hành trình từ cậu bé chăn trâu cờ lau tập trận đến danh hiệu Vạn Thắng Vương, thống nhất non sông và đặt tên nước là Đại Cồ Việt.",
+  "thumbnail": "https://images.unsplash.com/photo-1528127269322-539801943592?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "MEDIUM",
+  "estimatedTime": 15,
+  "displayOrder": 2,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_4",
+    "GRADE_7"
+  ],
+  "topics": [
+    "danh-nhan-lich-su",
+    "doc-lap-va-phong-kien"
+  ],
+  "periods": [
+    "trieu-ngo-dinh-tien-le"
+  ],
+  "characters": [
+    {
+      "slug": "dinh-bo-linh",
+      "role": "Vạn Thắng Vương - Vua sáng lập triều Đinh"
+    }
+  ],
+  "events": [],
+  "media": [
+    {
+      "type": "IMAGE",
+      "url": "https://images.unsplash.com/photo-1528127269322-539801943592?w=1200&auto=format&fit=crop&q=80",
+      "title": "Cố đô Hoa Lư - Ninh Bình",
+      "description": "Kinh đô đầu tiên của nhà nước phong kiến trung ương tập quyền Việt Nam",
+      "displayOrder": 1
+    }
+  ],
+  "blocks": [
+    {
+      "id": "dinh-bo-linh-dep-loan-12-su-quan-blk-1",
+      "type": "text",
+      "text": "## 1. Thời kỳ loạn 12 sứ quân\n\nSau khi Ngô Quyền qua đời (năm 944), triều đình nhà Ngô rối ren, tranh giành quyền lực. Đất nước rơi vào tình cảnh cát cứ phân liệt của 12 sứ quân, nhân dân điêu đứng, mùa màng thất bát, nguy cơ ngoại xâm rình rập."
+    },
+    {
+      "id": "dinh-bo-linh-dep-loan-12-su-quan-blk-2",
+      "type": "text",
+      "text": "## 2. Tài năng xuất chúng của Đinh Bộ Lĩnh\n\nĐinh Bộ Lĩnh quê ở động Hoa Lư (Ninh Bình). Từ thuở nhỏ, ông đã thể hiện chí khí hơn người khi cùng đám trẻ chăn trâu lấy **hoa lau làm cờ**, bày trận đánh giả và được chúng bạn tôn làm thủ lĩnh.\n\nNhờ tài mưu lược quân sự, kết hợp thu phục nhân tâm và liên kết các sứ quân yêu nước, Đinh Bộ Lĩnh lần lượt dẹp yên và thu phục các sứ quân, được suy tôn là **Vạn Thắng Vương**."
+    },
+    {
+      "id": "dinh-bo-linh-dep-loan-12-su-quan-blk-3",
+      "type": "text",
+      "text": "## 3. Sự ra đời của nhà nước Đại Cồ Việt\n\nNăm 968, đất nước hoàn toàn thống nhất. Đinh Bộ Lĩnh lên ngôi Hoàng đế (Đinh Tiên Hoàng), lập nên triều Đinh:\n\n- Đặt tên nước là **Đại Cồ Việt** (nước Việt lớn).\n- Chọn Hoa Lư làm kinh đô hiểm yếu.\n- Đặt niên hiệu riêng là *Thái Bình*, khẳng định vị thế bình đẳng với các hoàng đế phương Bắc.\n- Đúc đồng tiền *Thái Bình hưng bảo* — đồng tiền đầu tiên trong lịch sử tiền tệ Việt Nam."
+    }
+  ]
+}

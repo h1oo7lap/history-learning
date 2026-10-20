@@ -1,0 +1,40 @@
+{
+  "title": "[Dự thảo] Phong trào Cần Vương và các cuộc khởi nghĩa tiêu biểu cuối thế kỷ XIX",
+  "slug": "phong-trao-can-vuong-cuoi-the-ky-xix",
+  "summary": "Tài liệu dự thảo nghiên cứu về phong trào yêu nước phò vua cứu nước dưới ngọn cờ của vua Hàm Nghi và các danh nhân Tôn Thất Thuyết, Phan Đình Phùng.",
+  "thumbnail": "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "MEDIUM",
+  "estimatedTime": 15,
+  "displayOrder": 9,
+  "status": "DRAFT",
+  "grades": [
+    "GRADE_8",
+    "GRADE_11"
+  ],
+  "topics": [
+    "khang-chien-chong-phap"
+  ],
+  "periods": [
+    "thoi-ky-phap-thuoc"
+  ],
+  "characters": [],
+  "events": [],
+  "media": [],
+  "blocks": [
+    {
+      "id": "phong-trao-can-vuong-cuoi-the-ky-xix-blk-1",
+      "type": "text",
+      "text": "## 1. Bối cảnh bùng nổ phong trào\n\nSau khi thực dân Pháp đánh chiếm Bắc Kỳ và ép triều đình Huế ký Hiệp ước Hác-măng (1883) và Pa-tơ-nốt (1884), phe chủ chiến do Tôn Thất Thuyết đứng đầu đã kiên quyết phản kháng."
+    },
+    {
+      "id": "phong-trao-can-vuong-cuoi-the-ky-xix-blk-2",
+      "type": "text",
+      "text": "## 2. Chiếu Cần Vương ban bố\n\nTháng 7 năm 1885, sau cuộc tấn công đồn Mang Cá không thành, Tôn Thất Thuyết rước vua trẻ Hàm Nghi ra căn cứ Tân Sở (Quảng Trị) và ban Chiếu Cần Vương, kêu gọi sĩ phu và nhân dân cả nước đứng lên phò vua giúp nước."
+    },
+    {
+      "id": "phong-trao-can-vuong-cuoi-the-ky-xix-blk-3",
+      "type": "text",
+      "text": "## 3. Các cuộc khởi nghĩa tiêu biểu\n\n- Khởi nghĩa Ba Đình (1886 - 1887) do Phạm Bành và Đinh Công Tráng lãnh đạo.\n- Khởi nghĩa Bãi Sậy (1883 - 1892) do Nguyễn Thiện Thuật chỉ huy.\n- Khởi nghĩa Hương Khê (1885 - 1896) do Phan Đình Phùng chỉ huy — đỉnh cao của phong trào Cần Vương."
+    }
+  ]
+}

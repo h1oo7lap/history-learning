@@ -1,0 +1,63 @@
+{
+  "title": "Lý Thái Tổ và Chiếu dời đô về Thăng Long (1010)",
+  "slug": "ly-thai-to-va-chieu-doi-do-thang-long",
+  "summary": "Tầm nhìn thiên tài của Lý Công Uẩn khi ban hành Chiếu dời đô năm 1010, chuyển trung tâm chính trị từ vùng núi Hoa Lư ra đồng bằng Thăng Long trù phú.",
+  "thumbnail": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "EASY",
+  "estimatedTime": 10,
+  "displayOrder": 3,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_4",
+    "GRADE_7",
+    "GRADE_10"
+  ],
+  "topics": [
+    "doc-lap-va-phong-kien",
+    "danh-nhan-lich-su",
+    "van-hoa-nghe-thuat-truyen-thong"
+  ],
+  "periods": [
+    "trieu-ly"
+  ],
+  "characters": [
+    {
+      "slug": "ly-cong-uan",
+      "role": "Vua Lý Thái Tổ - người ban Chiếu dời đô"
+    }
+  ],
+  "events": [
+    "doi-do-ve-thang-long"
+  ],
+  "media": [
+    {
+      "type": "IMAGE",
+      "url": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&auto=format&fit=crop&q=80",
+      "title": "Tượng đài Vua Lý Thái Tổ tại Hà Nội",
+      "description": "Tượng đài tưởng niệm người có công dời đô về Thăng Long năm 1010",
+      "displayOrder": 1
+    }
+  ],
+  "blocks": [
+    {
+      "id": "ly-thai-to-va-chieu-doi-do-thang-long-blk-1",
+      "type": "text",
+      "text": "## 1. Bối cảnh ban hành Chiếu dời đô\n\nNăm 1009, Lý Công Uẩn được triều thần tôn lên ngôi Hoàng đế, sáng lập triều Lý (Lý Thái Tổ). Nhận thấy vùng đất Hoa Lư núi non hiểm trở chỉ thích hợp cho việc phòng ngự thời đầu độc lập, nay đất nước thanh bình cần một địa bàn rộng lớn để mở mang kinh tế và văn hóa lâu dài."
+    },
+    {
+      "id": "ly-thai-to-va-chieu-doi-do-thang-long-blk-2",
+      "type": "text",
+      "text": "## 2. Tầm nhìn chiến lược về đất Thăng Long\n\nMùa thu năm 1010, Lý Thái Tổ ban **Chiếu dời đô** (Thiên đô chiếu), chỉ rõ vùng đất Đại La là:\n\n> \"Ở vào nơi trung tâm trời đất, được thế rồng cuộn hổ ngồi; chính giữa nam bắc đông tây, tiện nghi núi sau sông trước. Đất rộng mà bằng phẳng, thế đất cao mà sáng sủa; dân cư khỏi chịu cảnh khốn khổ ngập lụt, muôn vật rất mực phong phú tươi tốt...\""
+    },
+    {
+      "id": "ly-thai-to-va-chieu-doi-do-thang-long-blk-3",
+      "type": "text",
+      "text": "## 3. Rồng vàng xuất hiện và đổi tên Thăng Long\n\nKhi đoàn thuyền rồng của vua vừa cập bến dưới chân thành Đại La, có điềm lành rồng vàng bay lên, vua bèn đổi tên Đại La thành **Thăng Long** (Rồng bay lên)."
+    },
+    {
+      "id": "ly-thai-to-va-chieu-doi-do-thang-long-blk-4",
+      "type": "text",
+      "text": "## 4. Ý nghĩa lịch sử\n\nSự kiện dời đô mở ra một trang sử mới cho nước Đại Việt, đưa Thăng Long trở thành trái tim chính trị, kinh tế và văn hóa của đất nước suốt hơn một thiên niên kỷ."
+    }
+  ]
+}

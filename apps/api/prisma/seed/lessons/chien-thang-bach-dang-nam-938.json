@@ -1,0 +1,63 @@
+{
+  "title": "Chiến thắng Bạch Đằng năm 938 – Chấm dứt nghìn năm Bắc thuộc",
+  "slug": "chien-thang-bach-dang-nam-938",
+  "summary": "Tìm hiểu về trận thủy chiến lẫy lừng trên sông Bạch Đằng do Ngô Quyền lãnh đạo, đánh tan quân Nam Hán và mở ra kỷ nguyên độc lập tự chủ lâu dài cho dân tộc Việt Nam.",
+  "thumbnail": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "EASY",
+  "estimatedTime": 12,
+  "displayOrder": 1,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_4",
+    "GRADE_7",
+    "GRADE_10"
+  ],
+  "topics": [
+    "cac-tran-danh-lich-su",
+    "danh-nhan-lich-su",
+    "doc-lap-va-phong-kien"
+  ],
+  "periods": [
+    "trieu-ngo-dinh-tien-le"
+  ],
+  "characters": [
+    {
+      "slug": "ngo-quyen",
+      "role": "Chủ tướng chỉ huy chiến dịch Bạch Đằng"
+    }
+  ],
+  "events": [
+    "chien-thang-bach-dang-938"
+  ],
+  "media": [
+    {
+      "type": "IMAGE",
+      "url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80",
+      "title": "Mô phỏng bãi cọc sông Bạch Đằng",
+      "description": "Trận địa cọc gỗ bịt sắt độc đáo của Ngô Quyền",
+      "displayOrder": 1
+    }
+  ],
+  "blocks": [
+    {
+      "id": "chien-thang-bach-dang-nam-938-blk-1",
+      "type": "text",
+      "text": "## 1. Bối cảnh lịch sử\n\nVào mùa thu năm 938, chúa Nam Hán sai con trai là Vạn vương Hoằng Tháo chỉ huy thủy quân ồ ạt tiến sang xâm lược nước ta theo đường biển và sông Bạch Đằng.\n\nTrước họa xâm lăng, **Ngô Quyền** khẩn trương tập hợp lực lượng toàn dân, định kế đánh giặc tại vùng cửa sông Bạch Đằng hiểm yếu.\n\n> \"Hoằng Tháo là một đứa trẻ dại, đem quân từ xa đến, quân lính mỏi mệt, lại nghe tin Công Tiễn đã chết, không có người làm nội ứng, khí thế đã mất một nửa rồi. Quân ta lấy sức còn nhàn hạ địch với quân mỏi mệt, tất phá được!\" — *Ngô Quyền*"
+    },
+    {
+      "id": "chien-thang-bach-dang-nam-938-blk-2",
+      "type": "text",
+      "text": "## 2. Kế sách cọc ngầm độc đáo\n\nNgô Quyền đã lợi dụng hiện tượng **thủy triều lên xuống** của vùng biển Đông Bắc:\n\n- Cho đẵn gỗ rừng, vót nhọn đầu và bịt sắt nhọn rồi cắm ngầm xuống lòng sông Bạch Đằng nơi hiểm yếu.\n- Khi thủy triều lên, nước ngập che khuất bãi cọc nhọn dưới dòng nước.\n- Sai thuyền nhẹ ra khiêu chiến, giả thua rút lui để nhử địch vượt qua bãi cọc khi nước triều đạt đỉnh."
+    },
+    {
+      "id": "chien-thang-bach-dang-nam-938-blk-3",
+      "type": "text",
+      "text": "## 3. Diễn biến trận đánh quyết định\n\nKhi thủy triều bắt đầu rút mạnh, Ngô Quyền hạ lệnh dốc toàn bộ quân lực tổng phản công. Quân giặc bất ngờ quay đầu tháo chạy, thuyền chiến va phải bãi cọc ngầm nhọn hoắt, bị thủng vỡ và đắm vô số. Quân Nam Hán tan vỡ hoàn toàn, Hoằng Tháo bị tiêu diệt tại trận."
+    },
+    {
+      "id": "chien-thang-bach-dang-nam-938-blk-4",
+      "type": "text",
+      "text": "## 4. Ý nghĩa lịch sử\n\nChiến thắng Bạch Đằng năm 938 có ý nghĩa bước ngoặt vô cùng to lớn: **chính thức chấm dứt hơn 1000 năm Bắc thuộc**, mở ra thời kỳ độc lập tự chủ lâu dài và vẻ vang cho dân tộc ta."
+    }
+  ]
+}

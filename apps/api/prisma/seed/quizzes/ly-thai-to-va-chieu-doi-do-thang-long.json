@@ -1,0 +1,67 @@
+{
+  "title": "Trắc nghiệm: Sự kiện Dời đô về Thăng Long",
+  "description": "Kiểm tra hiểu biết về Chiếu dời đô và vị vua Lý Thái Tổ.",
+  "timeLimit": 240,
+  "passScore": 60,
+  "status": "PUBLISHED",
+  "questions": [
+    {
+      "content": "Năm nào Lý Công Uẩn quyết định dời đô từ Hoa Lư về Thăng Long?",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "explanation": "Năm Canh Tuất 1010, vua Lý Thái Tổ ban Chiếu dời đô từ Hoa Lư về thành Đại La (Thăng Long).",
+      "displayOrder": 1,
+      "answers": [
+        {
+          "content": "Năm 938",
+          "isCorrect": false,
+          "displayOrder": 1
+        },
+        {
+          "content": "Năm 1010",
+          "isCorrect": true,
+          "displayOrder": 2
+        },
+        {
+          "content": "Năm 1285",
+          "isCorrect": false,
+          "displayOrder": 3
+        },
+        {
+          "content": "Năm 1428",
+          "isCorrect": false,
+          "displayOrder": 4
+        }
+      ]
+    },
+    {
+      "content": "Tên gọi \"Thăng Long\" mang ý nghĩa gì?",
+      "type": "SINGLE_CHOICE",
+      "points": 1,
+      "explanation": "Thăng Long nghĩa là Rồng bay lên, tượng trưng cho sự hưng thịnh vươn mình của đất nước.",
+      "displayOrder": 2,
+      "answers": [
+        {
+          "content": "Rồng bay lên",
+          "isCorrect": true,
+          "displayOrder": 1
+        },
+        {
+          "content": "Đất lành chim đậu",
+          "isCorrect": false,
+          "displayOrder": 2
+        },
+        {
+          "content": "Thành phố hòa bình",
+          "isCorrect": false,
+          "displayOrder": 3
+        },
+        {
+          "content": "Rồng ẩn mình",
+          "isCorrect": false,
+          "displayOrder": 4
+        }
+      ]
+    }
+  ]
+}

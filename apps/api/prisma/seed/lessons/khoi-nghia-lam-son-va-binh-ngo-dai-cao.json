@@ -1,0 +1,54 @@
+{
+  "title": "Khởi nghĩa Lam Sơn và khúc ca khải hoàn Bình Ngô Đại Cáo",
+  "slug": "khoi-nghia-lam-son-va-binh-ngo-dai-cao",
+  "summary": "Cuộc khởi nghĩa trường kỳ 10 năm gian khổ từ đất Lam Sơn do Lê Lợi và Nguyễn Trãi lãnh đạo đánh đuổi ách đô hộ nhà Minh, khôi phục nền thái bình thịnh trị.",
+  "thumbnail": "https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?w=800&auto=format&fit=crop&q=80",
+  "difficulty": "MEDIUM",
+  "estimatedTime": 18,
+  "displayOrder": 5,
+  "status": "PUBLISHED",
+  "grades": [
+    "GRADE_7",
+    "GRADE_10"
+  ],
+  "topics": [
+    "cac-tran-danh-lich-su",
+    "danh-nhan-lich-su",
+    "doc-lap-va-phong-kien"
+  ],
+  "periods": [
+    "trieu-le-so"
+  ],
+  "characters": [
+    {
+      "slug": "le-loi",
+      "role": "Bình Định Vương - Lãnh tụ tối cao khởi nghĩa Lam Sơn"
+    }
+  ],
+  "events": [
+    "khoi-nghia-lam-son"
+  ],
+  "media": [],
+  "blocks": [
+    {
+      "id": "khoi-nghia-lam-son-va-binh-ngo-dai-cao-blk-1",
+      "type": "text",
+      "text": "## 1. Ách đô hộ tàn bạo của giặc Minh\n\nĐầu thế kỷ XV, nhà Hồ sụp đổ, giặc Minh đô hộ nước ta. Chúng bóc lột cùng kiệt, vơ vét tài nguyên, thi hành chính sách đồng hóa văn hóa tàn bạo, đẩy nhân dân ta vào cảnh lầm than:\n\n> \"Nướng dân đen trên ngọn lửa hung tàn,<br>Vùi con đỏ xuống dưới hầm tai vạ.\" — *Bình Ngô Đại Cáo*"
+    },
+    {
+      "id": "khoi-nghia-lam-son-va-binh-ngo-dai-cao-blk-2",
+      "type": "text",
+      "text": "## 2. Ngọn cờ tụ nghĩa Lam Sơn\n\nĐầu năm 1418, tại vùng đất Lam Sơn (Thanh Hóa), Lê Lợi cùng 18 hào kiệt họp Hội thề Lũng Nhai, dựng cờ khởi nghĩa với danh hiệu **Bình Định Vương**.\n\nNhững năm đầu vô cùng gian nan, nghĩa quân nhiều lần bị bao vây ở núi Chí Linh, phải ăn măng rừng rau dại nhưng lòng quyết tâm không hề nao núng."
+    },
+    {
+      "id": "khoi-nghia-lam-son-va-binh-ngo-dai-cao-blk-3",
+      "type": "text",
+      "text": "## 3. Chiến lược xoay chuyển tình thế\n\nTheo mưu kế của tướng Nguyễn Chích, nghĩa quân tiến đánh vào Nghệ An giải phóng vùng đất rộng lớn, sau đó tiến quân ra Bắc. Các chiến thắng Tốt Động - Chúc Động và đỉnh cao Chi Lăng - Xương Giang đã tiêu diệt hoàn toàn viện binh Liễu Thăng, buộc tướng giặc Vương Thông phải xin hàng tại Đông Quan."
+    },
+    {
+      "id": "khoi-nghia-lam-son-va-binh-ngo-dai-cao-blk-4",
+      "type": "text",
+      "text": "## 4. Bình Ngô Đại Cáo – Bản tuyên ngôn độc lập\n\nMùa xuân năm 1428, Lê Lợi lên ngôi vua, sai Nguyễn Trãi soạn **Bình Ngô Đại Cáo**, tuyên bố kết thúc chiến tranh, mở ra kỷ nguyên thái bình của triều Hậu Lê."
+    }
+  ]
+}
