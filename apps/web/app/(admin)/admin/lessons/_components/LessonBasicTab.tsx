@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { BlockEditor } from '@/components/content/BlockEditor';
 import type { ContentBlock } from '@/components/content/BlockEditor';
+import { ImageUploader } from '@/components/admin-crud';
 
 export interface LessonBasicTabProps {
   title: string;
@@ -195,36 +196,17 @@ export function LessonBasicTab({
 
       {/* Thumbnail */}
       <div>
-        <label className="label" htmlFor="lesson-thumbnail">
-          URL Ảnh bìa
-        </label>
-        <input
-          id="lesson-thumbnail"
-          className="input"
-          type="url"
-          placeholder="https://example.com/thumbnail.jpg"
+        <ImageUploader
+          label="Ảnh bìa bài học"
+          hint="Tải ảnh lên từ máy hoặc nhập URL trực tiếp"
           value={thumbnail}
-          onChange={(e) => setThumbnail(e.target.value)}
+          onChange={(url) => {
+            setThumbnail(url);
+            if (errors.thumbnail) clearError('thumbnail');
+          }}
+          folder="lessons/thumbnails"
         />
-        {thumbnail && (
-          <div style={{ marginTop: '0.5rem' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={thumbnail}
-              alt="Thumbnail preview"
-              style={{
-                maxWidth: 160,
-                maxHeight: 90,
-                borderRadius: 6,
-                objectFit: 'cover',
-                border: '1px solid var(--border)',
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
-        )}
+        {errors.thumbnail && <p className="field-error">{errors.thumbnail}</p>}
       </div>
     </>
   );

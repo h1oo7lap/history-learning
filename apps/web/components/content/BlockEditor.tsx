@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { api } from '@/lib/api-client';
 import { extractYoutubeId } from '@history-learning/shared';
 
@@ -176,6 +176,8 @@ function ImageBlockEditor({
   block: ImageBlock;
   onUpdate: (b: ImageBlock) => void;
 }) {
+  const [mode, setMode] = useState<'upload' | 'url'>('upload');
+  const [urlInput, setUrlInput] = useState(block.url || '');
   const { upload, uploading, progress, error, setError } = useCloudinaryUpload(
     'lessons/images',
     'image/jpeg,image/png,image/webp',
@@ -184,84 +186,279 @@ function ImageBlockEditor({
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
+  useEffect(() => {
+    setUrlInput(block.url || '');
+  }, [block.url]);
+
   const handleFile = async (file: File) => {
     const url = await upload(file);
-    if (url) onUpdate({ ...block, url });
+    if (url) {
+      setUrlInput(url);
+      onUpdate({ ...block, url });
+    }
+  };
+
+  const handleUrlApply = () => {
+    const val = urlInput.trim();
+    if (!val) {
+      setError('Vui lòng nhập đường dẫn URL ảnh');
+      return;
+    }
+    if (!val.startsWith('https://') && !val.startsWith('http://')) {
+      setError('URL ảnh phải bắt đầu bằng https:// hoặc http://');
+      return;
+    }
+    setError(null);
+    onUpdate({ ...block, url: val });
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      {/* Preview */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      {/* Preview when image exists */}
       {block.url && !uploading && (
-        <div style={{ position: 'relative', maxWidth: 320, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)' }}>
-          <img src={block.url} alt="preview" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block' }} />
-          <button
-            type="button"
-            onClick={() => { onUpdate({ ...block, url: '' }); setError(null); }}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div
             style={{
-              position: 'absolute', top: 6, right: 6,
-              background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none',
-              borderRadius: 4, padding: '2px 6px', fontSize: '0.75rem', cursor: 'pointer',
+              position: 'relative',
+              maxWidth: 380,
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
             }}
           >
-            Xoa
-          </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={block.url}
+              alt={block.alt || 'Xem trước hình ảnh'}
+              style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }}
+              onError={() => setError('Không tải được ảnh từ đường dẫn này. Vui lòng kiểm tra lại URL.')}
+            />
+            <div style={{ position: 'absolute', top: 6, right: 6 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdate({ ...block, url: '' });
+                  setUrlInput('');
+                  setError(null);
+                }}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.9)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 4,
+                  padding: '3px 8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                ✕ Xóa ảnh
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', maxWidth: 420 }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--muted)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+              }}
+              title={block.url}
+            >
+              🔗 {block.url}
+            </span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                onUpdate({ ...block, url: '' });
+                setError(null);
+              }}
+              style={{ fontSize: '0.75rem' }}
+            >
+              📷 Đổi ảnh khác
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Drop zone */}
+      {/* Mode switcher and upload/URL inputs when no image */}
       {!block.url && !uploading && (
-        <div
-          onClick={() => inputRef.current?.click()}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          style={{
-            border: `2px dashed ${dragOver ? 'var(--brand-500)' : 'var(--border)'}`,
-            borderRadius: 'var(--radius-md)', padding: '1rem',
-            textAlign: 'center', cursor: 'pointer',
-            background: dragOver ? 'var(--brand-50)' : 'var(--surface-2)',
-            transition: 'all 0.15s',
-          }}
-        >
-          <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem', opacity: 0.5 }}>🖼️</div>
-          <p style={{ color: 'var(--muted)', fontSize: '0.8rem', margin: 0 }}>
-            Keo tha hoac <span style={{ color: 'var(--brand-500)', fontWeight: 600 }}>chon anh</span>
-          </p>
-          <p style={{ color: 'var(--muted)', fontSize: '0.72rem', margin: '0.2rem 0 0' }}>JPG · PNG · WebP · Max 5MB</p>
-        </div>
+        <>
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.5rem',
+              borderBottom: '1px solid var(--border)',
+              paddingBottom: '0.4rem',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setMode('upload');
+                setError(null);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: mode === 'upload' ? '2px solid var(--brand-500)' : '2px solid transparent',
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.78rem',
+                fontWeight: mode === 'upload' ? 600 : 400,
+                color: mode === 'upload' ? 'var(--brand-500)' : 'var(--muted)',
+                cursor: 'pointer',
+              }}
+            >
+              📤 Tải lên file
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('url');
+                setError(null);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: mode === 'url' ? '2px solid var(--brand-500)' : '2px solid transparent',
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.78rem',
+                fontWeight: mode === 'url' ? 600 : 400,
+                color: mode === 'url' ? 'var(--brand-500)' : 'var(--muted)',
+                cursor: 'pointer',
+              }}
+            >
+              🔗 Nhập URL trực tiếp
+            </button>
+          </div>
+
+          {mode === 'upload' ? (
+            <div
+              onClick={() => inputRef.current?.click()}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const f = e.dataTransfer.files[0];
+                if (f) handleFile(f);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              style={{
+                border: `2px dashed ${dragOver ? 'var(--brand-500)' : 'var(--border)'}`,
+                borderRadius: 'var(--radius-md)',
+                padding: '1.25rem',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: dragOver ? 'var(--brand-50)' : 'var(--surface-2)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem', opacity: 0.6 }}>🖼️</div>
+              <p style={{ color: 'var(--muted)', fontSize: '0.8rem', margin: 0 }}>
+                Kéo thả hình ảnh hoặc <span style={{ color: 'var(--brand-500)', fontWeight: 600 }}>chọn ảnh từ máy</span>
+              </p>
+              <p style={{ color: 'var(--muted)', fontSize: '0.72rem', margin: '0.2rem 0 0' }}>
+                JPG · PNG · WebP · Tối đa 5MB
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <input
+                  className="input"
+                  type="url"
+                  placeholder="https://example.com/hinh-anh.jpg hoặc https://res.cloudinary.com/..."
+                  value={urlInput}
+                  onChange={(e) => {
+                    setUrlInput(e.target.value);
+                    setError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleUrlApply();
+                    }
+                  }}
+                  style={{ fontSize: '0.82rem', flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleUrlApply}
+                  style={{ fontSize: '0.78rem' }}
+                >
+                  Áp dụng
+                </button>
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                Hỗ trợ đường dẫn ảnh HTTPS trực tiếp hoặc ảnh từ Cloudinary
+              </p>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Progress */}
+      {/* Uploading progress */}
       {uploading && (
         <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--surface-2)' }}>
           <div style={{ width: '100%', height: 4, borderRadius: 999, background: 'var(--border)', overflow: 'hidden', marginBottom: '0.4rem' }}>
             <div style={{ width: `${progress}%`, height: '100%', background: 'var(--brand-500)', transition: 'width 0.2s' }} />
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--muted)', margin: 0 }}>Dang tai len... {progress}%</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--muted)', margin: 0 }}>Đang tải lên... {progress}%</p>
         </div>
       )}
 
-      {error && <p className="field-error">{error}</p>}
+      {/* Error alert */}
+      {error && (
+        <div style={{ padding: '0.4rem 0.6rem', background: 'rgb(239 68 68 / 0.1)', borderRadius: 'var(--radius-sm)', border: '1px solid rgb(239 68 68 / 0.2)' }}>
+          <p className="field-error" style={{ margin: 0, fontSize: '0.78rem' }}>⚠️ {error}</p>
+        </div>
+      )}
 
-      {/* Alt / Caption */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+      {/* Alt text and Caption fields */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.25rem' }}>
         <div>
-          <label className="label" style={{ fontSize: '0.78rem' }}>Alt text</label>
-          <input className="input" placeholder="Mo ta hinh anh..." value={block.alt ?? ''} onChange={(e) => onUpdate({ ...block, alt: e.target.value })} style={{ fontSize: '0.82rem' }} />
+          <label className="label" style={{ fontSize: '0.78rem' }}>Mô tả ảnh (Alt text *):</label>
+          <input
+            className="input"
+            placeholder="Mô tả nội dung hình ảnh..."
+            value={block.alt ?? ''}
+            onChange={(e) => onUpdate({ ...block, alt: e.target.value })}
+            style={{ fontSize: '0.82rem' }}
+          />
         </div>
         <div>
-          <label className="label" style={{ fontSize: '0.78rem' }}>Caption</label>
-          <input className="input" placeholder="Chu thich anh..." value={block.caption ?? ''} onChange={(e) => onUpdate({ ...block, caption: e.target.value })} style={{ fontSize: '0.82rem' }} />
+          <label className="label" style={{ fontSize: '0.78rem' }}>Chú thích (Caption):</label>
+          <input
+            className="input"
+            placeholder="Chú thích dưới ảnh (tùy chọn)..."
+            value={block.caption ?? ''}
+            onChange={(e) => onUpdate({ ...block, caption: e.target.value })}
+            style={{ fontSize: '0.82rem' }}
+          />
         </div>
       </div>
 
-      {block.url && (
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()} style={{ alignSelf: 'flex-start', fontSize: '0.8rem' }}>
-          📷 Doi anh
-        </button>
-      )}
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = '';
+        }}
+      />
     </div>
   );
 }
@@ -484,6 +681,7 @@ function VideoBlockEditor({
 
       {block.youtubeId && !err && (
         <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '16/9', maxWidth: 320 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`https://img.youtube.com/vi/${block.youtubeId}/hqdefault.jpg`}
             alt="YouTube thumbnail"

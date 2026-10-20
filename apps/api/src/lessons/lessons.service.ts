@@ -485,8 +485,9 @@ export class LessonsService {
   }
 
   /**
-   * Validate that all image/audio block URLs belong to this project's Cloudinary cloud.
-   * Throws VALIDATION_ERROR if any URL has the wrong cloud name path.
+   * Validate that all image/audio block URLs belong to this project's Cloudinary cloud
+   * when hosted on res.cloudinary.com.
+   * Throws VALIDATION_ERROR if a Cloudinary URL has the wrong cloud name path.
    */
   private validateCloudinaryUrls(contentJson: ContentJsonDto): void {
     const expectedPrefix = `/${this.cloudName}/`;
@@ -496,9 +497,13 @@ export class LessonsService {
       if (block.type === 'image' || block.type === 'audio') {
         try {
           const url = new URL(block.url);
-          if (!url.pathname.startsWith(expectedPrefix)) {
+          // If URL is from Cloudinary, ensure it belongs to this project's cloud
+          if (
+            url.hostname === 'res.cloudinary.com' &&
+            !url.pathname.startsWith(expectedPrefix)
+          ) {
             errors.push(
-              `Block "${block.id}": URL path must start with "${expectedPrefix}" (got "${url.pathname.slice(0, 30)}...")`,
+              `Block "${block.id}": Cloudinary URL path must start with "${expectedPrefix}" (got "${url.pathname.slice(0, 30)}...")`,
             );
           }
         } catch {

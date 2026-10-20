@@ -74,6 +74,14 @@ const cloudinaryUrlSchema = z
     { message: 'URL must be from res.cloudinary.com' },
   );
 
+/** Image URL validation — accepts Cloudinary and external https/http URLs */
+const imageUrlSchema = z
+  .string()
+  .url()
+  .refine((u) => u.startsWith('https://') || u.startsWith('http://'), {
+    message: 'URL must use https or http',
+  });
+
 const blockIdSchema = z.string().min(1).max(64);
 
 export const TextBlockSchema = z.object({
@@ -91,7 +99,7 @@ export type TextBlock = z.infer<typeof TextBlockSchema>;
 export const ImageBlockSchema = z.object({
   id: blockIdSchema,
   type: z.literal('image'),
-  url: cloudinaryUrlSchema,
+  url: imageUrlSchema,
   alt: z.string().min(1, 'alt is required').max(300),
   caption: z.string().max(300).optional(),
 });
