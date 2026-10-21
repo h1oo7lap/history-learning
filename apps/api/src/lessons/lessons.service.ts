@@ -21,7 +21,7 @@ import {
 
 /** Fields included when returning a lesson in admin/public detail (includes contentJson) */
 const LESSON_INCLUDE = {
-  grades: { include: { grade: true } },
+  grade: true,
   topics: { include: { topic: true } },
   periods: { include: { period: true } },
   characters: { include: { character: true } },
@@ -44,7 +44,7 @@ const LESSON_LIST_SELECT = {
   createdAt: true,
   updatedAt: true,
   // content and contentJson intentionally excluded from list
-  grades: { include: { grade: true } },
+  grade: true,
   topics: { include: { topic: true } },
 } as const;
 
@@ -77,9 +77,7 @@ export class LessonsService {
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' as const } }
         : {}),
-      ...(query.gradeId
-        ? { grades: { some: { gradeId: query.gradeId } } }
-        : {}),
+      ...(query.gradeId ? { gradeId: query.gradeId } : {}),
       ...(query.topicId
         ? { topics: { some: { topicId: query.topicId } } }
         : {}),
@@ -139,9 +137,7 @@ export class LessonsService {
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' as const } }
         : {}),
-      ...(query.gradeId
-        ? { grades: { some: { gradeId: query.gradeId } } }
-        : {}),
+      ...(query.gradeId ? { gradeId: query.gradeId } : {}),
       ...(query.topicId
         ? { topics: { some: { topicId: query.topicId } } }
         : {}),
@@ -213,7 +209,7 @@ export class LessonsService {
     // Publish validation
     const status = dto.status ?? PublishStatus.DRAFT;
     if (status === PublishStatus.PUBLISHED) {
-      this.validatePublish(dto.title, content, contentJson, dto.gradeIds ?? []);
+      this.validatePublish(dto.title, content, contentJson, dto.gradeId);
     }
 
     return this.prisma.lesson.create({
@@ -228,9 +224,7 @@ export class LessonsService {
         estimatedTime: dto.estimatedTime,
         displayOrder: dto.displayOrder,
         status,
-        grades: {
-          create: (dto.gradeIds ?? []).map((gradeId) => ({ gradeId })),
-        },
+        gradeId: dto.gradeId,
         topics: {
           create: (dto.topicIds ?? []).map((topicId) => ({ topicId })),
         },
@@ -335,19 +329,16 @@ export class LessonsService {
     const newStatus = dto.status ?? existing.status;
     if (newStatus === PublishStatus.PUBLISHED) {
       const finalTitle = dto.title ?? existing.title;
-      const finalGradeIds =
-        dto.gradeIds !== undefined
-          ? dto.gradeIds
-          : existing.grades.map((g) => g.gradeId);
-      this.validatePublish(finalTitle, finalContent, finalContentJson, finalGradeIds ?? []);
+      const finalGradeId =
+        dto.gradeId !== undefined
+          ? dto.gradeId
+          : existing.gradeId;
+      this.validatePublish(finalTitle, finalContent, finalContentJson, finalGradeId);
     }
 
     // Build the update within a transaction for relation sync
     return this.prisma.$transaction(async (tx) => {
       // Sync relations: delete all, then re-create (only for provided arrays)
-      if (dto.gradeIds !== undefined) {
-        await tx.lessonGrade.deleteMany({ where: { lessonId: id } });
-      }
       if (dto.topicIds !== undefined) {
         await tx.lessonTopic.deleteMany({ where: { lessonId: id } });
       }
@@ -383,14 +374,7 @@ export class LessonsService {
             ? { displayOrder: dto.displayOrder }
             : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),
-          // Re-create relations if provided
-          ...(dto.gradeIds !== undefined
-            ? {
-                grades: {
-                  create: dto.gradeIds.map((gradeId) => ({ gradeId })),
-                },
-              }
-            : {}),
+          ...(dto.gradeId !== undefined ? { gradeId: dto.gradeId } : {}),
           ...(dto.topicIds !== undefined
             ? {
                 topics: {
@@ -526,16 +510,16 @@ export class LessonsService {
    * Throws VALIDATION_ERROR with details if any are missing.
    */
   private async validateRelationIds(
-    dto: Partial<Pick<CreateLessonDto, 'gradeIds' | 'topicIds' | 'periodIds' | 'characters' | 'eventIds'>>,
+    dto: Partial<Pick<CreateLessonDto, 'gradeId' | 'topicIds' | 'periodIds' | 'characters' | 'eventIds'>>,
   ) {
     const errors: string[] = [];
 
-    if (dto.gradeIds?.length) {
+    if (dto.gradeId) {
       const found = await this.prisma.grade.count({
-        where: { id: { in: dto.gradeIds } },
+        where: { id: dto.gradeId },
       });
-      if (found !== dto.gradeIds.length) {
-        errors.push('One or more grade IDs are invalid');
+      if (found === 0) {
+        errors.push('Grade ID is invalid');
       }
     }
 
@@ -589,7 +573,7 @@ export class LessonsService {
    * Validate publish requirements:
    * - title must not be empty
    * - content (derived) must have at least some text (not just image/video/audio)
-   * - at least 1 grade
+   * - grade must be present
    *
    * A lesson with only image/audio/video blocks (no text) CANNOT be published.
    */
@@ -597,7 +581,7 @@ export class LessonsService {
     title: string,
     content: string,
     contentJson: ContentJsonDto | null,
-    gradeIds: string[],
+    gradeId?: string,
   ) {
     const errors: string[] = [];
 
@@ -619,8 +603,8 @@ export class LessonsService {
       }
     }
 
-    if (!gradeIds || gradeIds.length === 0) {
-      errors.push('At least one grade is required for publishing');
+    if (!gradeId || gradeId.trim().length === 0) {
+      errors.push('Grade is required for publishing');
     }
 
     if (errors.length) {

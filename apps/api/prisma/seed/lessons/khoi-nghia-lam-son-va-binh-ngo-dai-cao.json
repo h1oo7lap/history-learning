@@ -7,10 +7,6 @@
   "estimatedTime": 18,
   "displayOrder": 5,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_7",
-    "GRADE_10"
-  ],
   "topics": [
     "cac-tran-danh-lich-su",
     "danh-nhan-lich-su",
@@ -50,5 +46,6 @@
       "type": "text",
       "text": "## 4. Bình Ngô Đại Cáo – Bản tuyên ngôn độc lập\n\nMùa xuân năm 1428, Lê Lợi lên ngôi vua, sai Nguyễn Trãi soạn **Bình Ngô Đại Cáo**, tuyên bố kết thúc chiến tranh, mở ra kỷ nguyên thái bình của triều Hậu Lê."
     }
-  ]
+  ],
+  "grade": "GRADE_7"
 }

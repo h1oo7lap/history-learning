@@ -7,11 +7,6 @@
   "estimatedTime": 20,
   "displayOrder": 4,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_7",
-    "GRADE_10",
-    "GRADE_11"
-  ],
   "topics": [
     "cac-tran-danh-lich-su",
     "danh-nhan-lich-su",
@@ -59,5 +54,6 @@
       "type": "text",
       "text": "## 4. Tinh thần đoàn kết là cội nguồn sức mạnh\n\n> \"Vừa rồi Toa Đô, Ô Mã Nhi bốn mặt bao vây, nếu không có vua tôi đồng tâm, anh em hòa mục, cả nước góp sức thì làm sao phá được giặc?\" — *Trần Hưng Đạo*"
     }
-  ]
+  ],
+  "grade": "GRADE_7"
 }

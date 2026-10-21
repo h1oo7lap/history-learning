@@ -105,6 +105,16 @@ export class QuizzesService {
   async adminUpdate(id: string, dto: UpdateQuizDto) {
     await this.ensureExists(id);
 
+    if (dto.lessonId !== undefined) {
+      const lesson = await this.prisma.lesson.findUnique({ where: { id: dto.lessonId } });
+      if (!lesson) throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Bai hoc khong ton tai');
+
+      const existing = await this.prisma.quiz.findUnique({ where: { lessonId: dto.lessonId } });
+      if (existing && existing.id !== id) {
+        throw new AppError(ErrorCodes.QUIZ_ALREADY_EXISTS, 409, 'Bai hoc nay da co quiz');
+      }
+    }
+
     if (dto.status === PublishStatus.PUBLISHED) {
       await this.validatePublish(id);
     }
@@ -112,6 +122,7 @@ export class QuizzesService {
     return this.prisma.quiz.update({
       where: { id },
       data: {
+        ...(dto.lessonId !== undefined && { lessonId: dto.lessonId }),
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.timeLimit !== undefined && { timeLimit: dto.timeLimit }),
@@ -288,7 +299,7 @@ export class QuizzesService {
         status: PublishStatus.PUBLISHED,
         lesson: {
           status: PublishStatus.PUBLISHED,
-          ...(effectiveGradeId ? { grades: { some: { gradeId: effectiveGradeId } } } : {}),
+          ...(effectiveGradeId ? { gradeId: effectiveGradeId } : {}),
         },
       },
       select: {

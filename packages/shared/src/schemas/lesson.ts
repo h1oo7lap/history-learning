@@ -212,7 +212,7 @@ export const CreateLessonSchema = z.object({
   displayOrder: z.number().int().default(0),
   status: z.nativeEnum(PublishStatus).default(PublishStatus.DRAFT),
   // Relations
-  gradeIds: z.array(z.string()).default([]),
+  gradeId: z.string().min(1, 'Lớp học là bắt buộc'),
   topicIds: z.array(z.string()).default([]),
   periodIds: z.array(z.string()).default([]),
   characters: z.array(LessonCharacterRelSchema).default([]),

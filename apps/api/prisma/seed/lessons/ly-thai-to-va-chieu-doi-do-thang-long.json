@@ -7,11 +7,6 @@
   "estimatedTime": 10,
   "displayOrder": 3,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_4",
-    "GRADE_7",
-    "GRADE_10"
-  ],
   "topics": [
     "doc-lap-va-phong-kien",
     "danh-nhan-lich-su",
@@ -59,5 +54,6 @@
       "type": "text",
       "text": "## 4. Ý nghĩa lịch sử\n\nSự kiện dời đô mở ra một trang sử mới cho nước Đại Việt, đưa Thăng Long trở thành trái tim chính trị, kinh tế và văn hóa của đất nước suốt hơn một thiên niên kỷ."
     }
-  ]
+  ],
+  "grade": "GRADE_7"
 }

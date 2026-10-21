@@ -141,9 +141,7 @@ describe('Quizzes (e2e)', () => {
         slug: 'chien-thang-bach-dang-938-' + Date.now(),
         content: '<p>Nội dung bài học lịch sử</p>',
         status: PublishStatus.PUBLISHED,
-        grades: {
-          create: [{ gradeId: gradeA.id }],
-        },
+        gradeId: gradeA.id,
       },
     });
 
@@ -153,9 +151,7 @@ describe('Quizzes (e2e)', () => {
         slug: 'khoi-nghia-lam-son-' + Date.now(),
         content: '<p>Nội dung Lam Sơn</p>',
         status: PublishStatus.PUBLISHED,
-        grades: {
-          create: [{ gradeId: gradeB.id }],
-        },
+        gradeId: gradeB.id,
       },
     });
 
@@ -165,9 +161,7 @@ describe('Quizzes (e2e)', () => {
         slug: 'bai-hoc-nhap-' + Date.now(),
         content: '<p>Chưa xuất bản</p>',
         status: PublishStatus.DRAFT,
-        grades: {
-          create: [{ gradeId: gradeA.id }],
-        },
+        gradeId: gradeA.id,
       },
     });
 
@@ -248,9 +242,7 @@ describe('Quizzes (e2e)', () => {
         slug: 'khang-chien-chong-tong-' + Date.now(),
         content: '<p>Nội dung bài học kháng chiến chống Tống</p>',
         status: PublishStatus.PUBLISHED,
-        grades: {
-          create: [{ gradeId: gradeA.id }],
-        },
+        gradeId: gradeA.id,
       },
     });
 
@@ -1166,6 +1158,7 @@ describe('Quizzes (e2e)', () => {
           slug: 'bai-hoc-quiz-rong-' + Date.now(),
           content: '<p>Nội dung</p>',
           status: PublishStatus.DRAFT,
+          gradeId: gradeA.id,
         },
       });
 

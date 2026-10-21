@@ -5,8 +5,8 @@ import { CharacterMultiSelect } from './CharacterMultiSelect';
 import type { CharacterWithRole } from './types';
 
 export interface LessonRelationsTabProps {
-  gradeIds: string[];
-  setGradeIds: Dispatch<SetStateAction<string[]>>;
+  gradeId: string;
+  setGradeId: Dispatch<SetStateAction<string>>;
   topicIds: string[];
   setTopicIds: Dispatch<SetStateAction<string[]>>;
   periodIds: string[];
@@ -28,8 +28,8 @@ export interface LessonRelationsTabProps {
 }
 
 export function LessonRelationsTab({
-  gradeIds,
-  setGradeIds,
+  gradeId,
+  setGradeId,
   topicIds,
   setTopicIds,
   periodIds,
@@ -51,16 +51,28 @@ export function LessonRelationsTab({
 }: LessonRelationsTabProps) {
   return (
     <>
-      <MultiCheckbox
-        label="Lớp học"
-        options={gradeOptions.map((g) => ({
-          id: g.id,
-          name: `${g.name} (${g.code})`,
-        }))}
-        selected={gradeIds}
-        onChange={setGradeIds}
-        isLoading={gradesLoading}
-      />
+      <div>
+        <label className="label" htmlFor="lesson-grade-select">
+          Lớp học <span style={{ color: 'var(--error)' }}>*</span>
+        </label>
+        {gradesLoading ? (
+          <div className="skeleton" style={{ height: 38, borderRadius: 4 }} />
+        ) : (
+          <select
+            id="lesson-grade-select"
+            className="input"
+            value={gradeId}
+            onChange={(e) => setGradeId(e.target.value)}
+          >
+            <option value="">-- Chọn khối lớp --</option>
+            {gradeOptions.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({g.code})
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       <MultiCheckbox
         label="Chủ đề"

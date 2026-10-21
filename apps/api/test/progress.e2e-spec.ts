@@ -32,9 +32,26 @@ describe('Progress (e2e)', () => {
   let userBcookie: string;
   let userAId: string;
   let userBId: string;
+  let gradeId: string;
 
   beforeAll(async () => {
     ({ app, prisma } = await createTestApp());
+    const existing = await prisma.grade.findFirst();
+    if (existing) {
+      gradeId = existing.id;
+    } else {
+      const level = await prisma.educationLevel.upsert({
+        where: { code: 'PRIMARY_PROG_TEST' },
+        create: { name: 'Tiểu học', code: 'PRIMARY_PROG_TEST', displayOrder: 1 },
+        update: {},
+      });
+      const grade = await prisma.grade.upsert({
+        where: { code: 'GRADE_4_PROG_TEST' },
+        create: { educationLevelId: level.id, name: 'Lớp 4', code: 'GRADE_4_PROG_TEST', displayOrder: 1 },
+        update: {},
+      });
+      gradeId = grade.id;
+    }
   });
 
   afterAll(async () => {
@@ -158,6 +175,7 @@ describe('Progress (e2e)', () => {
     it('404: POST /api/lessons/:id/start trả 404 LESSON_NOT_FOUND với bài học DRAFT hoặc ARCHIVED', async () => {
       const draftLesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài DRAFT',
           slug: 'bai-draft',
           content: '<p>Nội dung draft</p>',
@@ -167,6 +185,7 @@ describe('Progress (e2e)', () => {
 
       const archivedLesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài ARCHIVED',
           slug: 'bai-archived',
           content: '<p>Nội dung archived</p>',
@@ -190,6 +209,7 @@ describe('Progress (e2e)', () => {
     it('404: POST /api/lessons/:id/complete trả 404 LESSON_NOT_FOUND với bài học DRAFT hoặc ARCHIVED', async () => {
       const draftLesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài DRAFT 2',
           slug: 'bai-draft-2',
           content: '<p>Nội dung draft</p>',
@@ -212,6 +232,7 @@ describe('Progress (e2e)', () => {
     it('P3: POST /api/lessons/:id/start tạo mới tiến độ IN_PROGRESS với progress=0 và startedAt', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 1',
           slug: 'bai-published-1',
           content: '<p>Nội dung 1</p>',
@@ -236,6 +257,7 @@ describe('Progress (e2e)', () => {
     it('P3: POST /api/lessons/:id/start lặp lại khi đang IN_PROGRESS giữ nguyên tiến độ', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 2',
           slug: 'bai-published-2',
           content: '<p>Nội dung 2</p>',
@@ -260,6 +282,7 @@ describe('Progress (e2e)', () => {
     it('P3: start không bao giờ hạ trạng thái COMPLETED xuống IN_PROGRESS', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 3',
           slug: 'bai-published-3',
           content: '<p>Nội dung 3</p>',
@@ -292,6 +315,7 @@ describe('Progress (e2e)', () => {
     it('P3: POST /api/lessons/:id/complete chuyển sang COMPLETED với progress=100 và ghi nhận completedAt', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 4',
           slug: 'bai-published-4',
           content: '<p>Nội dung 4</p>',
@@ -321,6 +345,7 @@ describe('Progress (e2e)', () => {
     it('P3: POST /api/lessons/:id/complete có thể hoàn thành trực tiếp mà không cần gọi start trước', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 5',
           slug: 'bai-published-5',
           content: '<p>Nội dung 5</p>',
@@ -343,6 +368,7 @@ describe('Progress (e2e)', () => {
     it('P3: complete nếu bản ghi đã có nhưng startedAt đang null thì đặt startedAt = now', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 6',
           slug: 'bai-published-6',
           content: '<p>Nội dung 6</p>',
@@ -376,6 +402,7 @@ describe('Progress (e2e)', () => {
     it('P1: complete lặp lại trả cùng kết quả và giữ nguyên completedAt lần đầu', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài PUBLISHED 7',
           slug: 'bai-published-7',
           content: '<p>Nội dung 7</p>',
@@ -408,6 +435,7 @@ describe('Progress (e2e)', () => {
     it('P1: hai request start đồng thời không gây lỗi unique 500', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài Race Start',
           slug: 'bai-race-start',
           content: '<p>Nội dung race</p>',
@@ -438,6 +466,7 @@ describe('Progress (e2e)', () => {
     it('P1: hai request complete đồng thời không gây lỗi unique 500 và completedAt chỉ ghi 1 lần', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài Race Complete',
           slug: 'bai-race-complete',
           content: '<p>Nội dung race</p>',
@@ -474,6 +503,7 @@ describe('Progress (e2e)', () => {
     it('P3: GET /api/progress/me trả danh sách tiến độ gồm lessonId, status, progress, startedAt, completedAt', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài Tiến Độ Me',
           slug: 'bai-tien-do-me',
           content: '<p>Nội dung</p>',
@@ -508,6 +538,7 @@ describe('Progress (e2e)', () => {
     it('P3: người dùng A không thấy bản ghi tiến độ của người dùng B trên GET /api/progress/me', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài Cách Ly',
           slug: 'bai-cach-ly',
           content: '<p>Nội dung</p>',
@@ -548,6 +579,7 @@ describe('Progress (e2e)', () => {
     it('P3: cả vai trò USER và ADMIN đã đăng nhập đều dùng được các API tiến độ', async () => {
       const lesson = await prisma.lesson.create({
         data: {
+          gradeId,
           title: 'Bài Vai Trò',
           slug: 'bai-vai-tro',
           content: '<p>Nội dung</p>',

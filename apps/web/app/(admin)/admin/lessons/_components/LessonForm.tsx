@@ -50,7 +50,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
   const [estimatedTime, setEstimatedTime] = useState('10');
   const [displayOrder, setDisplayOrder] = useState('0');
   const [status, setStatus] = useState<LessonStatus>('DRAFT');
-  const [gradeIds, setGradeIds] = useState<string[]>([]);
+  const [gradeId, setGradeId] = useState<string>('');
   const [topicIds, setTopicIds] = useState<string[]>([]);
   const [periodIds, setPeriodIds] = useState<string[]>([]);
   const [characters, setCharacters] = useState<CharacterWithRole[]>([]);
@@ -85,7 +85,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
         setEstimatedTime(String(lesson.estimatedTime));
         setDisplayOrder(String(lesson.displayOrder));
         setStatus(lesson.status);
-        setGradeIds(lesson.grades.map((g) => g.gradeId));
+        setGradeId(lesson.gradeId || lesson.grades?.[0]?.gradeId || '');
         setTopicIds(lesson.topics.map((t) => t.topicId));
         setPeriodIds(lesson.periods.map((p) => p.periodId));
         setCharacters(
@@ -113,7 +113,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
         setEstimatedTime('10');
         setDisplayOrder('0');
         setStatus('DRAFT');
-        setGradeIds([]);
+        setGradeId('');
         setTopicIds([]);
         setPeriodIds([]);
         setCharacters([]);
@@ -170,11 +170,13 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
 
     if (estimatedTime && isNaN(Number(estimatedTime))) errs.estimatedTime = 'Phải là số';
     if (displayOrder && isNaN(Number(displayOrder))) errs.displayOrder = 'Phải là số';
+    if (status === 'PUBLISHED' && !gradeId) errs.gradeId = 'Vui lòng chọn khối lớp để xuất bản';
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       // Switch to the tab that has the first error
       if (errs.title || errs.content) setActiveTab('basic');
       else if (errs.estimatedTime || errs.displayOrder) setActiveTab('meta');
+      else if (errs.gradeId) setActiveTab('relations');
     }
     return Object.keys(errs).length === 0;
   };
@@ -197,7 +199,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
       estimatedTime: Number(estimatedTime) || 10,
       displayOrder: Number(displayOrder) || 0,
       status,
-      gradeIds,
+      gradeId,
       topicIds,
       periodIds,
       characters: characters
@@ -378,8 +380,8 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
             {/* === TAB: Relations === */}
             {activeTab === 'relations' && (
               <LessonRelationsTab
-                gradeIds={gradeIds}
-                setGradeIds={setGradeIds}
+                gradeId={gradeId}
+                setGradeId={setGradeId}
                 topicIds={topicIds}
                 setTopicIds={setTopicIds}
                 periodIds={periodIds}

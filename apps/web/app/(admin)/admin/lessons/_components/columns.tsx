@@ -59,12 +59,13 @@ export const difficultyColumn: ColumnDef<Lesson> = {
 export const gradeTagsColumn: ColumnDef<Lesson> = {
   key: 'grades',
   header: 'Lớp',
-  render: (item) => (
-    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-      {item.grades.length > 0 ? (
-        item.grades.slice(0, 3).map((g) => (
+  render: (item) => {
+    const gradeName = item.grade?.name || item.grades?.[0]?.grade?.name;
+    const gradeCode = item.grade?.code || item.grades?.[0]?.grade?.code;
+    return (
+      <div>
+        {gradeName || gradeCode ? (
           <span
-            key={g.gradeId}
             style={{
               padding: '0.1rem 0.4rem',
               borderRadius: 4,
@@ -74,28 +75,14 @@ export const gradeTagsColumn: ColumnDef<Lesson> = {
               whiteSpace: 'nowrap',
             }}
           >
-            {g.grade.code || g.grade.name}
+            {gradeCode || gradeName}
           </span>
-        ))
-      ) : (
-        <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
-      )}
-      {item.grades.length > 3 && (
-        <span
-          style={{
-            padding: '0.1rem 0.4rem',
-            borderRadius: 4,
-            background: 'var(--surface-2)',
-            fontSize: '0.75rem',
-            fontWeight: 500,
-            color: 'var(--muted)',
-          }}
-        >
-          +{item.grades.length - 3}
-        </span>
-      )}
-    </div>
-  ),
+        ) : (
+          <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
+        )}
+      </div>
+    );
+  },
 };
 
 export const timeColumn: ColumnDef<Lesson> = {

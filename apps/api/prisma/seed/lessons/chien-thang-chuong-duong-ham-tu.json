@@ -7,9 +7,6 @@
   "estimatedTime": 18,
   "displayOrder": 13,
   "status": "DRAFT",
-  "grades": [
-    "GRADE_10"
-  ],
   "topics": [
     "cac-tran-danh-lich-su",
     "doc-lap-va-phong-kien",
@@ -52,5 +49,6 @@
       "type": "text",
       "text": "## 5. Bài học lịch sử cho hậu thế\n\nThắng lợi để lại bài học sâu sắc về nghệ thuật chiến tranh nhân dân: lấy đoản binh chế trường trận, tránh chỗ mạnh đánh chỗ yếu, dựa vào sức mạnh đoàn kết toàn dân và biết chớp đúng thời cơ khi đối phương bộc lộ nhược điểm chiến lược để dứt điểm trận đánh."
     }
-  ]
+  ],
+  "grade": "GRADE_7"
 }

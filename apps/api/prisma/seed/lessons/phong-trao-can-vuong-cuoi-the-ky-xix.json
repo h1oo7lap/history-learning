@@ -7,10 +7,6 @@
   "estimatedTime": 15,
   "displayOrder": 9,
   "status": "DRAFT",
-  "grades": [
-    "GRADE_8",
-    "GRADE_11"
-  ],
   "topics": [
     "khang-chien-chong-phap"
   ],
@@ -36,5 +32,6 @@
       "type": "text",
       "text": "## 3. Các cuộc khởi nghĩa tiêu biểu\n\n- Khởi nghĩa Ba Đình (1886 - 1887) do Phạm Bành và Đinh Công Tráng lãnh đạo.\n- Khởi nghĩa Bãi Sậy (1883 - 1892) do Nguyễn Thiện Thuật chỉ huy.\n- Khởi nghĩa Hương Khê (1885 - 1896) do Phan Đình Phùng chỉ huy — đỉnh cao của phong trào Cần Vương."
     }
-  ]
+  ],
+  "grade": "GRADE_8"
 }

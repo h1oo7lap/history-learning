@@ -65,7 +65,7 @@ describe('LessonsService', () => {
       estimatedTime: 10,
       displayOrder: 0,
       status: PublishStatus.DRAFT,
-      gradeIds: ['grade-1'],
+      gradeId: 'grade-1',
       topicIds: [] as string[],
       periodIds: [] as string[],
       characters: [] as { characterId: string; role?: string | null }[],
@@ -148,21 +148,18 @@ describe('LessonsService', () => {
     it('should create grade/topic relations', async () => {
       const dto = {
         ...validDto,
-        gradeIds: ['g1', 'g2'],
+        gradeId: 'g1',
         topicIds: ['t1'],
       };
       prisma.lesson.findUnique.mockResolvedValue(null);
-      prisma.grade.count.mockResolvedValue(2);
+      prisma.grade.count.mockResolvedValue(1);
       prisma.topic.count.mockResolvedValue(1);
       prisma.lesson.create.mockResolvedValue({ id: 'new' });
 
       await service.adminCreate(dto);
 
       const createCall = prisma.lesson.create.mock.calls[0][0];
-      expect(createCall.data.grades.create).toEqual([
-        { gradeId: 'g1' },
-        { gradeId: 'g2' },
-      ]);
+      expect(createCall.data.gradeId).toBe('g1');
       expect(createCall.data.topics.create).toEqual([{ topicId: 't1' }]);
     });
   });
@@ -172,7 +169,7 @@ describe('LessonsService', () => {
   // =========================================================================
 
   describe('relation ID validation', () => {
-    it('should throw VALIDATION_ERROR when grade IDs do not exist', async () => {
+    it('should throw VALIDATION_ERROR when grade ID does not exist', async () => {
       const dto = {
         title: 'Test',
         content: 'Content',
@@ -180,7 +177,7 @@ describe('LessonsService', () => {
         estimatedTime: 10,
         displayOrder: 0,
         status: PublishStatus.DRAFT,
-        gradeIds: ['non-existent-grade'],
+        gradeId: 'non-existent-grade',
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -193,7 +190,7 @@ describe('LessonsService', () => {
 
       await expect(service.adminCreate(dto)).rejects.toThrow(AppError);
       await expect(service.adminCreate(dto)).rejects.toThrow(
-        /grade IDs are invalid/i,
+        /grade ID is invalid/i,
       );
     });
 
@@ -205,7 +202,7 @@ describe('LessonsService', () => {
         estimatedTime: 10,
         displayOrder: 0,
         status: PublishStatus.DRAFT,
-        gradeIds: [] as string[],
+        gradeId: 'g1',
         topicIds: ['bad-topic'],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -231,7 +228,8 @@ describe('LessonsService', () => {
       slug: 'old-title',
       content: 'Old content',
       status: PublishStatus.DRAFT,
-      grades: [{ gradeId: 'g1' }],
+      gradeId: 'g1',
+      grade: { id: 'g1', name: 'Lớp 4' },
       topics: [],
       periods: [],
       characters: [],
@@ -305,19 +303,17 @@ describe('LessonsService', () => {
       expect(result.slug).toBe('totally-new-title');
     });
 
-    it('should sync grade relations on update (delete + re-create)', async () => {
+    it('should update grade on update', async () => {
       prisma.lesson.findUnique.mockResolvedValue(existingLesson);
-      prisma.grade.count.mockResolvedValue(2);
+      prisma.grade.count.mockResolvedValue(1);
 
-      const deleteMock = vi.fn();
       const updateMock = vi.fn().mockResolvedValue({
         ...existingLesson,
-        grades: [{ gradeId: 'g2' }, { gradeId: 'g3' }],
+        gradeId: 'g2',
       });
 
       prisma.$transaction.mockImplementation(async (fn: any) => {
         return fn({
-          lessonGrade: { deleteMany: deleteMock },
           lessonTopic: prisma.lessonTopic,
           lessonPeriod: prisma.lessonPeriod,
           lessonCharacter: prisma.lessonCharacter,
@@ -328,12 +324,16 @@ describe('LessonsService', () => {
       });
 
       await service.adminUpdate('lesson-1', {
-        gradeIds: ['g2', 'g3'],
+        gradeId: 'g2',
       });
 
-      expect(deleteMock).toHaveBeenCalledWith({
-        where: { lessonId: 'lesson-1' },
-      });
+      expect(updateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            gradeId: 'g2',
+          }),
+        }),
+      );
     });
   });
 
@@ -342,7 +342,7 @@ describe('LessonsService', () => {
   // =========================================================================
 
   describe('publish validation', () => {
-    it('should fail to publish when no grades are provided', async () => {
+    it('should fail to publish when no grade is provided', async () => {
       const dto = {
         title: 'Valid Title',
         content: 'Some content',
@@ -350,7 +350,7 @@ describe('LessonsService', () => {
         difficulty: Difficulty.EASY,
         estimatedTime: 10,
         displayOrder: 0,
-        gradeIds: [] as string[], // no grades
+        gradeId: '', // no grade
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -362,7 +362,7 @@ describe('LessonsService', () => {
 
       await expect(service.adminCreate(dto)).rejects.toThrow(AppError);
       await expect(service.adminCreate(dto)).rejects.toThrow(
-        /at least one grade/i,
+        /grade is required/i,
       );
     });
 
@@ -374,7 +374,7 @@ describe('LessonsService', () => {
         difficulty: Difficulty.EASY,
         estimatedTime: 10,
         displayOrder: 0,
-        gradeIds: ['g1'],
+        gradeId: 'g1',
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -399,7 +399,7 @@ describe('LessonsService', () => {
         difficulty: Difficulty.EASY,
         estimatedTime: 10,
         displayOrder: 0,
-        gradeIds: ['g1'],
+        gradeId: 'g1',
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -424,7 +424,7 @@ describe('LessonsService', () => {
         difficulty: Difficulty.MEDIUM,
         estimatedTime: 15,
         displayOrder: 1,
-        gradeIds: ['g1'],
+        gradeId: 'g1',
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -451,7 +451,7 @@ describe('LessonsService', () => {
         slug: 'good-title',
         content: 'Some content',
         status: PublishStatus.DRAFT,
-        grades: [], // no existing grades
+        gradeId: '', // no existing grade
         topics: [],
         periods: [],
         characters: [],
@@ -470,7 +470,7 @@ describe('LessonsService', () => {
         service.adminUpdate('lesson-1', {
           status: PublishStatus.PUBLISHED,
         }),
-      ).rejects.toThrow(/at least one grade/i);
+      ).rejects.toThrow(/grade is required/i);
     });
   });
 
@@ -583,7 +583,7 @@ describe('LessonsService', () => {
       estimatedTime: 10,
       displayOrder: 0,
       status: PublishStatus.DRAFT,
-      gradeIds: [] as string[],
+      gradeId: 'g1',
       topicIds: [] as string[],
       periodIds: [] as string[],
       characters: [] as { characterId: string; role?: string | null }[],
@@ -693,7 +693,7 @@ describe('LessonsService', () => {
         difficulty: Difficulty.EASY,
         estimatedTime: 10,
         displayOrder: 0,
-        gradeIds: ['g1'],
+        gradeId: 'g1',
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],
@@ -736,7 +736,7 @@ describe('LessonsService', () => {
         difficulty: Difficulty.EASY,
         estimatedTime: 10,
         displayOrder: 0,
-        gradeIds: ['g1'],
+        gradeId: 'g1',
         topicIds: [] as string[],
         periodIds: [] as string[],
         characters: [] as { characterId: string; role?: string | null }[],

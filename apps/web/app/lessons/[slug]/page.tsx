@@ -90,15 +90,14 @@ export default async function LessonPage({
 
   const topics = lesson.topics?.map((t) => t.topic) ?? [];
   const periods = lesson.periods?.map((p) => p.period) ?? [];
-  const grades = lesson.grades?.map((g) => g.grade) ?? [];
+  const grade = lesson.grade ?? lesson.grades?.[0]?.grade;
 
   // Extract headings for Table of Contents
   const { headings, processedHtml } = lesson.contentJson
     ? { headings: extractHeadingsFromContentJson(lesson.contentJson), processedHtml: '' }
     : injectHeadingIds(lesson.content ?? '');
 
-  const primaryGrade = grades[0];
-  const primaryGradeLabel = primaryGrade ? formatGrade(primaryGrade) : null;
+  const gradeLabel = grade ? formatGrade(grade) : null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10 space-y-8">
@@ -124,17 +123,17 @@ export default async function LessonPage({
               Bài học
             </Link>
           </li>
-          {primaryGradeLabel && (
+          {grade && gradeLabel && (
             <>
               <li aria-hidden="true" className="text-muted/60">
                 <ChevronRight size={14} />
               </li>
               <li>
                 <Link
-                  href={`/lessons?gradeId=${primaryGrade.id}`}
+                  href={`/lessons?grade=${grade.id}`}
                   className="text-muted hover:text-seal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-sm"
                 >
-                  {primaryGradeLabel}
+                  {gradeLabel}
                 </Link>
               </li>
             </>
@@ -167,10 +166,10 @@ export default async function LessonPage({
                 <span>{lesson.estimatedTime} phút đọc</span>
               </span>
 
-              {grades.length > 0 && (
+              {grade && gradeLabel && (
                 <span className="inline-flex items-center gap-1.5">
                   <GraduationCap size={16} className="text-muted/80 shrink-0" aria-hidden="true" />
-                  <span>{grades.map((g) => formatGrade(g)).join(', ')}</span>
+                  <span>{gradeLabel}</span>
                 </span>
               )}
 
@@ -257,12 +256,10 @@ export default async function LessonPage({
                 <dd className="font-medium text-ink">{lesson.estimatedTime} phút</dd>
               </div>
 
-              {grades.length > 0 && (
+              {grade && gradeLabel && (
                 <div className="flex items-start justify-between gap-3">
                   <dt className="text-muted shrink-0">Lớp học</dt>
-                  <dd className="font-medium text-ink text-right">
-                    {grades.map((g) => formatGrade(g)).join(', ')}
-                  </dd>
+                  <dd className="font-medium text-ink text-right">{gradeLabel}</dd>
                 </div>
               )}
 

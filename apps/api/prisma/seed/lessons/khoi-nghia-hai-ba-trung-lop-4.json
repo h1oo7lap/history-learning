@@ -7,9 +7,6 @@
   "estimatedTime": 8,
   "displayOrder": 12,
   "status": "DRAFT",
-  "grades": [
-    "GRADE_4"
-  ],
   "topics": [
     "thoi-ky-bac-thuoc",
     "cac-tran-danh-lich-su"
@@ -36,5 +33,6 @@
       "type": "text",
       "text": "## 3. Ý nghĩa của cuộc khởi nghĩa\n\nCuộc khởi nghĩa Hai Bà Trưng là mốc son chói lọi trong trang sử vàng của dân tộc. Dù sau này Hai Bà đã anh dũng hy sinh khi quân giặc quay lại tấn công, hình ảnh hai vị nữ anh hùng cưỡi voi xông trận vẫn sống mãi trong lòng muôn đời con cháu Việt Nam.\n\n*Câu hỏi gợi mở:* Em cảm phục điều gì nhất ở tinh thần yêu nước và lòng dũng cảm của Hai Bà Trưng?"
     }
-  ]
+  ],
+  "grade": "GRADE_4"
 }

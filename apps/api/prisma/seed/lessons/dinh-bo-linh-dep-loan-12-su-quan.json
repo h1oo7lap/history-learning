@@ -7,10 +7,6 @@
   "estimatedTime": 15,
   "displayOrder": 2,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_4",
-    "GRADE_7"
-  ],
   "topics": [
     "danh-nhan-lich-su",
     "doc-lap-va-phong-kien"
@@ -50,5 +46,6 @@
       "type": "text",
       "text": "## 3. Sự ra đời của nhà nước Đại Cồ Việt\n\nNăm 968, đất nước hoàn toàn thống nhất. Đinh Bộ Lĩnh lên ngôi Hoàng đế (Đinh Tiên Hoàng), lập nên triều Đinh:\n\n- Đặt tên nước là **Đại Cồ Việt** (nước Việt lớn).\n- Chọn Hoa Lư làm kinh đô hiểm yếu.\n- Đặt niên hiệu riêng là *Thái Bình*, khẳng định vị thế bình đẳng với các hoàng đế phương Bắc.\n- Đúc đồng tiền *Thái Bình hưng bảo* — đồng tiền đầu tiên trong lịch sử tiền tệ Việt Nam."
     }
-  ]
+  ],
+  "grade": "GRADE_7"
 }

@@ -7,11 +7,6 @@
   "estimatedTime": 22,
   "displayOrder": 7,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_5",
-    "GRADE_9",
-    "GRADE_12"
-  ],
   "topics": [
     "cac-tran-danh-lich-su",
     "khang-chien-chong-phap"
@@ -53,5 +48,6 @@
       "type": "text",
       "text": "## 4. Ý nghĩa thời đại\n\nChiến thắng Điện Biên Phủ đã giáng đòn quyết định đập tan ách thống trị của thực dân Pháp, buộc Pháp ký Hiệp định Giơ-ne-vơ lập lại hòa bình ở Đông Dương, trở thành nguồn cổ vũ lớn lao cho phong trào giải phóng dân tộc trên toàn thế giới."
     }
-  ]
+  ],
+  "grade": "GRADE_9"
 }

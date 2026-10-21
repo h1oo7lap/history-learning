@@ -49,26 +49,30 @@ function cloudinaryUrl(path = 'image/upload/sample.jpg'): string {
   return `https://res.cloudinary.com/${cloud}/${path}`;
 }
 
+let gradeId: string;
+
 /** Minimal valid lesson DTO (legacy HTML mode) */
-function legacyLessonDto(overrides = {}) {
+function legacyLessonDto(overrides: any = {}) {
   return {
     title: 'Bài học lịch sử số 1',
     content: '<p>Nội dung bài học</p>',
     difficulty: 'EASY',
     estimatedTime: 10,
     displayOrder: 0,
+    gradeId,
     ...overrides,
   };
 }
 
 /** Minimal valid lesson DTO with contentJson (block mode) */
-function blockLessonDto(overrides = {}) {
+function blockLessonDto(overrides: any = {}) {
   return {
     title: 'Bài học block-based',
     content: '', // ignored by server when contentJson is present
     difficulty: 'EASY',
     estimatedTime: 10,
     displayOrder: 0,
+    gradeId,
     contentJson: {
       version: 1,
       blocks: [{ id: 'b1', type: 'text', text: 'Nội dung bài học từ block' }],
@@ -85,7 +89,6 @@ describe('Lessons (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let adminCookie: string;
-  let gradeId: string;
 
   beforeAll(async () => {
     ({ app, prisma } = await createTestApp());
@@ -692,7 +695,7 @@ describe('Lessons (e2e)', () => {
         .set('Cookie', adminCookie)
         .send({
           status: 'PUBLISHED',
-          gradeIds: [gradeId],
+          gradeId,
         })
         .expect(422);
 
@@ -723,7 +726,7 @@ describe('Lessons (e2e)', () => {
         .set('Cookie', adminCookie)
         .send({
           status: 'PUBLISHED',
-          gradeIds: [gradeId],
+          gradeId,
         })
         .expect(200);
 
@@ -744,7 +747,7 @@ describe('Lessons (e2e)', () => {
         .set('Cookie', adminCookie)
         .send({
           status: 'PUBLISHED',
-          gradeIds: [gradeId],
+          gradeId,
         })
         .expect(200);
 
@@ -771,7 +774,7 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/lessons/${id}`)
         .set('Cookie', adminCookie)
-        .send({ status: 'PUBLISHED', gradeIds: [gradeId] })
+        .send({ status: 'PUBLISHED', gradeId })
         .expect(200);
 
       return id;
@@ -818,7 +821,7 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/lessons/${id}`)
         .set('Cookie', adminCookie)
-        .send({ status: 'PUBLISHED', gradeIds: [gradeId] })
+        .send({ status: 'PUBLISHED', gradeId })
         .expect(200);
 
       const res = await request(app.getHttpServer())
@@ -842,7 +845,7 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/lessons/${id}`)
         .set('Cookie', adminCookie)
-        .send({ status: 'PUBLISHED', gradeIds: [gradeId] })
+        .send({ status: 'PUBLISHED', gradeId })
         .expect(200);
 
       const res = await request(app.getHttpServer())

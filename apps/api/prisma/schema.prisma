@@ -180,7 +180,7 @@ model Grade {
 
   educationLevel EducationLevel @relation(fields: [educationLevelId], references: [id], onDelete: Restrict)
   users          User[]
-  lessons        LessonGrade[]
+  lessons        Lesson[]
 
   @@index([educationLevelId])
   @@map("grades")
@@ -274,29 +274,19 @@ model Lesson {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  grades     LessonGrade[]
-  topics     LessonTopic[]
-  periods    LessonPeriod[]
-  characters LessonCharacter[]
-  events     LessonEvent[]
-  media      LessonMedia[]
-  progress   LessonProgress[]
-  quiz       Quiz?
+  gradeId       String
+  grade         Grade         @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+  topics        LessonTopic[]
+  periods       LessonPeriod[]
+  characters    LessonCharacter[]
+  events        LessonEvent[]
+  media         LessonMedia[]
+  progress      LessonProgress[]
+  quiz          Quiz?
 
+  @@index([gradeId])
   @@index([status, displayOrder])
   @@map("lessons")
-}
-
-model LessonGrade {
-  lessonId String
-  gradeId  String
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  grade  Grade  @relation(fields: [gradeId], references: [id], onDelete: Restrict)
-
-  @@id([lessonId, gradeId])
-  @@index([gradeId])
-  @@map("lesson_grades")
 }
 
 model LessonTopic {

@@ -7,11 +7,6 @@
   "estimatedTime": 10,
   "displayOrder": 8,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_4",
-    "GRADE_6",
-    "GRADE_10"
-  ],
   "topics": [
     "lich-su-viet-nam-co-dai",
     "van-hoa-nghe-thuat-truyen-thong"
@@ -38,5 +33,6 @@
       "type": "text",
       "text": "## 3. Đời sống vật chất và tinh thần\n\nCư dân Văn Lang đã thuần thục kỹ thuật đúc đồng với biểu tượng đỉnh cao là **Trống đồng Đông Sơn**. Đời sống sinh hoạt phong phú với tục ăn trầu, nhuộm răng đen, làm bánh chưng, bánh giầy trong các dịp lễ hội mừng mùa màng."
     }
-  ]
+  ],
+  "grade": "GRADE_6"
 }

@@ -110,7 +110,9 @@ export interface Lesson {
   status: LessonStatus;
   createdAt: string;
   updatedAt: string;
-  grades: LessonGradeRel[];
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string };
+  grades?: LessonGradeRel[];
   topics: LessonTopicRel[];
   periods: LessonPeriodRel[];
   characters: LessonCharacterRel[];
@@ -130,6 +132,7 @@ export interface CreateLessonPayload {
   estimatedTime?: number;
   displayOrder?: number;
   status?: LessonStatus;
+  gradeId: string;
   gradeIds?: string[];
   topicIds?: string[];
   periodIds?: string[];
@@ -443,7 +446,7 @@ export interface CreateQuizPayload {
   status?: QuizStatus;
 }
 
-export type UpdateQuizPayload = Partial<Omit<CreateQuizPayload, 'lessonId'>>;
+export type UpdateQuizPayload = Partial<CreateQuizPayload>;
 
 export interface QuizListQuery {
   page?: number;

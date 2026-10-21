@@ -28,7 +28,8 @@ interface LessonJsonData {
   estimatedTime: number;
   displayOrder: number;
   status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
-  grades: string[];
+  grade?: string;
+  grades?: string[];
   topics?: string[];
   periods?: string[];
   characters?: CharacterRef[];
@@ -142,20 +143,18 @@ export async function seedLessons(prisma: PrismaClient) {
       );
     }
 
-    if (!Array.isArray(data.grades) || data.grades.length === 0) {
-      throw new Error(
-        `[Lỗi File: ${filename}] Trường "grades" phải là mảng và có ít nhất 1 khối lớp.`,
-      );
+    const gradeCode = data.grade || (Array.isArray(data.grades) ? data.grades[0] : null);
+    if (!gradeCode || typeof gradeCode !== 'string') {
+      throw new Error(`[Lỗi File: ${filename}] Thiếu trường bắt buộc "grade".`);
     }
 
     // 3. Validation: Validate reference slugs against existing taxonomy
-    for (const gradeCode of data.grades) {
-      if (!gradeMap.has(gradeCode)) {
-        throw new Error(
-          `[Lỗi File: ${filename}] Tham chiếu gradeCode không tồn tại: "${gradeCode}" ở trường "grades".`,
-        );
-      }
+    if (!gradeMap.has(gradeCode)) {
+      throw new Error(
+        `[Lỗi File: ${filename}] Tham chiếu gradeCode không tồn tại: "${gradeCode}" ở trường "grade".`,
+      );
     }
+    const gradeId = gradeMap.get(gradeCode)!;
 
     const topicSlugs = data.topics || [];
     for (const topicSlug of topicSlugs) {
@@ -235,6 +234,7 @@ export async function seedLessons(prisma: PrismaClient) {
         estimatedTime: data.estimatedTime,
         displayOrder: data.displayOrder,
         status: data.status,
+        gradeId,
       },
       create: {
         title: data.title.trim(),
@@ -247,26 +247,18 @@ export async function seedLessons(prisma: PrismaClient) {
         estimatedTime: data.estimatedTime,
         displayOrder: data.displayOrder,
         status: data.status,
+        gradeId,
       },
     });
 
     lessonSlugToIdMap.set(lesson.slug, lesson.id);
 
     // 7. Clear old relational links and reconnect (safe and idempotent)
-    await prisma.lessonGrade.deleteMany({ where: { lessonId: lesson.id } });
     await prisma.lessonTopic.deleteMany({ where: { lessonId: lesson.id } });
     await prisma.lessonPeriod.deleteMany({ where: { lessonId: lesson.id } });
     await prisma.lessonCharacter.deleteMany({ where: { lessonId: lesson.id } });
     await prisma.lessonEvent.deleteMany({ where: { lessonId: lesson.id } });
     await prisma.lessonMedia.deleteMany({ where: { lessonId: lesson.id } });
-
-    // Connect Grades
-    for (const code of data.grades) {
-      const gradeId = gradeMap.get(code)!;
-      await prisma.lessonGrade.create({
-        data: { lessonId: lesson.id, gradeId },
-      });
-    }
 
     // Connect Topics
     for (const slug of topicSlugs) {

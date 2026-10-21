@@ -1064,7 +1064,7 @@ describe('QuizzesService', () => {
             status: PublishStatus.PUBLISHED,
             lesson: {
               status: PublishStatus.PUBLISHED,
-              grades: { some: { gradeId: 'grade-user' } },
+              gradeId: 'grade-user',
             },
           },
         }),
@@ -1079,7 +1079,7 @@ describe('QuizzesService', () => {
             status: PublishStatus.PUBLISHED,
             lesson: {
               status: PublishStatus.PUBLISHED,
-              grades: { some: { gradeId: 'grade-override' } },
+              gradeId: 'grade-override',
             },
           },
         }),

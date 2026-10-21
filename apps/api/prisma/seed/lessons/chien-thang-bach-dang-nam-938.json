@@ -7,11 +7,6 @@
   "estimatedTime": 12,
   "displayOrder": 1,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_4",
-    "GRADE_7",
-    "GRADE_10"
-  ],
   "topics": [
     "cac-tran-danh-lich-su",
     "danh-nhan-lich-su",
@@ -59,5 +54,6 @@
       "type": "text",
       "text": "## 4. Ý nghĩa lịch sử\n\nChiến thắng Bạch Đằng năm 938 có ý nghĩa bước ngoặt vô cùng to lớn: **chính thức chấm dứt hơn 1000 năm Bắc thuộc**, mở ra thời kỳ độc lập tự chủ lâu dài và vẻ vang cho dân tộc ta."
     }
-  ]
+  ],
+  "grade": "GRADE_4"
 }

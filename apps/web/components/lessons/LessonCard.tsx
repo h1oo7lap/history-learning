@@ -25,7 +25,11 @@ const difficultyBadgeVariant: Record<string, BadgeVariant> = {
 export function LessonCard({ lesson, className }: LessonCardProps) {
   const [imageError, setImageError] = useState(false);
 
-  const gradeText = lesson.grades?.[0]?.grade ? formatGrade(lesson.grades[0].grade) : '';
+  const gradeText = lesson.grade
+    ? formatGrade(lesson.grade)
+    : lesson.grades?.[0]?.grade
+      ? formatGrade(lesson.grades[0].grade)
+      : '';
   const periodText = lesson.periods?.[0]?.period?.name ?? '';
   const metaLine = [gradeText, periodText].filter(Boolean).join(' · ');
 

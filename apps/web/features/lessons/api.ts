@@ -16,9 +16,11 @@ export interface PublicLessonSummary {
   estimatedTime: number;
   displayOrder: number;
   status: LessonStatus;
-  grades: { gradeId: string; grade: { id: string; name: string; code: string } }[];
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string };
+  grades?: { gradeId: string; grade: { id: string; name: string; code: string } }[];
   topics: { topicId: string; topic: { id: string; name: string; slug: string } }[];
-  periods: { periodId: string; period: { id: string; name: string; slug: string } }[];
+  periods?: { periodId: string; period: { id: string; name: string; slug: string } }[];
 }
 
 export interface PublicLessonDetail extends PublicLessonSummary {

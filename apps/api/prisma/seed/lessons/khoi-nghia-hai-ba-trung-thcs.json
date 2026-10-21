@@ -7,9 +7,6 @@
   "estimatedTime": 12,
   "displayOrder": 11,
   "status": "DRAFT",
-  "grades": [
-    "GRADE_6"
-  ],
   "topics": [
     "thoi-ky-bac-thuoc",
     "cac-tran-danh-lich-su"
@@ -41,5 +38,6 @@
       "type": "text",
       "text": "## 4. Ý nghĩa lịch sử\n\nKhởi nghĩa Hai Bà Trưng là tiếng pháo hiệu mở đầu cho phong trào đấu tranh giành độc lập của dân tộc Việt Nam suốt nghìn năm Bắc thuộc. Sự kiện này khẳng định sức sống mãnh liệt của truyền thống dựng nước thời các vua Hùng, đồng thời chứng minh vai trò lịch sử to lớn của người phụ nữ Việt Nam trong sự nghiệp chống giặc ngoại xâm."
     }
-  ]
+  ],
+  "grade": "GRADE_6"
 }

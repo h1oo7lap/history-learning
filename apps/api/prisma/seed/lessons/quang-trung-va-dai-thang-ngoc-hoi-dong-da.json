@@ -7,11 +7,6 @@
   "estimatedTime": 16,
   "displayOrder": 6,
   "status": "PUBLISHED",
-  "grades": [
-    "GRADE_5",
-    "GRADE_8",
-    "GRADE_11"
-  ],
   "topics": [
     "cac-tran-danh-lich-su",
     "danh-nhan-lich-su"
@@ -43,5 +38,6 @@
       "type": "text",
       "text": "## 3. Đêm mùng 4 rạng sáng mùng 5 Tết Kỷ Dậu\n\nQuân Tây Sơn đồng loạt công phá đồn Ngọc Hồi và đồn Khương Thượng (Đống Đa). Tướng giặc Sầm Nghi Đống khiếp sợ thắt cổ tự tử; Tôn Sĩ Nghị hoảng hốt bỏ cả ấn tín tháo chạy qua cầu phao sông Hồng làm cầu đứt, xác giặc trôi nghẽn khúc sông.\n\nĐúng trưa mùng 5 Tết, Hoàng đế Quang Trung trong tấm áo bào xạm đen khói súng dẫn đầu đoàn quân chiến thắng tiến vào Thăng Long giữa tiếng reo hò rực rỡ của muôn dân."
     }
-  ]
+  ],
+  "grade": "GRADE_8"
 }

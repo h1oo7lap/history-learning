@@ -7,10 +7,6 @@
   "estimatedTime": 18,
   "displayOrder": 10,
   "status": "ARCHIVED",
-  "grades": [
-    "GRADE_7",
-    "GRADE_10"
-  ],
   "topics": [
     "doc-lap-va-phong-kien"
   ],
@@ -37,5 +33,6 @@
       "type": "text",
       "text": "## 3. Vũ khí trang bị\n\nBộ binh trang bị giáo mác, đao kiếm, cung nỏ và khiên mây. Thủy quân sử dụng các loại chiến thuyền nhẹ, cơ động, trang bị hỏa hổ và câu liêm chuyên dụng cho việc đánh thủy chiến trên các luồng lạch hiểm trở."
     }
-  ]
+  ],
+  "grade": "GRADE_11"
 }
