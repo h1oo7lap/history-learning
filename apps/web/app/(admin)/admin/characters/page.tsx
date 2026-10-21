@@ -90,8 +90,9 @@ const FIELDS: FieldDef[] = [
 const characterNameColumn: ColumnDef<Character> = {
   key: 'name',
   header: 'Nhân vật',
+  maxWidth: 280,
   render: (item) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: 280, minWidth: 0 }}>
       <div style={{
         width: 36, height: 36, borderRadius: '50%',
         background: item.avatar
@@ -103,13 +104,31 @@ const characterNameColumn: ColumnDef<Character> = {
       }}>
         {!item.avatar && item.name.charAt(0).toUpperCase()}
       </div>
-      <div>
-        <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.name}</div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div
+          title={item.name}
+          style={{
+            fontWeight: 600,
+            color: 'var(--foreground)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.name}
+        </div>
         {item.shortDescription && (
-          <div style={{
-            color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.1rem',
-            maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
+          <div
+            title={item.shortDescription}
+            style={{
+              color: 'var(--muted)',
+              fontSize: '0.8rem',
+              marginTop: '0.1rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {item.shortDescription}
           </div>
         )}

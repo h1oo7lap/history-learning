@@ -10,9 +10,10 @@ import { DifficultyBadge } from './DifficultyBadge';
 export const lessonTitleColumn: ColumnDef<Lesson> = {
   key: 'title',
   header: 'Bài học',
+  maxWidth: 320,
   render: (item) => (
-    <div style={{ maxWidth: 300 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div style={{ maxWidth: 320, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
         {item.thumbnail && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
@@ -27,15 +28,26 @@ export const lessonTitleColumn: ColumnDef<Lesson> = {
             }}
           />
         )}
-        <div>
-          <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.title}</div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div
+            title={item.title}
+            style={{
+              fontWeight: 600,
+              color: 'var(--foreground)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.title}
+          </div>
           {item.summary && (
             <div
+              title={item.summary}
               style={{
                 color: 'var(--muted)',
                 fontSize: '0.8rem',
                 marginTop: '0.1rem',
-                maxWidth: 240,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -53,12 +65,14 @@ export const lessonTitleColumn: ColumnDef<Lesson> = {
 export const difficultyColumn: ColumnDef<Lesson> = {
   key: 'difficulty',
   header: 'Độ khó',
+  nowrap: true,
   render: (item) => <DifficultyBadge difficulty={item.difficulty} />,
 };
 
 export const gradeTagsColumn: ColumnDef<Lesson> = {
   key: 'grades',
   header: 'Lớp',
+  nowrap: true,
   render: (item) => {
     const gradeName = item.grade?.name || item.grades?.[0]?.grade?.name;
     const gradeCode = item.grade?.code || item.grades?.[0]?.grade?.code;

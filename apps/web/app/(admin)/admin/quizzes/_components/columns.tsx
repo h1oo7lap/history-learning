@@ -5,11 +5,24 @@ import type { AdminQuiz } from '@/features/admin/api';
 export const quizTitleColumn: ColumnDef<AdminQuiz> = {
   key: 'title',
   header: 'Bài Quiz',
+  maxWidth: 300,
   render: (item) => (
-    <div style={{ maxWidth: 300 }}>
-      <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.title}</div>
+    <div style={{ maxWidth: 300, minWidth: 0 }}>
+      <div
+        title={item.title}
+        style={{
+          fontWeight: 600,
+          color: 'var(--foreground)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {item.title}
+      </div>
       {item.description && (
         <div
+          title={item.description}
           style={{
             fontSize: '0.78rem',
             color: 'var(--muted)',
@@ -29,13 +42,26 @@ export const quizTitleColumn: ColumnDef<AdminQuiz> = {
 export const quizLessonColumn: ColumnDef<AdminQuiz> = {
   key: 'lessonId',
   header: 'Bài học liên kết',
-  render: (item) => (
-    <div style={{ fontSize: '0.85rem' }}>
-      <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>
-        📖 {item.lesson?.title ?? item.lessonId}
+  maxWidth: 240,
+  render: (item) => {
+    const text = item.lesson?.title ?? item.lessonId ?? '—';
+    return (
+      <div
+        title={text}
+        style={{
+          fontSize: '0.85rem',
+          maxWidth: 240,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>
+          📖 {text}
+        </div>
       </div>
-    </div>
-  ),
+    );
+  },
 };
 
 export const quizQuestionsColumn: ColumnDef<AdminQuiz> = {

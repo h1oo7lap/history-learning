@@ -314,9 +314,30 @@ export default function AdminUsersPage() {
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = '')}
                   >
-                    <td style={{ padding: '0.875rem 1rem' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{user.fullName}</div>
-                      <div style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                    <td style={{ padding: '0.875rem 1rem', maxWidth: 260, minWidth: 0 }}>
+                      <div
+                        title={user.fullName}
+                        style={{
+                          fontWeight: 600,
+                          color: 'var(--foreground)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {user.fullName}
+                      </div>
+                      <div
+                        title={user.email}
+                        style={{
+                          color: 'var(--muted)',
+                          fontSize: '0.8rem',
+                          marginTop: '0.15rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {user.email}
                       </div>
                     </td>

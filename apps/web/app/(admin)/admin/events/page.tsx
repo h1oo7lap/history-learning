@@ -74,8 +74,21 @@ const FIELDS: FieldDef[] = [
 const locationColumn: ColumnDef<HistoricalEvent> = {
   key: 'location',
   header: 'Địa điểm',
+  maxWidth: 200,
   render: (item) => (
-    <span style={{ color: item.location ? 'var(--foreground)' : 'var(--muted)', fontSize: '0.85rem' }}>
+    <span
+      title={item.location || undefined}
+      style={{
+        color: item.location ? 'var(--foreground)' : 'var(--muted)',
+        fontSize: '0.85rem',
+        display: 'inline-block',
+        maxWidth: 200,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        verticalAlign: 'bottom',
+      }}
+    >
       {item.location || '—'}
     </span>
   ),

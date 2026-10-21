@@ -14,8 +14,12 @@ export interface ColumnDef<T> {
   align?: 'left' | 'center' | 'right';
   /** Minimum width */
   minWidth?: number;
+  /** Maximum width */
+  maxWidth?: number;
   /** Don't wrap */
   nowrap?: boolean;
+  /** Truncate text with ellipsis (...) and show tooltip */
+  ellipsis?: boolean;
 }
 
 export interface PaginatedData<T> {
@@ -302,6 +306,7 @@ export function DataTable<T extends { id: string }>({
                         ...thStyle,
                         textAlign: col.align ?? 'left',
                         ...(col.minWidth ? { minWidth: col.minWidth } : {}),
+                        ...(col.maxWidth ? { maxWidth: col.maxWidth } : {}),
                       }}
                     >
                       {col.header}
@@ -322,20 +327,44 @@ export function DataTable<T extends { id: string }>({
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = '')}
                   >
-                    {columns.map((col) => (
-                      <td
-                        key={col.key}
-                        style={{
-                          ...tdStyle,
-                          textAlign: col.align ?? 'left',
-                          whiteSpace: col.nowrap ? 'nowrap' : undefined,
-                        }}
-                      >
-                        {col.render
-                          ? col.render(item, rowIdx)
-                          : String((item as Record<string, unknown>)[col.key] ?? '')}
-                      </td>
-                    ))}
+                    {columns.map((col) => {
+                      const rawContent = col.render
+                        ? col.render(item, rowIdx)
+                        : (item as Record<string, unknown>)[col.key] != null
+                          ? String((item as Record<string, unknown>)[col.key])
+                          : '';
+
+                      const shouldEllipsis =
+                        col.ellipsis && typeof rawContent === 'string' && rawContent.length > 0;
+
+                      return (
+                        <td
+                          key={col.key}
+                          style={{
+                            ...tdStyle,
+                            textAlign: col.align ?? 'left',
+                            whiteSpace: col.nowrap ? 'nowrap' : undefined,
+                            ...(col.maxWidth ? { maxWidth: col.maxWidth } : {}),
+                          }}
+                        >
+                          {shouldEllipsis ? (
+                            <div
+                              title={rawContent}
+                              style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: col.maxWidth ?? '100%',
+                              }}
+                            >
+                              {rawContent}
+                            </div>
+                          ) : (
+                            rawContent
+                          )}
+                        </td>
+                      );
+                    })}
                     {renderActions && (
                       <td style={{ ...tdStyle, textAlign: 'right' }}>
                         <div
@@ -470,20 +499,34 @@ export function DataTable<T extends { id: string }>({
 /** Standard "Name + description" column */
 export function nameColumn<T extends { name: string; description?: string | null }>(
   header = 'Tên',
+  options?: { maxWidth?: number },
 ): ColumnDef<T> {
+  const maxWidth = options?.maxWidth ?? 280;
   return {
     key: 'name',
     header,
+    maxWidth,
     render: (item) => (
-      <div>
-        <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>{item.name}</div>
+      <div style={{ maxWidth, minWidth: 0 }}>
+        <div
+          title={item.name}
+          style={{
+            fontWeight: 600,
+            color: 'var(--foreground)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.name}
+        </div>
         {item.description && (
           <div
+            title={item.description}
             style={{
               color: 'var(--muted)',
               fontSize: '0.8rem',
               marginTop: '0.15rem',
-              maxWidth: 280,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -498,18 +541,26 @@ export function nameColumn<T extends { name: string; description?: string | null
 }
 
 /** Standard "slug" column */
-export function slugColumn<T extends { slug: string }>(): ColumnDef<T> {
+export function slugColumn<T extends { slug: string }>(maxWidth = 180): ColumnDef<T> {
   return {
     key: 'slug',
     header: 'Slug',
+    maxWidth,
     render: (item) => (
       <code
+        title={item.slug}
         style={{
           fontSize: '0.8rem',
           background: 'var(--surface-2)',
           padding: '0.15rem 0.5rem',
           borderRadius: 4,
           color: 'var(--brand-600)',
+          display: 'inline-block',
+          maxWidth,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          verticalAlign: 'middle',
         }}
       >
         {item.slug}
