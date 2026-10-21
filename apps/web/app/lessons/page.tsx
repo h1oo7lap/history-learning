@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import {
   BookOpen,
@@ -140,6 +141,12 @@ export default async function LessonsPage({
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('access_token')?.value;
+  if (!token) {
+    redirect('/login?from=/lessons');
+  }
+
   const sp = await searchParams;
 
   const [currentUser, educationLevels] = await Promise.all([
@@ -261,22 +268,12 @@ export default async function LessonsPage({
               Đang xem bài học theo <strong>{activeGradeLabel}</strong>.
             </span>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span>Đăng nhập để tự động hiển thị theo khối lớp của bạn:</span>
-            <Link
-              href="/login"
-              className="text-seal font-medium hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-seal"
-            >
-              Đăng nhập
-            </Link>
-            <span aria-hidden="true">|</span>
-            <Link
-              href="/register"
-              className="text-seal font-medium hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-seal"
-            >
-              Đăng ký
-            </Link>
-          </div>
+          <Link
+            href="/onboarding/grade"
+            className="text-xs text-seal font-medium hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-seal"
+          >
+            Cập nhật khối lớp của bạn →
+          </Link>
         </div>
       )}
 

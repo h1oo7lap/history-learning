@@ -26,7 +26,7 @@ export interface NavItem {
  */
 export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Bảng điều khiển', authRequired: true },
-  { href: '/lessons', label: 'Bài học' },
+  { href: '/lessons', label: 'Bài học', authRequired: true },
   { href: '/quiz', label: 'Quiz', authRequired: true },
 ];
 

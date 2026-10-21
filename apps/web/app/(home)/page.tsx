@@ -177,7 +177,7 @@ export default async function HomePage({
                     </Button>
                   </Link>
                   <Link
-                    href="/lessons"
+                    href={isAuthenticated ? '/lessons' : '/login?from=/lessons'}
                     className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
                   >
                     <Button variant="secondary" size="lg">
@@ -189,7 +189,7 @@ export default async function HomePage({
 
               {/* Khung hình ảnh tư liệu thật bên phải (hoặc niên biểu tóm tắt) */}
               <div className="lg:col-span-5">
-                {featuredLesson ? (
+                {isAuthenticated && featuredLesson ? (
                   <div className="w-full max-w-md mx-auto lg:max-w-none">
                     <figure className="group rounded-md border border-line bg-card p-3 shadow-card transition-colors hover:border-bronze/60">
                       <Link
@@ -278,7 +278,11 @@ export default async function HomePage({
                           {level.grades.map((grade) => (
                             <Link
                               key={grade.id}
-                              href={`/lessons?grade=${grade.id}`}
+                              href={
+                                isAuthenticated
+                                  ? `/lessons?grade=${grade.id}`
+                                  : `/login?from=${encodeURIComponent(`/lessons?grade=${grade.id}`)}`
+                              }
                               className="p-3 text-center rounded-md border border-line bg-paper/60 hover:bg-card hover:border-bronze/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
                               title={`Xem bài học ${grade.name}`}
                             >
@@ -333,8 +337,8 @@ export default async function HomePage({
               </section>
             )}
 
-            {/* ─── 4. Bài học mới: Tối đa 6 LessonCard (ẩn nếu rỗng) ─── */}
-            {latestLessons.length > 0 && (
+            {/* ─── 4. Bài học mới: Chỉ hiển thị khi đã đăng nhập (ẩn khi chưa đăng nhập) ─── */}
+            {isAuthenticated && latestLessons.length > 0 && (
               <section aria-labelledby="latest-lessons-title" className="space-y-6">
                 <div className="flex items-end justify-between flex-wrap gap-4">
                   <div>
@@ -427,7 +431,7 @@ export default async function HomePage({
                   </Button>
                 </Link>
                 <Link
-                  href="/lessons"
+                  href={isAuthenticated ? '/lessons' : '/login?from=/lessons'}
                   className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
                 >
                   <Button variant="secondary" size="lg">

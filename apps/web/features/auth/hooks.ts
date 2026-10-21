@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { authApi, usersApi, gradesApi } from './api';
 import { ApiClientError } from '@/lib/api-client';
@@ -59,6 +59,7 @@ export function useRegister() {
 export function useLogin() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   return useMutation({
     mutationFn: (dto: LoginDto) => authApi.login(dto),
@@ -74,7 +75,12 @@ export function useLogin() {
       if (!user.gradeId) {
         router.push('/onboarding/grade');
       } else {
-        router.push('/dashboard');
+        const from = searchParams.get('from');
+        if (from && from.startsWith('/') && !from.startsWith('//')) {
+          router.push(from);
+        } else {
+          router.push('/dashboard');
+        }
       }
     },
     onError: (err: unknown) => {
