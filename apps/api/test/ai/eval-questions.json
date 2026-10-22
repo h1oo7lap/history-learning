@@ -1,0 +1,278 @@
+[
+  {
+    "id": "eval-in-01",
+    "category": "in-scope",
+    "question": "Vì sao Ngô Quyền lại chọn cắm cọc ở sông Bạch Đằng để đánh giặc?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-thang-bach-dang-nam-938"
+  },
+  {
+    "id": "eval-in-02",
+    "category": "in-scope",
+    "question": "Lý Thái Tổ vì lý do gì mà dời đô từ Hoa Lư về thành Đại La?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "ly-thai-to-va-chieu-doi-do-thang-long"
+  },
+  {
+    "id": "eval-in-03",
+    "category": "in-scope",
+    "question": "Tướng Nava đã biến Điện Biên Phủ thành pháo đài quân sự như thế nào?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-dich-dien-bien-phu-1954"
+  },
+  {
+    "id": "eval-in-04",
+    "category": "in-scope",
+    "question": "Đinh Bộ Lĩnh đã dùng cách gì để dẹp yên 12 sứ quân?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "dinh-bo-linh-dep-loan-12-su-quan"
+  },
+  {
+    "id": "eval-in-05",
+    "category": "in-scope",
+    "question": "Tại sao quân dân nhà Trần ba lần chiến thắng giặc Mông Cổ hung hãn?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong"
+  },
+  {
+    "id": "eval-in-06",
+    "category": "in-scope",
+    "question": "Khởi nghĩa Lam Sơn do Lê Lợi khởi xướng chống lại giặc nào?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "khoi-nghia-lam-son-va-binh-ngo-dai-cao"
+  },
+  {
+    "id": "eval-in-07",
+    "category": "in-scope",
+    "question": "Vua Quang Trung tiến quân ra Thăng Long đại phá quân Thanh vào dịp nào?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "quang-trung-va-dai-thang-ngoc-hoi-dong-da"
+  },
+  {
+    "id": "eval-in-08",
+    "category": "in-scope",
+    "question": "Truyền thuyết bọc trăm trứng của Lạc Long Quân và Âu Cơ giải thích điều gì?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "thoi-dai-cac-vua-hung-dung-nuoc"
+  },
+  {
+    "id": "eval-in-09",
+    "category": "in-scope",
+    "question": "Chính sách ngụ binh ư nông thời Lý Trần được hiểu là gì?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "tong-quan-to-chuc-quan-su-ly-tran"
+  },
+  {
+    "id": "eval-in-10",
+    "category": "in-scope",
+    "question": "Chiến thắng Tây Kết Hàm Tử Chương Dương có ý nghĩa gì đối với kháng chiến nhà Trần?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-thang-chuong-duong-ham-tu"
+  },
+  {
+    "id": "eval-in-11",
+    "category": "in-scope",
+    "question": "Hai Bà Trưng phất cờ khởi nghĩa nhằm trả thù cho ai và chống lại ai?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "khoi-nghia-hai-ba-trung-lop-4"
+  },
+  {
+    "id": "eval-in-12",
+    "category": "in-scope",
+    "question": "Chiếu Cần Vương do ai ban bố và phong trào này nổ ra trong hoàn cảnh nào?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "phong-trao-can-vuong-cuoi-the-ky-xix"
+  },
+  {
+    "id": "eval-out-01",
+    "category": "out-of-scope",
+    "question": "Thủ đô của nước Pháp là thành phố nào?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-02",
+    "category": "out-of-scope",
+    "question": "Công thức tính diện tích hình thang trong toán học là gì?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-03",
+    "category": "out-of-scope",
+    "question": "Cách giải phương trình bậc hai một ẩn số?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-04",
+    "category": "out-of-scope",
+    "question": "Thời tiết ngày mai ở Hà Nội như thế nào?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-05",
+    "category": "out-of-scope",
+    "question": "Điện thoại iPhone 15 Pro Max giá bao nhiêu tiền?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-06",
+    "category": "out-of-scope",
+    "question": "Ai là tổng thống đầu tiên của nước Mỹ?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-07",
+    "category": "out-of-scope",
+    "question": "Sông Nin nằm ở châu lục nào trên thế giới?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-08",
+    "category": "out-of-scope",
+    "question": "Chiến tranh thế giới thứ hai kết thúc vào năm nào?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-09",
+    "category": "out-of-scope",
+    "question": "Lập trình web bằng ngôn ngữ Python hay JavaScript tốt hơn?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-out-10",
+    "category": "out-of-scope",
+    "question": "Vua bóng đá Pele sinh năm bao nhiêu?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-trap-01",
+    "category": "follow-up",
+    "question": "Ai chỉ huy trận đánh đó?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Chiến thắng Bạch Đằng năm 938"
+      },
+      {
+        "role": "model",
+        "content": "Năm 938, Ngô Quyền lãnh đạo quân dân đánh tan quân Nam Hán trên sông Bạch Đằng."
+      }
+    ],
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-thang-bach-dang-nam-938"
+  },
+  {
+    "id": "eval-trap-02",
+    "category": "follow-up",
+    "question": "Ý nghĩa của sự kiện này là gì?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Lý Thái Tổ ban Chiếu dời đô năm 1010"
+      },
+      {
+        "role": "model",
+        "content": "Năm 1010, vua Lý Thái Tổ quyết định dời đô từ Hoa Lư về Thăng Long."
+      }
+    ],
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "ly-thai-to-va-chieu-doi-do-thang-long"
+  },
+  {
+    "id": "eval-trap-03",
+    "category": "follow-up",
+    "question": "Bà Triệu khởi nghĩa năm nào?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Chiến thắng Bạch Đằng năm 938"
+      },
+      {
+        "role": "model",
+        "content": "Năm 938, Ngô Quyền lãnh đạo quân dân đánh tan quân Nam Hán."
+      }
+    ],
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-trap-04",
+    "category": "follow-up",
+    "question": "Thủ đô của Pháp là gì?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Lý Thái Tổ dời đô về Thăng Long"
+      },
+      {
+        "role": "model",
+        "content": "Năm 1010, Lý Thái Tổ đổi tên Đại La thành Thăng Long."
+      }
+    ],
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-trap-05",
+    "category": "follow-up",
+    "question": "Diễn ra trong bao nhiêu ngày đêm?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Chiến dịch Điện Biên Phủ diễn ra năm 1954"
+      },
+      {
+        "role": "model",
+        "content": "Chiến dịch diễn ra tại thung lũng Mường Thanh, Điện Biên."
+      }
+    ],
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-dich-dien-bien-phu-1954"
+  },
+  {
+    "id": "eval-trap-06",
+    "category": "follow-up",
+    "question": "Dân số ở đó có đông không?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Thủ đô của Pháp là gì?"
+      },
+      {
+        "role": "model",
+        "content": "Paris là thủ đô của nước Pháp."
+      }
+    ],
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "eval-trap-07",
+    "category": "follow-up",
+    "question": "Vị vua này đặt tên nước là gì?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Đinh Bộ Lĩnh dẹp loạn 12 sứ quân"
+      },
+      {
+        "role": "model",
+        "content": "Đinh Bộ Lĩnh thống nhất đất nước, xưng là Đinh Tiên Hoàng."
+      }
+    ],
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "dinh-bo-linh-dep-loan-12-su-quan"
+  },
+  {
+    "id": "eval-trap-08",
+    "category": "follow-up",
+    "question": "Napoléon Bonaparte sinh năm bao nhiêu?",
+    "history": [
+      {
+        "role": "user",
+        "content": "Quang Trung đại phá quân Thanh vào mùa xuân Kỷ Dậu"
+      },
+      {
+        "role": "model",
+        "content": "Vua Quang Trung tiến quân thần tốc giải phóng Thăng Long năm 1789."
+      }
+    ],
+    "expectedBehavior": "reject"
+  }
+]

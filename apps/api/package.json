@@ -19,12 +19,16 @@
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "prisma": "prisma",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "ai:embed-smoke": "tsx src/ai/scripts/embed-smoke.ts",
+    "ai:reindex": "tsx src/ai/scripts/reindex.ts",
+    "ai:eval": "tsx src/ai/scripts/eval.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "@history-learning/shared": "workspace:*",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.1",

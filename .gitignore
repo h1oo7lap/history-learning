@@ -9,6 +9,7 @@ build/
 .next/
 out/
 *.tsbuildinfo
+.cache/
 
 # Generated files
 apps/api/src/generated/
