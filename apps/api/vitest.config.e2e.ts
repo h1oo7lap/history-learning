@@ -11,5 +11,6 @@ export default defineConfig({
     // Run test files serially so each file's beforeEach DB truncation
     // doesn't invalidate JWT cookies obtained in another file's setup.
     fileParallelism: false,
+    setupFiles: ['./test/setup-env.ts'],
   },
 });

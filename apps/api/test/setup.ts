@@ -36,10 +36,28 @@ export async function createTestApp(): Promise<{
     );
   }
 
-  // Override DATABASE_URL to TEST_DATABASE_URL
-  process.env['DATABASE_URL'] = process.env['TEST_DATABASE_URL'];
+  const testDbUrl = process.env['TEST_DATABASE_URL'];
+  const dbName = getDatabaseName(testDbUrl);
 
-  const dbName = getDatabaseName(process.env['TEST_DATABASE_URL']);
+  // Strict safety check: Ensure the database name explicitly contains 'test'
+  if (!dbName.toLowerCase().includes('test')) {
+    throw new Error(
+      `[test/setup] FATAL: TEST_DATABASE_URL points to "${dbName}", which does NOT contain "test"! ` +
+        'Refusing to run tests against non-test database.',
+    );
+  }
+
+  // Override DATABASE_URL to TEST_DATABASE_URL
+  process.env['DATABASE_URL'] = testDbUrl;
+
+  const currentDb = getDatabaseName(process.env['DATABASE_URL'] || '');
+  if (!currentDb.toLowerCase().includes('test')) {
+    throw new Error(
+      `[test/setup] FATAL: DATABASE_URL points to "${currentDb}", which does NOT contain "test"! ` +
+        'Refusing to run tests against non-test database.',
+    );
+  }
+
   console.log(`[Test DB] Connected to: ${dbName}`);
 
   // Safety rule: Always override EMBEDDING_PROVIDER with FakeEmbeddingProvider for tests

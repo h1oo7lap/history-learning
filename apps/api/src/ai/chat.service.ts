@@ -6,6 +6,29 @@ import { ErrorCodes } from '../common/errors/error-codes';
 import { AI_PROVIDER, type AiProvider } from './ai.provider';
 import { RETRIEVER, type Retriever } from './retriever.interface';
 
+export function normalizeRefusalText(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/^["'«»“”„‘’`*_~\s([\]+|["'«»“”„‘’`*_~\s)\].,!?:;]+$/g, '')
+    .trim();
+}
+
+export function isModelRefusal(answer: string): boolean {
+  if (!answer) return false;
+  const norm = normalizeRefusalText(answer);
+  const normModelRefusal = normalizeRefusalText(AI.MODEL_REFUSAL_MESSAGE);
+  const normNoContextRefusal = normalizeRefusalText(AI.NO_CONTEXT_REFUSAL_MESSAGE);
+
+  if (norm === normModelRefusal || norm === normNoContextRefusal) {
+    return true;
+  }
+  if (norm.includes(normModelRefusal) || norm.includes(normNoContextRefusal)) {
+    return true;
+  }
+  return false;
+}
+
 @Injectable()
 export class ChatService {
   constructor(
@@ -89,10 +112,8 @@ ${contextText}`;
     const trimmedAnswer = rawAnswer.trim();
 
     // 5. I1: If model refused to answer or indicated insufficient context, sources=[]
-    if (
-      trimmedAnswer.includes(AI.MODEL_REFUSAL_MESSAGE) ||
-      trimmedAnswer.includes(AI.NO_CONTEXT_REFUSAL_MESSAGE)
-    ) {
+    // Robust check handling quotes, punctuation, case variations, markdown formatting
+    if (isModelRefusal(trimmedAnswer)) {
       return {
         answer: AI.MODEL_REFUSAL_MESSAGE,
         sources: [],

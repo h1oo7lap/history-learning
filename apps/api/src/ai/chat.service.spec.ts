@@ -117,6 +117,45 @@ describe('ChatService (Unit)', () => {
     expect(result.sources).toEqual([]);
   });
 
+  it('I1: returns sources=[] and normalizes answer when model refusal has quotes, trailing punctuation, or markdown', async () => {
+    vi.mocked(mockRetriever.retrieve).mockResolvedValue({
+      accepted: true,
+      effectiveQuery: 'Hỏi ngoài bài',
+      segments: [
+        {
+          lessonId: 'lesson-bach-dang',
+          slug: 'chien-thang-bach-dang-nam-938',
+          title: 'Chiến thắng Bạch Đằng năm 938',
+          content: 'Trận chiến trên sông Bạch Đằng.',
+          score: 0.75,
+        },
+      ],
+      sources: [
+        {
+          lessonId: 'lesson-bach-dang',
+          title: 'Chiến thắng Bạch Đằng năm 938',
+          slug: 'chien-thang-bach-dang-nam-938',
+        },
+      ],
+    });
+
+    // Variations of refusal formatting produced by LLMs
+    const refusalVariations = [
+      `"${AI.MODEL_REFUSAL_MESSAGE}"`,
+      `*${AI.MODEL_REFUSAL_MESSAGE}.*`,
+      `  "${AI.MODEL_REFUSAL_MESSAGE}."  `,
+      `mình chưa tìm thấy đủ thông tin trong các bài học hiện có.`,
+      `«${AI.MODEL_REFUSAL_MESSAGE}»`,
+    ];
+
+    for (const variation of refusalVariations) {
+      fakeAi.setMockAnswer(variation);
+      const res = await chatService.chat({ question: 'Chi tiết khác', history: [] });
+      expect(res.answer).toBe(AI.MODEL_REFUSAL_MESSAGE);
+      expect(res.sources).toEqual([]);
+    }
+  });
+
   it('I3: propagates error when retrieval or embedding fails', async () => {
     vi.mocked(mockRetriever.retrieve).mockRejectedValue(
       new Error('AI embedding service failure'),

@@ -23,15 +23,24 @@ async function main() {
     const stats = await indexingService.reindexAll();
     const durationSec = ((Date.now() - startTime) / 1000).toFixed(2);
 
+    const actualActiveChunks = await prisma.lessonChunk.count();
+
     console.log('\n--- Reindex Summary ---');
     console.log(`Total lessons in DB:      ${stats.totalLessons}`);
     console.log(`PUBLISHED lessons:        ${stats.publishedLessons}`);
-    console.log(`Total active chunks:      ${stats.totalChunks}`);
+    console.log(`Total active chunks:      ${actualActiveChunks}`);
     console.log(`New / updated chunks:     ${stats.newChunks}`);
     console.log(`Skipped (unchanged):      ${stats.skippedChunks}`);
     console.log(`Errors encountered:       ${stats.errors}`);
     console.log(`Completed in:             ${durationSec}s`);
     console.log('------------------------');
+
+    if (stats.failedLessons && stats.failedLessons.length > 0) {
+      console.log('\n--- Danh sách bài học lỗi ---');
+      for (const f of stats.failedLessons) {
+        console.log(`- [${f.slug}] "${f.title}": ${f.error}`);
+      }
+    }
   } finally {
     await prisma.$disconnect();
   }

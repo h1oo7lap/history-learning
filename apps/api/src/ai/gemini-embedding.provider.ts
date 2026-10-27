@@ -20,8 +20,14 @@ function normalizeVector(vec: number[]): number[] {
 export class GeminiEmbeddingProvider implements EmbeddingProvider {
   private readonly logger = new Logger(GeminiEmbeddingProvider.name);
   private readonly dimensions = AI.EMBEDDING_DIMENSIONS || 768;
+  public readonly usesDiskCache = true;
 
   constructor(private readonly config: ConfigService) {}
+
+  get modelIdentifier(): string {
+    const model = this.config.get<string>('AI_EMBEDDING_MODEL')?.trim() || 'gemini-embedding-2';
+    return `gemini:${model}`;
+  }
 
   private getClient(): { ai: GoogleGenAI; model: string } {
     const apiKey = this.config.get<string>('AI_API_KEY')?.trim();
@@ -42,41 +48,102 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     };
   }
 
-  async embedDocuments(texts: string[]): Promise<number[][]> {
-    if (texts.length === 0) return [];
-    const { ai, model } = this.getClient();
+  private validateAndNormalize(vals: any[], contextInfo: string): number[] {
+    if (
+      !Array.isArray(vals) ||
+      vals.length !== this.dimensions ||
+      vals.some((v) => typeof v !== 'number' || !Number.isFinite(v))
+    ) {
+      throw new Error(
+        `Vector trả về không hợp lệ cho ${contextInfo}: độ dài ${vals?.length ?? 0}/${this.dimensions}, có phần tử NaN hoặc không phải số hữu hạn.`,
+      );
+    }
 
-    const results: number[][] = [];
-    const batchSize = 10;
+    const normalized = normalizeVector(vals);
+    let sumSq = 0;
+    for (let k = 0; k < normalized.length; k++) {
+      sumSq += normalized[k]! * normalized[k]!;
+    }
+    const norm = Math.sqrt(sumSq);
+    if (Math.abs(norm - 1) >= 1e-3) {
+      throw new Error(`Vector cho ${contextInfo} có chuẩn L2 lệch chuẩn: norm=${norm.toFixed(5)}`);
+    }
 
-    for (let i = 0; i < texts.length; i += batchSize) {
-      const batch = texts.slice(i, i + batchSize);
+    return normalized;
+  }
 
+  private async embedSingleDocumentWithRetry(
+    ai: GoogleGenAI,
+    model: string,
+    text: string,
+    chunkIndex: number,
+  ): Promise<number[]> {
+    const maxRetries = 2;
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const response = await ai.models.embedContent({
           model,
-          contents: batch.length === 1 ? batch[0] : batch,
+          contents: text,
           config: {
             taskType: 'RETRIEVAL_DOCUMENT',
             outputDimensionality: this.dimensions,
           },
         });
 
-        const rawEmbeddings =
-          response.embeddings ||
-          ((response as any).embedding ? [(response as any).embedding] : []);
+        const vals =
+          response.embeddings?.[0]?.values ||
+          (response as any).embedding?.values ||
+          [];
 
-        for (let j = 0; j < batch.length; j++) {
-          const vals = rawEmbeddings[j]?.values || [];
-          results.push(normalizeVector(vals));
-        }
+        return this.validateAndNormalize(vals, `chunk #${chunkIndex}`);
       } catch (err: any) {
-        // Do not log API keys or secrets
+        lastError = err;
+        this.logger.warn(
+          `Lỗi nhúng chunk #${chunkIndex} (thử lần ${attempt}/${maxRetries}): ${err?.message || 'unknown error'}`,
+        );
+        if (attempt < maxRetries) {
+          const isRateLimit =
+            err?.status === 429 ||
+            err?.code === 429 ||
+            /429|resource_exhausted|rate\s*limit|quota/i.test(err?.message || '');
+          const delayMs = isRateLimit ? 1500 * attempt : 500;
+          await new Promise((res) => setTimeout(res, delayMs));
+        }
+      }
+    }
+
+    throw new AppError(
+      ErrorCodes.AI_UNAVAILABLE,
+      HttpStatus.SERVICE_UNAVAILABLE,
+      `Không thể tạo embedding hợp lệ cho chunk #${chunkIndex}: ${lastError?.message || 'thất bại sau các lần thử'}`,
+    );
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) return [];
+    const { ai, model } = this.getClient();
+
+    const results: number[][] = [];
+    const concurrency = 5;
+
+    for (let i = 0; i < texts.length; i += concurrency) {
+      const batch = texts.slice(i, i + concurrency);
+      try {
+        const batchResults = await Promise.all(
+          batch.map((text, idx) =>
+            this.embedSingleDocumentWithRetry(ai, model, text, i + idx),
+          ),
+        );
+        results.push(...batchResults);
+      } catch (err: any) {
         this.logger.error(`Gemini embedDocuments error: ${err?.message || 'unknown error'}`);
+        if (err instanceof AppError) throw err;
         throw new AppError(
           ErrorCodes.AI_UNAVAILABLE,
           HttpStatus.SERVICE_UNAVAILABLE,
-          'Dịch vụ tạo vector embedding hiện đang gặp sự cố hoặc quá tải.',
+          `Dịch vụ tạo vector embedding thất bại: ${err?.message || 'unknown error'}`,
         );
       }
     }
@@ -102,10 +169,10 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
         (response as any).embedding?.values ||
         [];
 
-      return normalizeVector(vals);
+      return this.validateAndNormalize(vals, 'câu hỏi query');
     } catch (err: any) {
-      // Do not log API keys or secrets
       this.logger.error(`Gemini embedQuery error: ${err?.message || 'unknown error'}`);
+      if (err instanceof AppError) throw err;
       throw new AppError(
         ErrorCodes.AI_UNAVAILABLE,
         HttpStatus.SERVICE_UNAVAILABLE,

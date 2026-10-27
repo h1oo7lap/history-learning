@@ -34,7 +34,7 @@ describe('EmbeddingDiskCache & Cache Isolation', () => {
 
   it('persists and retrieves vectors with provider and model correctly', () => {
     const cache = new EmbeddingDiskCache(tempDir);
-    const dummyVector = [0.1, 0.2, 0.3];
+    const dummyVector = Array.from({ length: 768 }, (_, i) => i * 0.001);
 
     cache.set('GeminiEmbeddingProvider', 'gemini-embedding-2', 768, 'hello world', dummyVector);
 
@@ -61,6 +61,7 @@ describe('EmbeddingDiskCache & Cache Isolation', () => {
       },
       $queryRaw: vi.fn().mockResolvedValue([]),
       $executeRaw: vi.fn().mockResolvedValue(1),
+      $transaction: vi.fn().mockImplementation(async (cb) => cb(mockPrisma)),
     };
 
     const config = new ConfigService();
@@ -73,6 +74,28 @@ describe('EmbeddingDiskCache & Cache Isolation', () => {
     await indexingService.reindexLesson('test-lesson');
 
     // Verify tempDir remains completely empty - fake provider must never write to disk cache
+    const files = fs.readdirSync(tempDir);
+    expect(files).toHaveLength(0);
+  });
+
+  it('evicts and unlinks corrupt or wrong-dimension cache files on get', () => {
+    const cache = new EmbeddingDiskCache(tempDir);
+    const key = cache.getCacheKey('GeminiEmbeddingProvider', 'gemini-embedding-2', 768, 'bad content');
+    const badFilePath = path.join(tempDir, `${key}.json`);
+
+    // Write corrupted JSON
+    fs.writeFileSync(badFilePath, '{"invalid": true, "embedding": [1, 2]}');
+    expect(fs.existsSync(badFilePath)).toBe(true);
+
+    const result = cache.get('GeminiEmbeddingProvider', 'gemini-embedding-2', 768, 'bad content');
+    expect(result).toBeNull();
+    // Verify corrupt file was deleted
+    expect(fs.existsSync(badFilePath)).toBe(false);
+  });
+
+  it('never writes empty or invalid vectors into cache on set', () => {
+    const cache = new EmbeddingDiskCache(tempDir);
+    cache.set('GeminiEmbeddingProvider', 'gemini-embedding-2', 768, 'bad text', []);
     const files = fs.readdirSync(tempDir);
     expect(files).toHaveLength(0);
   });

@@ -5,6 +5,8 @@ import { tokenizeAndFilter, extractBigrams } from './retrieval';
 
 @Injectable()
 export class FakeEmbeddingProvider implements EmbeddingProvider {
+  public readonly modelIdentifier = 'fake:mock-embedding';
+  public usesDiskCache = false;
   private readonly dimensions = AI.EMBEDDING_DIMENSIONS || 768;
 
   async embedDocuments(texts: string[]): Promise<number[][]> {

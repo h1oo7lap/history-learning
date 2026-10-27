@@ -101,23 +101,27 @@ export class LessonIndexingService {
 
     // Read existing chunks from DB
     const existingRows = await this.prisma.$queryRaw<
-      Array<{ chunkIndex: number; contentHash: string; hasEmbedding: boolean }>
+      Array<{ chunkIndex: number; contentHash: string; embeddingModel: string; hasEmbedding: boolean }>
     >`
-      SELECT "chunkIndex", "contentHash", (embedding IS NOT NULL) AS "hasEmbedding"
+      SELECT "chunkIndex", "contentHash", "embeddingModel", (embedding IS NOT NULL) AS "hasEmbedding"
       FROM lesson_chunks
       WHERE "lessonId" = ${lessonId}
     `;
 
-    const existingMap = new Map<number, { contentHash: string; hasEmbedding: boolean }>();
+    const existingMap = new Map<number, { contentHash: string; embeddingModel: string; hasEmbedding: boolean }>();
     for (const r of existingRows) {
       existingMap.set(r.chunkIndex, {
         contentHash: r.contentHash,
+        embeddingModel: r.embeddingModel,
         hasEmbedding: Boolean(r.hasEmbedding),
       });
     }
 
-    const embeddingModel =
-      this.config.get<string>('AI_EMBEDDING_MODEL')?.trim() || 'gemini-embedding-2';
+    const modelIdentifier =
+      this.embeddingProvider.modelIdentifier ||
+      (this.embeddingProvider.constructor.name === 'FakeEmbeddingProvider'
+        ? 'fake:mock-embedding'
+        : `gemini:${this.config.get<string>('AI_EMBEDDING_MODEL')?.trim() || 'gemini-embedding-2'}`);
     const dimensions = AI.EMBEDDING_DIMENSIONS || 768;
 
     // Identify chunks that need new embeddings
@@ -127,24 +131,27 @@ export class LessonIndexingService {
     let skippedCount = 0;
     let newCount = 0;
 
-    const isTestEnv = process.env['NODE_ENV'] === 'test';
     const providerName = this.embeddingProvider.constructor.name || 'default';
-    const isRealProvider = providerName === 'GeminiEmbeddingProvider';
-    const isCacheEnabled = !this.isAutoIndexDisabled && !isTestEnv && isRealProvider;
+    const isCacheEnabled = Boolean(this.embeddingProvider.usesDiskCache);
 
     for (const chunk of newChunks) {
       const existing = existingMap.get(chunk.chunkIndex);
-      if (existing && existing.contentHash === chunk.contentHash && existing.hasEmbedding) {
-        // Skip calling embedding API for unchanged chunk
+      if (
+        existing &&
+        existing.contentHash === chunk.contentHash &&
+        existing.embeddingModel === modelIdentifier &&
+        existing.hasEmbedding
+      ) {
+        // Skip calling embedding API for unchanged chunk with matching model
         skippedCount++;
         continue;
       }
 
       newCount++;
 
-      // Check disk cache: ONLY enabled for real production provider (GeminiEmbeddingProvider) outside test environment
+      // Check disk cache: enabled when usesDiskCache is true on provider outside test environment
       const cached = isCacheEnabled
-        ? this.diskCache.get(providerName, embeddingModel, dimensions, chunk.embedText)
+        ? this.diskCache.get(providerName, modelIdentifier, dimensions, chunk.embedText)
         : null;
       if (cached && cached.length === dimensions) {
         cachedVectors.set(chunk.chunkIndex, cached);
@@ -158,51 +165,86 @@ export class LessonIndexingService {
       const texts = chunksToEmbed.map((c) => c.embedText);
       const generatedVectors = await this.embedWithBackoff(texts);
 
+      if (generatedVectors.length !== chunksToEmbed.length) {
+        throw new Error(
+          `Bài "${lesson.title}" (${lesson.slug}): Số lượng vector trả về (${generatedVectors.length}) không khớp với số chunk cần nhúng (${chunksToEmbed.length})!`,
+        );
+      }
+
       for (let i = 0; i < chunksToEmbed.length; i++) {
         const item = chunksToEmbed[i]!;
         const vec = generatedVectors[i]!;
+
+        // Strict pre-persistence validation
+        if (
+          !Array.isArray(vec) ||
+          vec.length !== dimensions ||
+          vec.some((v) => typeof v !== 'number' || !Number.isFinite(v))
+        ) {
+          throw new Error(
+            `Bài "${lesson.title}" (${lesson.slug}) chunk #${item.index} nhận vector không hợp lệ (độ dài: ${vec?.length ?? 0}/${dimensions})!`,
+          );
+        }
+
         cachedVectors.set(item.index, vec);
-        // Save to disk cache only for real provider
+        // Save to disk cache only when provider supports disk cache
         if (isCacheEnabled) {
-          this.diskCache.set(providerName, embeddingModel, dimensions, item.embedText, vec);
+          this.diskCache.set(providerName, modelIdentifier, dimensions, item.embedText, vec);
         }
       }
     }
 
-    // Persist to DB
-    for (const chunk of newChunks) {
-      const newVector = cachedVectors.get(chunk.chunkIndex);
+    // Persist all chunks for this lesson inside ONE ATOMIC TRANSACTION
+    // Ensures all-or-nothing consistency (no partial/corrupt lesson state)
+    await this.prisma.$transaction(async (tx) => {
+      for (const chunk of newChunks) {
+        const newVector = cachedVectors.get(chunk.chunkIndex);
 
-      if (newVector) {
-        const vectorStr = `[${newVector.join(',')}]`;
-        const chunkId = crypto.randomUUID();
+        if (newVector) {
+          // Pre-SQL check: Never write an empty or invalid vector into Postgres
+          if (
+            !Array.isArray(newVector) ||
+            newVector.length !== dimensions ||
+            newVector.some((v) => typeof v !== 'number' || !Number.isFinite(v))
+          ) {
+            throw new Error(
+              `Raw vector validation failed before SQL insert for lesson ${lesson.slug} chunk #${chunk.chunkIndex}`,
+            );
+          }
 
-        await this.prisma.$executeRaw`
-          INSERT INTO lesson_chunks (id, "lessonId", "chunkIndex", heading, content, "contentHash", embedding, "embeddingModel", "createdAt")
-          VALUES (${chunkId}, ${lessonId}, ${chunk.chunkIndex}, ${chunk.heading ?? null}, ${chunk.content}, ${chunk.contentHash}, ${vectorStr}::vector, ${embeddingModel}, NOW())
-          ON CONFLICT ("lessonId", "chunkIndex")
-          DO UPDATE SET
-            heading = EXCLUDED.heading,
-            content = EXCLUDED.content,
-            "contentHash" = EXCLUDED."contentHash",
-            embedding = EXCLUDED.embedding,
-            "embeddingModel" = EXCLUDED."embeddingModel"
-        `;
-      } else {
-        // Content changed without re-embedding? Update text columns
-        await this.prisma.$executeRaw`
-          UPDATE lesson_chunks
-          SET heading = ${chunk.heading ?? null}, content = ${chunk.content}, "contentHash" = ${chunk.contentHash}
-          WHERE "lessonId" = ${lessonId} AND "chunkIndex" = ${chunk.chunkIndex}
-        `;
+          const vectorStr = `[${newVector.join(',')}]`;
+          const chunkId = crypto.randomUUID();
+
+          await tx.$executeRaw`
+            INSERT INTO lesson_chunks (id, "lessonId", "chunkIndex", heading, content, "contentHash", embedding, "embeddingModel", "createdAt")
+            VALUES (${chunkId}, ${lessonId}, ${chunk.chunkIndex}, ${chunk.heading ?? null}, ${chunk.content}, ${chunk.contentHash}, ${vectorStr}::vector, ${modelIdentifier}, NOW())
+            ON CONFLICT ("lessonId", "chunkIndex")
+            DO UPDATE SET
+              heading = EXCLUDED.heading,
+              content = EXCLUDED.content,
+              "contentHash" = EXCLUDED."contentHash",
+              embedding = EXCLUDED.embedding,
+              "embeddingModel" = EXCLUDED."embeddingModel"
+          `;
+        } else {
+          // Content unchanged but metadata or text update
+          await tx.$executeRaw`
+            UPDATE lesson_chunks
+            SET heading = ${chunk.heading ?? null}, content = ${chunk.content}, "contentHash" = ${chunk.contentHash}, "embeddingModel" = ${modelIdentifier}
+            WHERE "lessonId" = ${lessonId} AND "chunkIndex" = ${chunk.chunkIndex}
+          `;
+        }
       }
-    }
 
-    // Delete any stale chunks beyond new count
-    await this.prisma.$executeRaw`
-      DELETE FROM lesson_chunks
-      WHERE "lessonId" = ${lessonId} AND "chunkIndex" >= ${newChunks.length}
-    `;
+      // Delete any stale chunks beyond new count within the same transaction
+      await tx.$executeRaw`
+        DELETE FROM lesson_chunks
+        WHERE "lessonId" = ${lessonId} AND "chunkIndex" >= ${newChunks.length}
+      `;
+    }, {
+      maxWait: 5000,
+      timeout: 15000,
+    });
 
     return {
       chunkCount: newChunks.length,
@@ -221,9 +263,15 @@ export class LessonIndexingService {
     newChunks: number;
     skippedChunks: number;
     errors: number;
+    failedLessons: Array<{
+      id: string;
+      title: string;
+      slug: string;
+      error: string;
+    }>;
   }> {
     const lessons = await this.prisma.lesson.findMany({
-      select: { id: true, title: true, status: true },
+      select: { id: true, title: true, slug: true, status: true },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -232,6 +280,12 @@ export class LessonIndexingService {
     let skippedChunks = 0;
     let publishedCount = 0;
     let errors = 0;
+    const failedLessons: Array<{
+      id: string;
+      title: string;
+      slug: string;
+      error: string;
+    }> = [];
 
     for (const l of lessons) {
       if (l.status === 'PUBLISHED') {
@@ -244,8 +298,14 @@ export class LessonIndexingService {
         skippedChunks += res.skippedCount;
       } catch (err: any) {
         errors++;
+        failedLessons.push({
+          id: l.id,
+          title: l.title,
+          slug: l.slug,
+          error: err?.message || 'unknown error',
+        });
         this.logger.error(
-          `Error reindexing lesson "${l.title}" (${l.id}): ${err?.message || 'unknown error'}`,
+          `Error reindexing lesson "${l.title}" (${l.slug}): ${err?.message || 'unknown error'}`,
         );
       }
     }
@@ -257,6 +317,7 @@ export class LessonIndexingService {
       newChunks,
       skippedChunks,
       errors,
+      failedLessons,
     };
   }
 
