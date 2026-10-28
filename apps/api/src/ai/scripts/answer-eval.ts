@@ -8,7 +8,13 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { GeminiEmbeddingProvider } from '../gemini-embedding.provider';
 import { GeminiProvider } from '../gemini.provider';
 import { VectorRetriever } from '../vector-retriever';
-import { ChatService } from '../chat.service';
+import { ChatService, isModelRefusal } from '../chat.service';
+import {
+  DEFAULT_PACING_MS,
+  sleep,
+  withRateLimitRetry,
+  isApiError,
+} from './eval-retry-helper';
 
 export function stripVietnameseAccents(str: string): string {
   return str
@@ -58,18 +64,25 @@ interface AnswerEvalItem {
   lessonTitle: string;
   question: string;
   expectedFacts: string[];
+  expectRefusal?: boolean;
+  category?: string;
 }
 
 interface AnswerEvalResult {
   id: string;
+  category: string;
   question: string;
   expectedSlug: string;
+  expectRefusal: boolean;
   answer: string;
   sources: Array<{ lessonId: string; title: string; slug: string }>;
   isCorrectSource: boolean;
   noGreeting: boolean;
   factsCheck: { passed: boolean; missing: string[] };
-  allPassed: boolean;
+  isRefusal: boolean;
+  sourcesEmpty: boolean;
+  status: 'PASSED' | 'FAILED' | 'API_ERROR';
+  failureReason?: string;
 }
 
 async function runAnswerEval() {
@@ -90,6 +103,7 @@ async function runAnswerEval() {
   console.log(`Provider  : GeminiProvider (@google/genai)`);
   console.log(`Chat Model: ${model}`);
   console.log(`Embedding : GeminiEmbeddingProvider (768 dims, Disk Cache)`);
+  console.log(`Giãn cách : ~${(DEFAULT_PACING_MS / 1000).toFixed(1)}s giữa các request thật`);
   console.log(`Database  : Chỉ Đọc (SELECT chunks & lessons)\n`);
 
   const prisma = new PrismaService(config);
@@ -114,104 +128,221 @@ async function runAnswerEval() {
 
   for (let i = 0; i < evalItems.length; i++) {
     const item = evalItems[i]!;
-    process.stdout.write(`Đang xử lý câu [${item.id}] (${i + 1}/${evalItems.length})... `);
+    const category = item.category || (item.expectRefusal ? 'ngoài kho / vi phạm' : 'trong kho');
+    process.stdout.write(`Đang xử lý câu [${item.id}] (${i + 1}/${evalItems.length}) [${category}]... `);
+
+    // Giãn cách mặc định giữa các request thật
+    if (i > 0) {
+      await sleep(DEFAULT_PACING_MS);
+    }
 
     try {
-      const response = await chatService.chat({
-        question: item.question,
-        history: [],
-      });
+      const response = await withRateLimitRetry(
+        () =>
+          chatService.chat({
+            question: item.question,
+            history: [],
+          }),
+        { label: `[${item.id}]` },
+      );
 
       const answer = response.answer;
       const sources = response.sources;
-
-      const isCorrectSource = sources.some((s) => s.slug === item.lessonSlug);
+      const isRefusal = isModelRefusal(answer);
+      const sourcesEmpty = sources.length === 0;
       const noGreeting = !startsWithGreeting(answer);
-      const factsCheck = checkExpectedFacts(answer, item.expectedFacts);
-      const allPassed = isCorrectSource && noGreeting && factsCheck.passed;
+
+      let status: 'PASSED' | 'FAILED' = 'FAILED';
+      let failureReason: string | undefined;
+
+      if (item.expectRefusal) {
+        // Refusal expected: must be refusal message AND sources must be empty
+        const allPassed = isRefusal && sourcesEmpty;
+        status = allPassed ? 'PASSED' : 'FAILED';
+        if (!allPassed) {
+          const reasons: string[] = [];
+          if (!isRefusal) reasons.push('Không trả về câu từ chối chuẩn');
+          if (!sourcesEmpty) reasons.push(`Sources không rỗng (${sources.map((s) => s.slug).join(', ')})`);
+          failureReason = reasons.join('; ');
+        }
+      } else {
+        // In-scope question: must match expected source, no greeting, all facts present, and not refusal
+        const isCorrectSource = sources.some((s) => s.slug === item.lessonSlug);
+        const factsCheck = checkExpectedFacts(answer, item.expectedFacts);
+        const allPassed = isCorrectSource && noGreeting && factsCheck.passed && !isRefusal;
+        status = allPassed ? 'PASSED' : 'FAILED';
+        if (!allPassed) {
+          const reasons: string[] = [];
+          if (!isCorrectSource) reasons.push(`Sai nguồn (kỳ vọng ${item.lessonSlug}, nhận ${sources.map((s) => s.slug).join(', ') || 'RỖNG'})`);
+          if (!noGreeting) reasons.push('Bắt đầu bằng lời chào');
+          if (!factsCheck.passed) reasons.push(`Thiếu facts (${factsCheck.missing.join(', ')})`);
+          if (isRefusal) reasons.push('Bị từ chối oan');
+          failureReason = reasons.join('; ');
+        }
+      }
 
       results.push({
         id: item.id,
+        category,
         question: item.question,
         expectedSlug: item.lessonSlug,
+        expectRefusal: !!item.expectRefusal,
         answer,
         sources,
-        isCorrectSource,
+        isCorrectSource: sources.some((s) => s.slug === item.lessonSlug),
         noGreeting,
-        factsCheck,
-        allPassed,
+        factsCheck: checkExpectedFacts(answer, item.expectedFacts),
+        isRefusal,
+        sourcesEmpty,
+        status,
+        failureReason,
       });
 
-      console.log(allPassed ? '✓ ĐẠT' : '✗ KHÔNG ĐẠT');
+      console.log(status === 'PASSED' ? '✓ ĐẠT' : `✗ KHÔNG ĐẠT (${failureReason})`);
     } catch (err: any) {
-      console.log(`✗ LỖI: ${err?.message || err}`);
+      const apiErr = isApiError(err);
+      console.log(`✗ ${apiErr ? 'LỖI API (429/timeout)' : 'LỖI'}: ${err?.message || err}`);
       results.push({
         id: item.id,
+        category,
         question: item.question,
         expectedSlug: item.lessonSlug,
-        answer: `[ERROR] ${err?.message || err}`,
+        expectRefusal: !!item.expectRefusal,
+        answer: `[LỖI] ${err?.message || err}`,
         sources: [],
         isCorrectSource: false,
         noGreeting: false,
         factsCheck: { passed: false, missing: item.expectedFacts },
-        allPassed: false,
+        isRefusal: false,
+        sourcesEmpty: true,
+        status: apiErr ? 'API_ERROR' : 'FAILED',
+        failureReason: `Lỗi: ${err?.message || err}`,
       });
     }
   }
 
   await prisma.$disconnect();
 
+  // ============================================================================
+  // PHẦN 1: BẢNG KẾT QUẢ TÁCH RÕ BA NHÓM (ĐẠT, TRƯỢT, LỖI API)
+  // ============================================================================
+  const passedGroup = results.filter((r) => r.status === 'PASSED');
+  const failedGroup = results.filter((r) => r.status === 'FAILED');
+  const apiErrorGroup = results.filter((r) => r.status === 'API_ERROR');
+
   console.log('\n================================================================================');
-  console.log('BẢNG KẾT QUẢ ĐÁNH GIÁ CHẤT LƯỢNG CÂU TRẢ LỜI:');
+  console.log('BẢNG KẾT QUẢ ĐÁNH GIÁ CHẤT LƯỢNG CÂU TRẢ LỜI (TÁCH 3 NHÓM RÕ RỆT):');
   console.log('================================================================================\n');
 
-  console.log(
-    '| ID     | Nguồn đúng? | Không chào? | Đủ Facts? | Toàn bộ? | Bài học kỳ vọng                       |',
-  );
-  console.log(
-    '|--------|-------------|-------------|-----------|----------|---------------------------------------|',
-  );
-
-  for (const r of results) {
-    const idCol = r.id.padEnd(6);
-    const srcCol = (r.isCorrectSource ? '✓ ĐÚNG' : '✗ SAI').padEnd(11);
-    const greetCol = (r.noGreeting ? '✓ TỐT' : '✗ CÓ CHÀO').padEnd(11);
-    const factsCol = (r.factsCheck.passed ? '✓ ĐỦ' : `✗ THIẾU(${r.factsCheck.missing.length})`).padEnd(9);
-    const allCol = (r.allPassed ? '✓ ĐẠT' : '✗ HỎNG').padEnd(8);
-    const slugCol = r.expectedSlug.slice(0, 37).padEnd(37);
-
-    console.log(`| ${idCol} | ${srcCol} | ${greetCol} | ${factsCol} | ${allCol} | ${slugCol} |`);
-  }
-
-  const failedItems = results.filter((r) => !r.allPassed);
-  if (failedItems.length > 0) {
-    console.log('\n--------------------------------------------------------------------------------');
-    console.log('CHI TIẾT CÁC CÂU CHƯA ĐẠT:');
-    console.log('--------------------------------------------------------------------------------');
-    for (const f of failedItems) {
-      console.log(`\n* [${f.id}] "${f.question}"`);
-      console.log(`  - Nguồn nhận được: ${f.sources.map((s) => s.slug).join(', ') || 'RỖNG'}`);
-      console.log(`  - Nguồn kỳ vọng  : ${f.expectedSlug}`);
-      console.log(`  - Không chào     : ${f.noGreeting ? 'ĐẠT' : 'VI PHẠM (bắt đầu bằng lời chào)'}`);
-      console.log(
-        `  - Facts thiếu    : ${f.factsCheck.missing.length > 0 ? f.factsCheck.missing.join(', ') : 'Không thiếu'}`,
-      );
-      console.log(`  - Câu trả lời mẫu:\n    "${f.answer.slice(0, 300).replace(/\n/g, ' ')}..."`);
+  console.log('--- NHÓM 1: CÁC CÂU ĐẠT (PASSED) ---');
+  if (passedGroup.length === 0) {
+    console.log('(Không có câu nào)\n');
+  } else {
+    console.log(
+      '| ID          | Phân loại         | Nguồn đúng/rỗng? | Không chào? | Đủ facts/Từ chối? | Đánh giá |',
+    );
+    console.log(
+      '|-------------|-------------------|------------------|-------------|-------------------|----------|',
+    );
+    for (const r of passedGroup) {
+      const idCol = r.id.padEnd(11);
+      const catCol = r.category.padEnd(17);
+      const srcCol = (r.expectRefusal ? (r.sourcesEmpty ? '✓ RỖNG' : '✗ CÓ NGUỒN') : (r.isCorrectSource ? '✓ ĐÚNG' : '✗ SAI')).padEnd(16);
+      const greetCol = (r.noGreeting ? '✓ TỐT' : '✗ CÓ CHÀO').padEnd(11);
+      const factsCol = (r.expectRefusal ? (r.isRefusal ? '✓ TỪ CHỐI' : '✗ KHÔNG TỪ CHỐI') : (r.factsCheck.passed ? '✓ ĐỦ FACTS' : '✗ THIẾU')).padEnd(17);
+      console.log(`| ${idCol} | ${catCol} | ${srcCol} | ${greetCol} | ${factsCol} | ✓ ĐẠT    |`);
     }
+    console.log(`=> Tổng số câu đạt: ${passedGroup.length}/${results.length}\n`);
   }
 
-  const total = results.length;
-  const passedTotal = results.filter((r) => r.allPassed).length;
-  const passedSources = results.filter((r) => r.isCorrectSource).length;
-  const passedGreetings = results.filter((r) => r.noGreeting).length;
-  const passedFacts = results.filter((r) => r.factsCheck.passed).length;
+  console.log('--- NHÓM 2: CÁC CÂU TRƯỢT (FAILED) ---');
+  if (failedGroup.length === 0) {
+    console.log('(Không có câu nào trượt — Hoàn hảo!)\n');
+  } else {
+    console.log(
+      '| ID          | Phân loại         | Lý do trượt                                                           |',
+    );
+    console.log(
+      '|-------------|-------------------|-----------------------------------------------------------------------|',
+    );
+    for (const r of failedGroup) {
+      const idCol = r.id.padEnd(11);
+      const catCol = r.category.padEnd(17);
+      const reasonCol = (r.failureReason || 'Không rõ').slice(0, 69).padEnd(69);
+      console.log(`| ${idCol} | ${catCol} | ${reasonCol} |`);
+    }
+    console.log(`=> Tổng số câu trượt: ${failedGroup.length}/${results.length}\n`);
+  }
 
-  console.log('\n================================================================================');
-  console.log('TỔNG HỢP CHỈ SỐ CHẤT LƯỢNG CÂU TRẢ LỜI:');
-  console.log(`  1. Tỉ lệ nguồn bài chính xác : ${passedSources}/${total} (${((passedSources / total) * 100).toFixed(1)}%)`);
-  console.log(`  2. Tỉ lệ không mở đầu bằng chào: ${passedGreetings}/${total} (${((passedGreetings / total) * 100).toFixed(1)}%)`);
-  console.log(`  3. Tỉ lệ đầy đủ facts/mốc thời gian: ${passedFacts}/${total} (${((passedFacts / total) * 100).toFixed(1)}%)`);
-  console.log(`  ==> TỈ LỆ ĐẠT TOÀN DIỆN (ALL-PASS): ${passedTotal}/${total} (${((passedTotal / total) * 100).toFixed(1)}%)`);
+  console.log('--- NHÓM 3: LỖI API (429/TIMEOUT) — TÍNH RIÊNG, KHÔNG TÍNH VÀO TỈ LỆ ĐẠT/TRƯỢT ---');
+  if (apiErrorGroup.length === 0) {
+    console.log('(Không có lỗi API nào — Mạng và Quota ổn định!)\n');
+  } else {
+    console.log(
+      '| ID          | Phân loại         | Chi tiết lỗi API                                                      |',
+    );
+    console.log(
+      '|-------------|-------------------|-----------------------------------------------------------------------|',
+    );
+    for (const r of apiErrorGroup) {
+      const idCol = r.id.padEnd(11);
+      const catCol = r.category.padEnd(17);
+      const errCol = (r.failureReason || 'Lỗi API').slice(0, 69).padEnd(69);
+      console.log(`| ${idCol} | ${catCol} | ${errCol} |`);
+    }
+    console.log(`=> Tổng số câu gặp lỗi API: ${apiErrorGroup.length} câu (được tính riêng)\n`);
+  }
+
+  // ============================================================================
+  // PHẦN 2: BẢNG RIÊNG NHÓM "NGOÀI KHO + DỤ VI PHẠM" VỚI NỘI DUNG CÂU TRẢ LỜI THỰC TẾ
+  // ============================================================================
+  const refusalGroup = results.filter((r) => r.expectRefusal);
+
+  console.log('================================================================================');
+  console.log('CHI TIẾT NHÓM "NGOÀI KHO + DỤ VI PHẠM" (KÈM CÂU TRẢ LỜI THỰC TẾ CỦA MODEL):');
+  console.log('================================================================================\n');
+
+  for (let idx = 0; idx < refusalGroup.length; idx++) {
+    const item = refusalGroup[idx]!;
+    const statusText =
+      item.status === 'PASSED'
+        ? '✓ ĐẠT'
+        : item.status === 'API_ERROR'
+          ? '⚠ LỖI API (429/timeout)'
+          : '✗ KHÔNG ĐẠT';
+
+    console.log(`[${idx + 1}/10] Câu [${item.id}] — Nhóm: "${item.category.toUpperCase()}"`);
+    console.log(`  - Câu hỏi         : "${item.question}"`);
+    console.log(`  - Kỳ vọng         : Từ chối theo quy định & sources rỗng`);
+    console.log(`  - Kết quả đánh giá: ${statusText}`);
+    console.log(`  - Sources trả về  : ${item.sources.length === 0 ? '[] (RỖNG - Đúng quy định)' : JSON.stringify(item.sources)}`);
+    console.log(`  - Từ chối chuẩn?  : ${item.isRefusal ? 'CÓ (Khớp thông báo từ chối)' : 'KHÔNG'}`);
+    console.log(`  - Nội dung câu trả lời thực tế:`);
+    console.log(`    """`);
+    console.log(`    ${item.answer.replace(/\n/g, '\n    ')}`);
+    console.log(`    """\n`);
+  }
+
+  // ============================================================================
+  // PHẦN 3: TỔNG HỢP VÀ TỈ LỆ
+  // ============================================================================
+  const total = results.length;
+  const passedTotal = passedGroup.length;
+  const failedTotal = failedGroup.length;
+  const apiErrorTotal = apiErrorGroup.length;
+  const validEvaluatedTotal = passedTotal + failedTotal;
+
+  console.log('================================================================================');
+  console.log('TỔNG HỢP CHỈ SỐ EVALUATION (ai:answer-eval):');
+  console.log(`  - Tổng số câu hỏi nạp vào       : ${total}`);
+  console.log(`  - Số câu đạt (Passed)           : ${passedTotal}`);
+  console.log(`  - Số câu trượt (Failed)         : ${failedTotal}`);
+  console.log(`  - Số câu lỗi API (429/timeout)  : ${apiErrorTotal} (TÍNH RIÊNG, KHÔNG TÍNH VÀO TỈ LỆ ĐẠT/TRƯỢT)`);
+  console.log(`  - Tổng số câu đánh giá hợp lệ   : ${validEvaluatedTotal}`);
+  if (validEvaluatedTotal > 0) {
+    const overallRate = ((passedTotal / validEvaluatedTotal) * 100).toFixed(1);
+    console.log(`  ==> TỈ LỆ ĐẠT TOÀN DIỆN (trên câu hợp lệ): ${passedTotal}/${validEvaluatedTotal} (${overallRate}%)`);
+  }
   console.log('================================================================================\n');
 }
 

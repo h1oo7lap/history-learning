@@ -16,6 +16,15 @@ function normalizeVector(vec: number[]): number[] {
   return vec.map((v) => v / norm);
 }
 
+function isRateLimitError(err: any): boolean {
+  return (
+    err?.status === 429 ||
+    err?.code === 429 ||
+    err?.statusCode === 429 ||
+    /429|resource[_\s]+(?:has\s+been\s+)?exhausted|rate\s*limit|quota/i.test(err?.message || '')
+  );
+}
+
 @Injectable()
 export class GeminiEmbeddingProvider implements EmbeddingProvider {
   private readonly logger = new Logger(GeminiEmbeddingProvider.name);
@@ -104,14 +113,18 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
           `Lỗi nhúng chunk #${chunkIndex} (thử lần ${attempt}/${maxRetries}): ${err?.message || 'unknown error'}`,
         );
         if (attempt < maxRetries) {
-          const isRateLimit =
-            err?.status === 429 ||
-            err?.code === 429 ||
-            /429|resource_exhausted|rate\s*limit|quota/i.test(err?.message || '');
-          const delayMs = isRateLimit ? 1500 * attempt : 500;
+          const delayMs = isRateLimitError(err) ? 1500 * attempt : 500;
           await new Promise((res) => setTimeout(res, delayMs));
         }
       }
+    }
+
+    if (isRateLimitError(lastError)) {
+      throw new AppError(
+        ErrorCodes.AI_BUSY,
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+      );
     }
 
     throw new AppError(
@@ -140,6 +153,15 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
       } catch (err: any) {
         this.logger.error(`Gemini embedDocuments error: ${err?.message || 'unknown error'}`);
         if (err instanceof AppError) throw err;
+
+        if (isRateLimitError(err)) {
+          throw new AppError(
+            ErrorCodes.AI_BUSY,
+            HttpStatus.SERVICE_UNAVAILABLE,
+            'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+          );
+        }
+
         throw new AppError(
           ErrorCodes.AI_UNAVAILABLE,
           HttpStatus.SERVICE_UNAVAILABLE,
@@ -173,6 +195,15 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     } catch (err: any) {
       this.logger.error(`Gemini embedQuery error: ${err?.message || 'unknown error'}`);
       if (err instanceof AppError) throw err;
+
+      if (isRateLimitError(err)) {
+        throw new AppError(
+          ErrorCodes.AI_BUSY,
+          HttpStatus.SERVICE_UNAVAILABLE,
+          'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+        );
+      }
+
       throw new AppError(
         ErrorCodes.AI_UNAVAILABLE,
         HttpStatus.SERVICE_UNAVAILABLE,

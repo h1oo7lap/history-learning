@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { HttpStatus } from '@nestjs/common';
 import { ChatService, buildChatSystemPrompt } from './chat.service';
 import { FakeAiProvider } from './fake-ai.provider';
 import { AI } from '@history-learning/shared';
+import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
 import type { Retriever } from './retriever.interface';
 
@@ -233,6 +235,85 @@ describe('ChatService (Unit)', () => {
     await expect(
       chatService.chat({ question: 'Chiến thắng Bạch Đằng', history: [] }),
     ).rejects.toThrow('AI embedding service failure');
+  });
+
+  it('maps 429 rate limit error to AI_BUSY with status 503 and friendly Vietnamese message', async () => {
+    vi.mocked(mockRetriever.retrieve).mockResolvedValue({
+      accepted: true,
+      effectiveQuery: 'Chiến thắng Bạch Đằng',
+      segments: [
+        {
+          lessonId: 'lesson-bach-dang',
+          slug: 'chien-thang-bach-dang-nam-938',
+          title: 'Chiến thắng Bạch Đằng năm 938',
+          content: 'Năm 938, Ngô Quyền lãnh đạo đánh tan quân Nam Hán.',
+          score: 0.9,
+        },
+      ],
+      sources: [
+        {
+          lessonId: 'lesson-bach-dang',
+          title: 'Chiến thắng Bạch Đằng năm 938',
+          slug: 'chien-thang-bach-dang-nam-938',
+        },
+      ],
+    });
+
+    // Case 1: Provider throws error with status 429
+    const err429 = new Error('Resource has been exhausted (e.g. check quota)');
+    (err429 as any).status = 429;
+    fakeAi.setMockError(err429);
+
+    await expect(
+      chatService.chat({ question: 'Ngô Quyền là ai?', history: [] }),
+    ).rejects.toMatchObject({
+      code: ErrorCodes.AI_BUSY,
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      message: 'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+    });
+
+    // Case 2: Provider throws error with RESOURCE_EXHAUSTED in message
+    const exhaustedErr = new Error('429 RESOURCE_EXHAUSTED: rate limit exceeded');
+    fakeAi.setMockError(exhaustedErr);
+
+    await expect(
+      chatService.chat({ question: 'Ngô Quyền là ai?', history: [] }),
+    ).rejects.toMatchObject({
+      code: ErrorCodes.AI_BUSY,
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      message: 'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+    });
+
+    // Case 3: Provider throws AppError with AI_BUSY directly
+    fakeAi.setMockError(
+      new AppError(
+        ErrorCodes.AI_BUSY,
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+      ),
+    );
+
+    await expect(
+      chatService.chat({ question: 'Ngô Quyền là ai?', history: [] }),
+    ).rejects.toMatchObject({
+      code: ErrorCodes.AI_BUSY,
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      message: 'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+    });
+  });
+
+  it('maps 429 rate limit error during retrieval to AI_BUSY with status 503', async () => {
+    const rateLimitRetrievalErr = new Error('429 Quota exceeded');
+    (rateLimitRetrievalErr as any).status = 429;
+    vi.mocked(mockRetriever.retrieve).mockRejectedValue(rateLimitRetrievalErr);
+
+    await expect(
+      chatService.chat({ question: 'Chiến thắng Bạch Đằng', history: [] }),
+    ).rejects.toMatchObject({
+      code: ErrorCodes.AI_BUSY,
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      message: 'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+    });
   });
 
   it('throws 404 LESSON_NOT_FOUND if requested lessonId does not exist', async () => {

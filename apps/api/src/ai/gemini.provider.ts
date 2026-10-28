@@ -6,6 +6,15 @@ import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
 import { AI } from '../common/config/constants';
 
+function isRateLimitError(err: any): boolean {
+  return (
+    err?.status === 429 ||
+    err?.code === 429 ||
+    err?.statusCode === 429 ||
+    /429|resource[_\s]+(?:has\s+been\s+)?exhausted|rate\s*limit|quota/i.test(err?.message || '')
+  );
+}
+
 @Injectable()
 export class GeminiProvider implements AiProvider {
   private readonly logger = new Logger(GeminiProvider.name);
@@ -75,8 +84,20 @@ export class GeminiProvider implements AiProvider {
         }
       }
     } catch (err: any) {
+      if (err instanceof AppError) {
+        throw err;
+      }
       // Security: do NOT log apiKey, user prompt, or secrets
       this.logger.error(`AI generation error: ${err?.message || 'unknown error'}`);
+
+      if (isRateLimitError(err)) {
+        throw new AppError(
+          ErrorCodes.AI_BUSY,
+          HttpStatus.SERVICE_UNAVAILABLE,
+          'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+        );
+      }
+
       throw new AppError(
         ErrorCodes.AI_UNAVAILABLE,
         HttpStatus.SERVICE_UNAVAILABLE,

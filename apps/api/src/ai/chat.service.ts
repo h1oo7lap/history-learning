@@ -8,6 +8,15 @@ import { RETRIEVER, type Retriever } from './retriever.interface';
 
 const REFUSAL_BOUNDARY_REGEX = /^["'«»“”„‘’`*_~\s()[\].,!?:;]+|["'«»“”„‘’`*_~\s()[\].,!?:;]+$/g;
 
+function isRateLimitError(err: any): boolean {
+  return (
+    err?.status === 429 ||
+    err?.code === 429 ||
+    err?.statusCode === 429 ||
+    /429|resource[_\s]+(?:has\s+been\s+)?exhausted|rate\s*limit|quota/i.test(err?.message || '')
+  );
+}
+
 export function normalizeRefusalText(text: string): string {
   return text
     .trim()
@@ -58,7 +67,7 @@ export class ChatService {
     @Inject(RETRIEVER) private readonly retriever: Retriever,
     @Inject(AI_PROVIDER) private readonly aiProvider: AiProvider,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async chat(
     dto: AiChatDto,
@@ -94,12 +103,27 @@ export class ChatService {
     const effectiveGradeId =
       user?.role === 'ADMIN' ? undefined : (user?.gradeId ?? undefined);
 
-    const retrieval = await this.retriever.retrieve({
-      question: dto.question,
-      history: dto.history,
-      lessonId: dto.lessonId,
-      gradeId: effectiveGradeId,
-    });
+    let retrieval;
+    try {
+      retrieval = await this.retriever.retrieve({
+        question: dto.question,
+        history: dto.history,
+        lessonId: dto.lessonId,
+        gradeId: effectiveGradeId,
+      });
+    } catch (err: any) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      if (isRateLimitError(err)) {
+        throw new AppError(
+          ErrorCodes.AI_BUSY,
+          HttpStatus.SERVICE_UNAVAILABLE,
+          'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+        );
+      }
+      throw err;
+    }
 
     // 3. I2: If no relevant context found (below threshold), return refusal immediately
     // DO NOT call chat model.
@@ -120,11 +144,26 @@ export class ChatService {
 
     const systemPrompt = buildChatSystemPrompt(contextText);
 
-    const rawAnswer = await this.aiProvider.chat({
-      systemPrompt,
-      history: dto.history,
-      userMessage: dto.question,
-    });
+    let rawAnswer: string;
+    try {
+      rawAnswer = await this.aiProvider.chat({
+        systemPrompt,
+        history: dto.history,
+        userMessage: dto.question,
+      });
+    } catch (err: any) {
+      if (err instanceof AppError) {
+        throw err;
+      }
+      if (isRateLimitError(err)) {
+        throw new AppError(
+          ErrorCodes.AI_BUSY,
+          HttpStatus.SERVICE_UNAVAILABLE,
+          'Hệ thống đang bận, vui lòng thử lại sau ít phút',
+        );
+      }
+      throw err;
+    }
 
     const trimmedAnswer = rawAnswer.trim();
 

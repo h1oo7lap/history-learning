@@ -15,6 +15,12 @@ import { GeminiEmbeddingProvider } from '../gemini-embedding.provider';
 import { EmbeddingDiskCache } from '../embedding-cache';
 import { chunkLesson, type LessonChunkInput, type LessonChunkResult } from '../chunker';
 import { resolveEffectiveQuery } from '../retrieval';
+import {
+  DEFAULT_PACING_MS,
+  sleep,
+  withRateLimitRetry,
+  isApiError,
+} from './eval-retry-helper';
 
 interface SeedLessonJson {
   title: string;
@@ -57,6 +63,7 @@ interface EvaluatedQuestionResult {
   topLessonSlug: string;
   topLessonTitle: string;
   isCorrectLesson: boolean;
+  isApiError?: boolean;
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -131,7 +138,8 @@ async function main() {
   console.log(`[Provider] : ${embeddingProvider.constructor.name} (THẬT)`);
   console.log(`[Model]    : ${modelIdentifier}`);
   console.log(`[Dimensions]: ${dimensions}`);
-  console.log(`[Disk Cache]: .cache/embeddings (sha256 keying có định danh provider + model)\n`);
+  console.log(`[Disk Cache]: .cache/embeddings (sha256 keying có định danh provider + model)`);
+  console.log(`[Giãn cách] : ~${(DEFAULT_PACING_MS / 1000).toFixed(1)}s giữa các request thật tới API\n`);
 
   const diskCache = new EmbeddingDiskCache();
   const providerName = 'GeminiEmbeddingProvider';
@@ -141,9 +149,18 @@ async function main() {
     if (cached && cached.length === dimensions) {
       return cached;
     }
-    const vec = isDoc
-      ? (await embeddingProvider.embedDocuments([text]))[0]!
-      : await embeddingProvider.embedQuery(text);
+    // Giãn cách mặc định ~4.5s giữa các request thật tới API
+    await sleep(DEFAULT_PACING_MS);
+
+    const vec = await withRateLimitRetry(
+      async () => {
+        return isDoc
+          ? (await embeddingProvider.embedDocuments([text]))[0]!
+          : await embeddingProvider.embedQuery(text);
+      },
+      { label: `Nhúng ${isDoc ? 'chunk bài học' : 'câu hỏi'}` },
+    );
+
     diskCache.set(providerName, modelIdentifier, dimensions, text, vec);
     return vec;
   }
@@ -224,7 +241,30 @@ async function main() {
     for (const q of questions) {
       const group = classifyQuestion(q, isHoldout, publishedSlugs);
       const effectiveQuery = resolveEffectiveQuery(q.question, q.history);
-      const queryVec = await getOrEmbed(effectiveQuery, false);
+
+      let queryVec: number[];
+      try {
+        queryVec = await getOrEmbed(effectiveQuery, false);
+      } catch (err: any) {
+        if (isApiError(err)) {
+          console.warn(`[Lỗi API] Bỏ qua câu [${q.id}] do lỗi API (429/timeout): ${err?.message || err}`);
+          results.push({
+            id: q.id,
+            group,
+            question: q.question,
+            effectiveQuery,
+            expectedBehavior: q.expectedBehavior,
+            expectedLessonSlug: q.expectedLessonSlug,
+            topScore: -1,
+            topLessonSlug: 'none',
+            topLessonTitle: 'none',
+            isCorrectLesson: false,
+            isApiError: true,
+          });
+          continue;
+        }
+        throw err;
+      }
 
       let topScore = -1;
       let topLessonSlug = 'none';
@@ -253,6 +293,7 @@ async function main() {
         topLessonSlug,
         topLessonTitle,
         isCorrectLesson,
+        isApiError: false,
       });
     }
 
@@ -270,20 +311,32 @@ async function main() {
     for (const r of results) {
       const idCol = r.id.padEnd(12);
       const groupCol = r.group.padEnd(20);
-      const scoreCol = r.topScore.toFixed(4).padStart(11);
+      const scoreCol = r.isApiError ? '   LỖI API' : r.topScore.toFixed(4).padStart(11);
       const topCol = r.topLessonSlug.slice(0, 37).padEnd(37);
       const expCol = (r.expectedLessonSlug || '-').slice(0, 37).padEnd(37);
-      const matchCol =
-        r.group === 'in-scope' ? (r.isCorrectLesson ? 'ĐÚNG BÀI' : 'SAI BÀI ') : 'REJECT  ';
+      const matchCol = r.isApiError
+        ? 'LỖI API '
+        : r.group === 'in-scope'
+          ? r.isCorrectLesson
+            ? 'ĐÚNG BÀI'
+            : 'SAI BÀI '
+          : 'REJECT  ';
       console.log(`| ${idCol} | ${groupCol} | ${scoreCol} | ${topCol} | ${expCol} | ${matchCol}|`);
     }
   }
 
   // Helper quét ngưỡng
   function scanThresholds(results: EvaluatedQuestionResult[]) {
-    const inScope = results.filter((r) => r.group === 'in-scope');
-    const outHistory = results.filter((r) => r.group === 'lịch sử ngoài kho');
-    const nonHistory = results.filter((r) => r.group === 'phi lịch sử');
+    const validResults = results.filter((r) => !r.isApiError);
+    const apiErrors = results.filter((r) => r.isApiError);
+
+    if (apiErrors.length > 0) {
+      console.log(`[Lưu ý] Có ${apiErrors.length} câu gặp lỗi API (429/timeout) được tính riêng, không tính vào tỉ lệ.`);
+    }
+
+    const inScope = validResults.filter((r) => r.group === 'in-scope');
+    const outHistory = validResults.filter((r) => r.group === 'lịch sử ngoài kho');
+    const nonHistory = validResults.filter((r) => r.group === 'phi lịch sử');
 
     console.log(
       '| Ngưỡng | Nhận nhầm phi LS (<=0) | Nhận nhầm LS ngoài kho | Từ chối oan in-scope | Tìm đúng bài in-scope | Độ chính xác in-scope |',
@@ -367,6 +420,7 @@ async function main() {
       topLessonSlug: string;
       topLessonTitle: string;
       isCorrect: boolean;
+      isApiError?: boolean;
       failureReason?: string;
     }
 
@@ -378,7 +432,29 @@ async function main() {
       const expectRefusal = q.expectRefusal ?? (q.expectedBehavior === 'reject');
 
       const effectiveQuery = resolveEffectiveQuery(q.question);
-      const queryVec = await getOrEmbed(effectiveQuery, false);
+
+      let queryVec: number[];
+      try {
+        queryVec = await getOrEmbed(effectiveQuery, false);
+      } catch (err: any) {
+        if (isApiError(err)) {
+          evaluatedList.push({
+            id: q.id,
+            groupName,
+            question: q.question,
+            expectedSlug,
+            expectRefusal,
+            topScore: -1,
+            topLessonSlug: 'none',
+            topLessonTitle: 'none',
+            isCorrect: false,
+            isApiError: true,
+            failureReason: `Lỗi API (429/timeout): ${err?.message || err}`,
+          });
+          continue;
+        }
+        throw err;
+      }
 
       let topScore = -1;
       let topLessonSlug = 'none';
@@ -425,6 +501,7 @@ async function main() {
         topLessonSlug,
         topLessonTitle,
         isCorrect,
+        isApiError: false,
         failureReason,
       });
     }
@@ -445,17 +522,19 @@ async function main() {
     let totalCorrect = 0;
 
     for (const [groupName, items] of groupsMap.entries()) {
-      const correctInGroup = items.filter((i) => i.isCorrect).length;
+      const validItems = items.filter((i) => !i.isApiError);
+      const apiErrorsInGroup = items.filter((i) => i.isApiError);
+      const correctInGroup = validItems.filter((i) => i.isCorrect).length;
       totalCorrect += correctInGroup;
-      const scores = items.map((i) => i.topScore);
-      const minScore = Math.min(...scores);
-      const maxScore = Math.max(...scores);
-      const accuracy = ((correctInGroup / items.length) * 100).toFixed(1);
+      const scores = validItems.map((i) => i.topScore);
+      const minScore = scores.length > 0 ? Math.min(...scores) : 0;
+      const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+      const accuracy = validItems.length > 0 ? ((correctInGroup / validItems.length) * 100).toFixed(1) : 'N/A';
 
-      console.log(`▶ [${groupName}] : ${correctInGroup}/${items.length} câu đúng (${accuracy}%)`);
+      console.log(`▶ [${groupName}] : ${correctInGroup}/${validItems.length} câu đúng (${accuracy}%) ${apiErrorsInGroup.length > 0 ? `[${apiErrorsInGroup.length} lỗi API - tính riêng]` : ''}`);
       console.log(`   - Điểm thấp nhất : ${minScore.toFixed(4)} | Điểm cao nhất: ${maxScore.toFixed(4)}`);
 
-      const failedItems = items.filter((i) => !i.isCorrect);
+      const failedItems = validItems.filter((i) => !i.isCorrect);
       if (failedItems.length > 0) {
         console.log(`   - Danh sách câu sai (${failedItems.length} câu):`);
         for (const fail of failedItems) {
@@ -465,11 +544,23 @@ async function main() {
       } else {
         console.log('   - Danh sách câu sai: Không có (Đạt 100%)');
       }
+      if (apiErrorsInGroup.length > 0) {
+        console.log(`   - Danh sách câu lỗi API (${apiErrorsInGroup.length} câu):`);
+        for (const errItem of apiErrorsInGroup) {
+          console.log(`     * [${errItem.id}] "${errItem.question}" -> ${errItem.failureReason}`);
+        }
+      }
       console.log('');
     }
 
+    const totalValid = evaluatedList.filter((i) => !i.isApiError).length;
+    const totalApiErrors = evaluatedList.filter((i) => i.isApiError).length;
+
     console.log('================================================================================');
-    console.log(`TỔNG KẾT BỘ EVALUATION: ${totalCorrect}/${evaluatedList.length} câu đúng (${((totalCorrect / evaluatedList.length) * 100).toFixed(1)}%)`);
+    console.log(`TỔNG KẾT BỘ EVALUATION: ${totalCorrect}/${totalValid} câu đúng (${totalValid > 0 ? ((totalCorrect / totalValid) * 100).toFixed(1) : 0}%)`);
+    if (totalApiErrors > 0) {
+      console.log(`LỖI API (429/timeout): ${totalApiErrors} câu (TÍNH RIÊNG, KHÔNG TÍNH VÀO TỈ LỆ ĐẠT/TRƯỢT)`);
+    }
     console.log('================================================================================\n');
     return;
   }
@@ -488,18 +579,20 @@ async function main() {
   const devResults = await evaluateQuestions(devQuestions, false);
   printQuestionTable(devResults);
 
-  const devInScope = devResults.filter((r) => r.group === 'in-scope');
-  const devOutHistory = devResults.filter((r) => r.group === 'lịch sử ngoài kho');
-  const devNonHistory = devResults.filter((r) => r.group === 'phi lịch sử');
+  const devValid = devResults.filter((r) => !r.isApiError);
+  const devInScope = devValid.filter((r) => r.group === 'in-scope');
+  const devOutHistory = devValid.filter((r) => r.group === 'lịch sử ngoài kho');
+  const devNonHistory = devValid.filter((r) => r.group === 'phi lịch sử');
+  const devApiErrors = devResults.filter((r) => r.isApiError);
 
-  console.log(`\nPhân bổ bộ Dev (${devResults.length} câu):`);
+  console.log(`\nPhân bổ bộ Dev (${devValid.length} câu hợp lệ${devApiErrors.length > 0 ? `, ${devApiErrors.length} lỗi API tính riêng` : ''}):`);
   console.log(`  - in-scope            : ${devInScope.length} câu (kỳ vọng ~12 câu)`);
   console.log(`  - lịch sử ngoài kho   : ${devOutHistory.length} câu (gồm câu ngoài chương trình + 4 câu bài DRAFT/ARCHIVED)`);
   console.log(`  - phi lịch sử         : ${devNonHistory.length} câu`);
 
-  const minDevInScope = Math.min(...devInScope.map((r) => r.topScore));
-  const maxDevNonHistory = Math.max(...devNonHistory.map((r) => r.topScore));
-  const maxDevOutHistory = Math.max(...devOutHistory.map((r) => r.topScore));
+  const minDevInScope = devInScope.length > 0 ? Math.min(...devInScope.map((r) => r.topScore)) : 0;
+  const maxDevNonHistory = devNonHistory.length > 0 ? Math.max(...devNonHistory.map((r) => r.topScore)) : 0;
+  const maxDevOutHistory = devOutHistory.length > 0 ? Math.max(...devOutHistory.map((r) => r.topScore)) : 0;
   const devGap = minDevInScope - maxDevNonHistory;
 
   console.log('\n--- Thống kê điểm số bộ Dev ---');
@@ -511,8 +604,6 @@ async function main() {
   console.log('--- Quét ngưỡng trên bộ Dev ---');
   scanThresholds(devResults);
 
-  // Chọn ngưỡng tối ưu
-  // Ngưỡng 0.65 là ngưỡng tiêu chuẩn đã cấu hình trong packages/shared/src/constants.ts
   console.log(`\n=> CHỌN NGƯỠNG TRÊN BỘ DEV: ${selectedThreshold.toFixed(2)}`);
 
   // 5. ĐÁNH GIÁ BỘ HOLDOUT (eval-holdout.json) VỚI NGƯỠNG ĐÃ CHỌN
@@ -523,18 +614,20 @@ async function main() {
   const holdoutResults = await evaluateQuestions(holdoutQuestions, true);
   printQuestionTable(holdoutResults);
 
-  const holdoutInScope = holdoutResults.filter((r) => r.group === 'in-scope');
-  const holdoutOutHistory = holdoutResults.filter((r) => r.group === 'lịch sử ngoài kho');
-  const holdoutNonHistory = holdoutResults.filter((r) => r.group === 'phi lịch sử');
+  const holdoutValid = holdoutResults.filter((r) => !r.isApiError);
+  const holdoutInScope = holdoutValid.filter((r) => r.group === 'in-scope');
+  const holdoutOutHistory = holdoutValid.filter((r) => r.group === 'lịch sử ngoài kho');
+  const holdoutNonHistory = holdoutValid.filter((r) => r.group === 'phi lịch sử');
+  const holdoutApiErrors = holdoutResults.filter((r) => r.isApiError);
 
-  console.log(`\nPhân bổ bộ Hold-out (${holdoutResults.length} câu):`);
+  console.log(`\nPhân bổ bộ Hold-out (${holdoutValid.length} câu hợp lệ${holdoutApiErrors.length > 0 ? `, ${holdoutApiErrors.length} lỗi API tính riêng` : ''}):`);
   console.log(`  - in-scope            : ${holdoutInScope.length} câu (kỳ vọng ~7 câu)`);
   console.log(`  - lịch sử ngoài kho   : ${holdoutOutHistory.length} câu (gồm 5 câu ngoài kho + 3 câu bài DRAFT/ARCHIVED)`);
   console.log(`  - phi lịch sử         : ${holdoutNonHistory.length} câu`);
 
-  const minHoldoutInScope = Math.min(...holdoutInScope.map((r) => r.topScore));
-  const maxHoldoutNonHistory = Math.max(...holdoutNonHistory.map((r) => r.topScore));
-  const maxHoldoutOutHistory = Math.max(...holdoutOutHistory.map((r) => r.topScore));
+  const minHoldoutInScope = holdoutInScope.length > 0 ? Math.min(...holdoutInScope.map((r) => r.topScore)) : 0;
+  const maxHoldoutNonHistory = holdoutNonHistory.length > 0 ? Math.max(...holdoutNonHistory.map((r) => r.topScore)) : 0;
+  const maxHoldoutOutHistory = holdoutOutHistory.length > 0 ? Math.max(...holdoutOutHistory.map((r) => r.topScore)) : 0;
   const holdoutGap = minHoldoutInScope - maxHoldoutNonHistory;
 
   console.log('\n--- Thống kê điểm số bộ Hold-out ---');
@@ -557,7 +650,12 @@ async function main() {
   console.log(`  1. Nhận nhầm phi lịch sử       : ${holdoutFaNon}/${holdoutNonHistory.length} (${holdoutFaNon === 0 ? 'HOÀN HẢO 0%' : 'CẢNH BÁO'})`);
   console.log(`  2. Nhận nhầm lịch sử ngoài kho : ${holdoutFaOut}/${holdoutOutHistory.length}`);
   console.log(`  3. Từ chối oan câu in-scope    : ${holdoutFrIn}/${holdoutInScope.length}`);
-  console.log(`  4. Tìm đúng bài học in-scope   : ${holdoutTrueIn}/${holdoutInScope.length} (${((holdoutTrueIn / holdoutInScope.length) * 100).toFixed(1)}%)`);
+  if (holdoutInScope.length > 0) {
+    console.log(`  4. Tìm đúng bài học in-scope   : ${holdoutTrueIn}/${holdoutInScope.length} (${((holdoutTrueIn / holdoutInScope.length) * 100).toFixed(1)}%)`);
+  }
+  if (holdoutApiErrors.length > 0) {
+    console.log(`  5. Lỗi API (429/timeout)       : ${holdoutApiErrors.length} câu (TÍNH RIÊNG, KHÔNG TÍNH VÀO TỈ LỆ)`);
+  }
   console.log('================================================================================\n');
 }
 

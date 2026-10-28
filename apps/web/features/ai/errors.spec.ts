@@ -12,6 +12,11 @@ describe('getAiErrorMessage', () => {
     expect(getAiErrorMessage(err2)).toContain('quá nhanh');
   });
 
+  it('maps 503 AI_BUSY to system busy message', () => {
+    const err = new ApiClientError('AI_BUSY', 503, 'Hệ thống đang bận, vui lòng thử lại sau ít phút');
+    expect(getAiErrorMessage(err)).toBe('Hệ thống đang bận, vui lòng thử lại sau ít phút.');
+  });
+
   it('maps 503 AI_UNAVAILABLE to a temporary unavailable message', () => {
     const err = new ApiClientError('AI_UNAVAILABLE', 503, 'AI service unavailable');
     expect(getAiErrorMessage(err)).toBe('Dịch vụ AI tạm thời chưa sẵn sàng. Vui lòng thử lại sau.');

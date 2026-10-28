@@ -14,6 +14,10 @@ export function getAiErrorMessage(error: unknown): string {
       return 'Bạn đang đặt câu hỏi quá nhanh. Vui lòng chờ một lúc rồi thử lại nhé.';
     }
 
+    if (error.errorCode === 'AI_BUSY') {
+      return 'Hệ thống đang bận, vui lòng thử lại sau ít phút.';
+    }
+
     if (error.status === 503 || error.errorCode === 'AI_UNAVAILABLE') {
       return 'Dịch vụ AI tạm thời chưa sẵn sàng. Vui lòng thử lại sau.';
     }
