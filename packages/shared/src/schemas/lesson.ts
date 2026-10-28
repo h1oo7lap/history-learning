@@ -78,8 +78,8 @@ const cloudinaryUrlSchema = z
 const imageUrlSchema = z
   .string()
   .url()
-  .refine((u) => u.startsWith('https://') || u.startsWith('http://'), {
-    message: 'URL must use https or http',
+  .refine((u) => u.startsWith('https://'), {
+    message: 'URL must use https',
   });
 
 const blockIdSchema = z.string().min(1).max(64);
