@@ -1,4 +1,5 @@
-import { Injectable, Inject, HttpStatus } from '@nestjs/common';
+import { Injectable, Inject, Optional, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { EMBEDDING_PROVIDER, type EmbeddingProvider } from './embedding.provider';
 import {
@@ -11,6 +12,7 @@ import { resolveEffectiveQuery } from './retrieval';
 import { AI } from '@history-learning/shared';
 import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
+import type { Env } from '../common/config/env.schema';
 
 interface RawChunkRow {
   chunkId: string;
@@ -27,13 +29,20 @@ interface RawChunkRow {
 
 @Injectable()
 export class VectorRetriever implements Retriever {
-  private readonly threshold = AI.SIMILARITY_THRESHOLD ?? 0.65;
+  private readonly threshold: number;
   private readonly topK = 4;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(EMBEDDING_PROVIDER) private readonly embeddingProvider: EmbeddingProvider,
-  ) {}
+    @Optional() private readonly configService?: ConfigService<Env>,
+  ) {
+    const configuredThreshold = this.configService?.get<number>('AI_SIMILARITY_THRESHOLD');
+    this.threshold =
+      typeof configuredThreshold === 'number' && !isNaN(configuredThreshold)
+        ? configuredThreshold
+        : AI.SIMILARITY_THRESHOLD ?? 0.65;
+  }
 
   async retrieve(params: RetrieveParams): Promise<RetrieverResult> {
     const { question, history, lessonId, gradeId } = params;

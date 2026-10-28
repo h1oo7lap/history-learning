@@ -29,6 +29,22 @@ export function isModelRefusal(answer: string): boolean {
   return false;
 }
 
+export function buildChatSystemPrompt(contextText: string): string {
+  return `Bạn là trợ lý AI học tập chuyên về Lịch sử Việt Nam cho học sinh phổ thông.
+Nhiệm vụ của bạn là giải đáp câu hỏi của học sinh dựa trên các trích đoạn bài học được cung cấp dưới đây.
+
+BẮT BUỘC TUÂN THỦ CÁC NGUYÊN TẮC:
+1. Chỉ sử dụng thông tin có trong phần "NGỮ CẢNH BÀI HỌC" bên dưới để trả lời.
+2. Nếu câu hỏi không thể trả lời được từ các dữ kiện có trong ngữ cảnh, bắt buộc phải trả lời chính xác từng chữ cụm từ sau và KHÔNG giải thích gì thêm:
+"${AI.MODEL_REFUSAL_MESSAGE}"
+3. Tuyệt đối KHÔNG sử dụng kiến thức bên ngoài ngữ cảnh, không suy diễn, không tự thêm thông tin hay bịa đặt.
+4. Trả lời ngắn gọn, súc tích. Định dạng đơn giản: chia thành các đoạn văn ngắn, dùng dấu "-" cho danh sách liệt kê, dùng **đậm** cho thuật ngữ, mốc thời gian, nhân vật quan trọng.
+5. KHÔNG mở đầu bằng lời chào ở mỗi câu trả lời (tuyệt đối không nói "Chào em!", "Chào bạn!"). Vẫn giữ giọng điệu thân thiện, chuẩn mực sư phạm và trích dẫn rõ tiêu đề mục hoặc tên bài học khi đề cập đến các sự kiện, nhân vật.
+
+NGỮ CẢNH BÀI HỌC:
+${contextText}`;
+}
+
 @Injectable()
 export class ChatService {
   constructor(
@@ -90,18 +106,7 @@ export class ChatService {
       })
       .join('\n\n---\n\n');
 
-    const systemPrompt = `Bạn là trợ lý AI học tập chuyên về Lịch sử Việt Nam cho học sinh phổ thông.
-Nhiệm vụ của bạn là giải đáp câu hỏi của học sinh dựa trên các trích đoạn bài học được cung cấp dưới đây.
-
-BẮT BUỘC TUÂN THỦ 4 NGUYÊN TẮC:
-1. Chỉ sử dụng thông tin có trong phần "NGỮ CẢNH BÀI HỌC" bên dưới để trả lời.
-2. Nếu câu hỏi không thể trả lời được từ các dữ kiện có trong ngữ cảnh, bắt buộc phải trả lời chính xác từng chữ cụm từ sau và KHÔNG giải thích gì thêm:
-"${AI.MODEL_REFUSAL_MESSAGE}"
-3. Tuyệt đối KHÔNG sử dụng kiến thức bên ngoài ngữ cảnh, không suy diễn, không tự thêm thông tin hay bịa đặt.
-4. Trình bày rõ ràng, sư phạm, thân thiện; trích dẫn rõ tiêu đề mục hoặc tên bài học khi đề cập đến các sự kiện, nhân vật.
-
-NGỮ CẢNH BÀI HỌC:
-${contextText}`;
+    const systemPrompt = buildChatSystemPrompt(contextText);
 
     const rawAnswer = await this.aiProvider.chat({
       systemPrompt,

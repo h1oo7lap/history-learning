@@ -148,4 +148,35 @@ describe('VectorRetriever (Unit)', () => {
     expect(result.crossGradeFallback).toBe(true);
     expect(result.sources[0]?.slug).toBe('chien-dich-dien-bien-phu-1954');
   });
+
+  it('honors AI_SIMILARITY_THRESHOLD override from ConfigService', async () => {
+    const mockConfigService = {
+      get: vi.fn().mockReturnValue(0.8),
+    } as any;
+
+    const customRetriever = new VectorRetriever(mockPrisma, fakeEmbedder, mockConfigService);
+
+    // Score is 0.75: would pass default 0.65, but fails custom threshold 0.8
+    mockPrisma.$queryRaw.mockResolvedValue([
+      {
+        chunkId: 'c1',
+        lessonId: 'l1',
+        chunkIndex: 0,
+        heading: 'Nội dung',
+        content: 'Nội dung bài học',
+        title: 'Bài học 1',
+        slug: 'bai-hoc-1',
+        gradeId: 'g1',
+        score: 0.75,
+        rn: 1,
+      },
+    ]);
+
+    const result = await customRetriever.retrieve({
+      question: 'Chiến thắng Bạch Đằng',
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.segments).toHaveLength(0);
+  });
 });

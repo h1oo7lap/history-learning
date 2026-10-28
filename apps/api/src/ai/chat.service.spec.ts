@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ChatService } from './chat.service';
+import { ChatService, buildChatSystemPrompt } from './chat.service';
 import { FakeAiProvider } from './fake-ai.provider';
 import { AI } from '@history-learning/shared';
 import { ErrorCodes } from '../common/errors/error-codes';
@@ -196,6 +196,17 @@ describe('ChatService (Unit)', () => {
     ).rejects.toMatchObject({
       code: ErrorCodes.LESSON_NOT_PUBLISHED,
       status: 404,
+    });
+  });
+
+  describe('buildChatSystemPrompt', () => {
+    it('instructs model to answer concisely, use simple format (- and **), and omit greetings', () => {
+      const prompt = buildChatSystemPrompt('Ngữ cảnh mẫu');
+      expect(prompt).toContain('ngắn gọn');
+      expect(prompt).toContain('KHÔNG mở đầu bằng lời chào');
+      expect(prompt).toContain('**đậm**');
+      expect(prompt).toContain(AI.MODEL_REFUSAL_MESSAGE);
+      expect(prompt).toContain('NGỮ CẢNH BÀI HỌC:\nNgữ cảnh mẫu');
     });
   });
 });

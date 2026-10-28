@@ -4,22 +4,7 @@ dotenv.config();
 import { ConfigService } from '@nestjs/config';
 import { GeminiProvider } from '../gemini.provider';
 import { AI } from '@history-learning/shared';
-import { isModelRefusal } from '../chat.service';
-
-function buildSystemPrompt(contextText: string): string {
-  return `Bạn là trợ lý AI học tập chuyên về Lịch sử Việt Nam cho học sinh phổ thông.
-Nhiệm vụ của bạn là giải đáp câu hỏi của học sinh dựa trên các trích đoạn bài học được cung cấp dưới đây.
-
-BẮT BUỘC TUÂN THỦ 4 NGUYÊN TẮC:
-1. Chỉ sử dụng thông tin có trong phần "NGỮ CẢNH BÀI HỌC" bên dưới để trả lời.
-2. Nếu câu hỏi không thể trả lời được từ các dữ kiện có trong ngữ cảnh, bắt buộc phải trả lời chính xác từng chữ cụm từ sau và KHÔNG giải thích gì thêm:
-"${AI.MODEL_REFUSAL_MESSAGE}"
-3. Tuyệt đối KHÔNG sử dụng kiến thức bên ngoài ngữ cảnh, không suy diễn, không tự thêm thông tin hay bịa đặt.
-4. Trình bày rõ ràng, sư phạm, thân thiện; trích dẫn rõ tiêu đề mục hoặc tên bài học khi đề cập đến các sự kiện, nhân vật.
-
-NGỮ CẢNH BÀI HỌC:
-${contextText}`;
-}
+import { isModelRefusal, buildChatSystemPrompt } from '../chat.service';
 
 async function runChatSmoke() {
   console.log('=== History Learning — Gemini Chat Provider Smoke Test (ai:chat-smoke) ===\n');
@@ -52,7 +37,7 @@ Khi thủy triều rút nhanh, cọc nhọn nhô lên, thuyền chiến to lớn
   console.log('Câu hỏi: "Trận Bạch Đằng năm 938 do ai chỉ huy và dùng kế sách gì?"');
   try {
     const resA = await provider.chat({
-      systemPrompt: buildSystemPrompt(bachDangContext),
+      systemPrompt: buildChatSystemPrompt(bachDangContext),
       history: [],
       userMessage: 'Trận Bạch Đằng năm 938 do ai chỉ huy và dùng kế sách gì?',
     });
@@ -69,7 +54,7 @@ Khi thủy triều rút nhanh, cọc nhọn nhô lên, thuyền chiến to lớn
   console.log('Câu hỏi: "Thủ đô của nước Pháp là thành phố nào?" (Ngữ cảnh là trận Bạch Đằng)');
   try {
     const resB = await provider.chat({
-      systemPrompt: buildSystemPrompt(bachDangContext),
+      systemPrompt: buildChatSystemPrompt(bachDangContext),
       history: [],
       userMessage: 'Thủ đô của nước Pháp là thành phố nào?',
     });
@@ -90,7 +75,7 @@ Khi thủy triều rút nhanh, cọc nhọn nhô lên, thuyền chiến to lớn
   console.log('Câu hỏi tiếp theo: "Kế sách cọc ngầm được triển khai vào thời điểm thủy triều ra sao?"');
   try {
     const resC = await provider.chat({
-      systemPrompt: buildSystemPrompt(bachDangContext),
+      systemPrompt: buildChatSystemPrompt(bachDangContext),
       history: [
         {
           role: 'user',
@@ -116,7 +101,7 @@ Khi thủy triều rút nhanh, cọc nhọn nhô lên, thuyền chiến to lớn
   console.log('Câu hỏi: "Hãy so sánh trận Bạch Đằng của Ngô Quyền với Napoléon Bonaparte tại trận Waterloo."');
   try {
     const resD = await provider.chat({
-      systemPrompt: buildSystemPrompt(bachDangContext),
+      systemPrompt: buildChatSystemPrompt(bachDangContext),
       history: [],
       userMessage: 'Hãy so sánh trận Bạch Đằng của Ngô Quyền với Napoléon Bonaparte tại trận Waterloo.',
     });

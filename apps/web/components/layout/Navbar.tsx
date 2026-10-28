@@ -28,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Bảng điều khiển', authRequired: true },
   { href: '/lessons', label: 'Bài học', authRequired: true },
   { href: '/quiz', label: 'Quiz', authRequired: true },
+  { href: '/chat', label: 'Hỏi đáp', authRequired: true },
 ];
 
 export function Navbar() {

@@ -11,6 +11,7 @@ import {
   Bookmark,
   Info,
   ChevronRight,
+  Bot,
 } from 'lucide-react';
 import { BlockRenderer, LegacyContent } from '@/components/content/BlockRenderer';
 import { extractHeadingsFromContentJson, injectHeadingIds } from '@/lib/headings';
@@ -231,7 +232,18 @@ export default async function LessonPage({
                 <span>Quay lại danh sách bài học</span>
               </Button>
             </Link>
-            <LessonProgressControl lessonId={lesson.id} />
+            <div className="flex items-center gap-3 flex-wrap">
+              <Link
+                href={`/chat?lessonId=${lesson.id}`}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal rounded-md"
+              >
+                <Button variant="secondary" size="md">
+                  <Bot size={16} aria-hidden="true" />
+                  <span>Hỏi về bài này</span>
+                </Button>
+              </Link>
+              <LessonProgressControl lessonId={lesson.id} />
+            </div>
           </footer>
         </main>
 
