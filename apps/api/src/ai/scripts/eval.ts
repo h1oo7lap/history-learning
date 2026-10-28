@@ -1,3 +1,10 @@
+// =============================================================================
+// LƯU Ý QUAN TRỌNG:
+// Bộ eval-holdout.json KHÔNG độc lập (được tạo trước khi tinh chỉnh RAG).
+// Để kiểm tra độ bền thực tế sau tinh chỉnh, sử dụng:
+//   pnpm ai:eval --file test/ai/eval-robustness.json
+// =============================================================================
+
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -306,6 +313,167 @@ async function main() {
     }
   }
 
+  // Kiểm tra cờ --file hoặc argument đường dẫn file
+  const args = process.argv.slice(2);
+  let customFile: string | null = null;
+  const fileFlagIdx = args.findIndex((a) => a === '--file' || a === '-f');
+  if (fileFlagIdx !== -1 && args[fileFlagIdx + 1]) {
+    customFile = args[fileFlagIdx + 1]!;
+  } else {
+    const candidate = args.find((a) => !a.startsWith('-') && a.endsWith('.json'));
+    if (candidate) customFile = candidate;
+  }
+
+  const selectedThreshold = 0.65;
+
+  if (customFile) {
+    const resolvedPath = path.isAbsolute(customFile)
+      ? customFile
+      : path.resolve(process.cwd(), customFile);
+
+    if (!fs.existsSync(resolvedPath)) {
+      console.error(`FATAL: File không tồn tại: ${resolvedPath}`);
+      process.exit(1);
+    }
+
+    console.log('================================================================================');
+    console.log(`ĐÁNH GIÁ TẬP DỮ LIỆU TÙY CHỌN: ${path.basename(resolvedPath)}`);
+    console.log(`Đường dẫn: ${resolvedPath}`);
+    console.log(`Ngưỡng kiểm tra: ${selectedThreshold.toFixed(2)}`);
+    console.log('================================================================================\n');
+
+    interface CustomQuestionItem {
+      id: string;
+      type?: string;
+      category?: string;
+      group?: string;
+      question: string;
+      expectedLesson?: string;
+      expectedLessonSlug?: string;
+      expectRefusal?: boolean;
+      expectedBehavior?: 'accept' | 'reject';
+    }
+
+    const rawItems: CustomQuestionItem[] = JSON.parse(fs.readFileSync(resolvedPath, 'utf-8'));
+    console.log(`Tổng số câu hỏi trong file: ${rawItems.length}\n`);
+
+    interface EvaluatedCustomItem {
+      id: string;
+      groupName: string;
+      question: string;
+      expectedSlug?: string;
+      expectRefusal: boolean;
+      topScore: number;
+      topLessonSlug: string;
+      topLessonTitle: string;
+      isCorrect: boolean;
+      failureReason?: string;
+    }
+
+    const evaluatedList: EvaluatedCustomItem[] = [];
+
+    for (const q of rawItems) {
+      const groupName = q.type || q.group || q.category || 'Nhóm chung';
+      const expectedSlug = q.expectedLesson || q.expectedLessonSlug;
+      const expectRefusal = q.expectRefusal ?? (q.expectedBehavior === 'reject');
+
+      const effectiveQuery = resolveEffectiveQuery(q.question);
+      const queryVec = await getOrEmbed(effectiveQuery, false);
+
+      let topScore = -1;
+      let topLessonSlug = 'none';
+      let topLessonTitle = 'none';
+
+      for (const chunk of loadedChunks) {
+        const score = cosineSimilarity(queryVec, chunk.embedding);
+        if (score > topScore) {
+          topScore = score;
+          topLessonSlug = chunk.lessonSlug;
+          topLessonTitle = chunk.lessonTitle;
+        }
+      }
+
+      let isCorrect = false;
+      let failureReason: string | undefined;
+
+      if (expectRefusal) {
+        if (topScore < selectedThreshold) {
+          isCorrect = true;
+        } else {
+          isCorrect = false;
+          failureReason = `Nhận nhầm bài "${topLessonSlug}" (score ${topScore.toFixed(4)} >= ${selectedThreshold})`;
+        }
+      } else {
+        if (topScore >= selectedThreshold && topLessonSlug === expectedSlug) {
+          isCorrect = true;
+        } else if (topScore < selectedThreshold) {
+          isCorrect = false;
+          failureReason = `Từ chối oan (score ${topScore.toFixed(4)} < ${selectedThreshold}, match "${topLessonSlug}", kỳ vọng "${expectedSlug}")`;
+        } else {
+          isCorrect = false;
+          failureReason = `Sai bài học (score ${topScore.toFixed(4)}, match "${topLessonSlug}", kỳ vọng "${expectedSlug}")`;
+        }
+      }
+
+      evaluatedList.push({
+        id: q.id,
+        groupName,
+        question: q.question,
+        expectedSlug,
+        expectRefusal,
+        topScore,
+        topLessonSlug,
+        topLessonTitle,
+        isCorrect,
+        failureReason,
+      });
+    }
+
+    // Nhóm kết quả theo groupName
+    const groupsMap = new Map<string, EvaluatedCustomItem[]>();
+    for (const item of evaluatedList) {
+      if (!groupsMap.has(item.groupName)) {
+        groupsMap.set(item.groupName, []);
+      }
+      groupsMap.get(item.groupName)!.push(item);
+    }
+
+    console.log('--------------------------------------------------------------------------------');
+    console.log('KẾT QUẢ ĐÁNH GIÁ THEO TỪNG NHÓM:');
+    console.log('--------------------------------------------------------------------------------\n');
+
+    let totalCorrect = 0;
+
+    for (const [groupName, items] of groupsMap.entries()) {
+      const correctInGroup = items.filter((i) => i.isCorrect).length;
+      totalCorrect += correctInGroup;
+      const scores = items.map((i) => i.topScore);
+      const minScore = Math.min(...scores);
+      const maxScore = Math.max(...scores);
+      const accuracy = ((correctInGroup / items.length) * 100).toFixed(1);
+
+      console.log(`▶ [${groupName}] : ${correctInGroup}/${items.length} câu đúng (${accuracy}%)`);
+      console.log(`   - Điểm thấp nhất : ${minScore.toFixed(4)} | Điểm cao nhất: ${maxScore.toFixed(4)}`);
+
+      const failedItems = items.filter((i) => !i.isCorrect);
+      if (failedItems.length > 0) {
+        console.log(`   - Danh sách câu sai (${failedItems.length} câu):`);
+        for (const fail of failedItems) {
+          console.log(`     * [${fail.id}] "${fail.question}"`);
+          console.log(`       -> Top score: ${fail.topScore.toFixed(4)} | Lý do: ${fail.failureReason}`);
+        }
+      } else {
+        console.log('   - Danh sách câu sai: Không có (Đạt 100%)');
+      }
+      console.log('');
+    }
+
+    console.log('================================================================================');
+    console.log(`TỔNG KẾT BỘ EVALUATION: ${totalCorrect}/${evaluatedList.length} câu đúng (${((totalCorrect / evaluatedList.length) * 100).toFixed(1)}%)`);
+    console.log('================================================================================\n');
+    return;
+  }
+
   // 4. ĐÁNH GIÁ BỘ DEV (eval-questions.json)
   const devPath = path.resolve(__dirname, '../../../test/ai/eval-questions.json');
   const holdoutPath = path.resolve(__dirname, '../../../test/ai/eval-holdout.json');
@@ -345,7 +513,6 @@ async function main() {
 
   // Chọn ngưỡng tối ưu
   // Ngưỡng 0.65 là ngưỡng tiêu chuẩn đã cấu hình trong packages/shared/src/constants.ts
-  const selectedThreshold = 0.65;
   console.log(`\n=> CHỌN NGƯỠNG TRÊN BỘ DEV: ${selectedThreshold.toFixed(2)}`);
 
   // 5. ĐÁNH GIÁ BỘ HOLDOUT (eval-holdout.json) VỚI NGƯỠNG ĐÃ CHỌN

@@ -42,6 +42,7 @@ export const AI = {
   MAX_MODEL_MESSAGE_LENGTH: 2000,
   EMBEDDING_DIMENSIONS: 768,
   SIMILARITY_THRESHOLD: 0.65,
+  RELATIVE_SCORE_MARGIN: 0.1,
   NO_CONTEXT_REFUSAL_MESSAGE: 'Mình chưa tìm thấy thông tin phù hợp trong các bài học hiện có.',
   MODEL_REFUSAL_MESSAGE: 'Mình chưa tìm thấy đủ thông tin trong các bài học hiện có.',
   /** @deprecated Dùng NO_CONTEXT_REFUSAL_MESSAGE */

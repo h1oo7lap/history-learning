@@ -19,7 +19,6 @@ export interface RetrieverResult {
   effectiveQuery: string;
   segments: RetrievedSegment[];
   sources: Array<{ lessonId: string; title: string; slug: string }>;
-  crossGradeFallback?: boolean;
 }
 
 export interface Retriever {

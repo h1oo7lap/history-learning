@@ -106,47 +106,100 @@ describe('VectorRetriever (Unit)', () => {
     });
   });
 
-  it('performs cross-grade fallback when user grade has no matches above threshold', async () => {
-    // Call 1 (user grade): returns low score < 0.65
-    // Call 2 (fallback all grades): returns high score >= 0.65
-    mockPrisma.$queryRaw
-      .mockResolvedValueOnce([
-        {
-          chunkId: 'c_other',
-          lessonId: 'l_other',
-          chunkIndex: 0,
-          heading: 'Khái lược',
-          content: 'Nội dung lớp 4',
-          title: 'Bài lớp 4',
-          slug: 'bai-lop-4',
-          gradeId: 'grade-4',
-          score: 0.45, // < 0.65
-          rn: 1,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          chunkId: 'c_thcs',
-          lessonId: 'l_thcs',
-          chunkIndex: 0,
-          heading: 'Diễn biến',
-          content: 'Chiến dịch Điện Biên Phủ 1954',
-          title: 'Chiến dịch Điện Biên Phủ',
-          slug: 'chien-dich-dien-bien-phu-1954',
-          gradeId: 'grade-9',
-          score: 0.88, // >= 0.65
-          rn: 1,
-        },
-      ]);
+  it('strictly scopes to gradeId without cross-grade fallback when user has gradeId', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([
+      {
+        chunkId: 'c_other',
+        lessonId: 'l_other',
+        chunkIndex: 0,
+        heading: 'Khái lược',
+        content: 'Nội dung lớp 4',
+        title: 'Bài lớp 4',
+        slug: 'bai-lop-4',
+        gradeId: 'grade-4',
+        score: 0.45, // < 0.65 threshold
+        rn: 1,
+      },
+    ]);
 
     const result = await retriever.retrieve({
       question: 'Điện Biên Phủ diễn ra năm nào?',
       gradeId: 'grade-4',
     });
 
+    expect(result.accepted).toBe(false);
+    expect(result.segments).toEqual([]);
+    expect(result.sources).toEqual([]);
+    // Must only have queried once for grade-4, no second fallback query
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('filters segments by relative score margin (boundary at top - 0.10 and below)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      {
+        chunkId: 'c1',
+        lessonId: 'l1',
+        chunkIndex: 0,
+        heading: 'Mục 1',
+        content: 'Nội dung top 1',
+        title: 'Bài 1',
+        slug: 'bai-1',
+        gradeId: 'g1',
+        score: 0.85, // topScore
+        rn: 1,
+      },
+      {
+        chunkId: 'c2',
+        lessonId: 'l1',
+        chunkIndex: 1,
+        heading: 'Mục 2',
+        content: 'Nội dung đúng bằng top - 0.10',
+        title: 'Bài 1',
+        slug: 'bai-1',
+        gradeId: 'g1',
+        score: 0.75, // exactly topScore - 0.10 -> KEPT
+        rn: 2,
+      },
+      {
+        chunkId: 'c3',
+        lessonId: 'l1',
+        chunkIndex: 2,
+        heading: 'Mục 3',
+        content: 'Nội dung nhỏ hơn top - 0.10 một chút',
+        title: 'Bài 1',
+        slug: 'bai-1',
+        gradeId: 'g1',
+        score: 0.749, // < 0.75 -> EXCLUDED
+        rn: 3,
+      },
+      {
+        chunkId: 'c4',
+        lessonId: 'l2',
+        chunkIndex: 0,
+        heading: 'Mục 1',
+        content: 'Bài 2 có score trên threshold nhưng thấp hơn top - 0.10',
+        title: 'Bài 2',
+        slug: 'bai-2',
+        gradeId: 'g1',
+        score: 0.68, // >= 0.65 threshold but < 0.75 -> EXCLUDED
+        rn: 1,
+      },
+    ]);
+
+    const result = await retriever.retrieve({ question: 'Chiến thắng lịch sử' });
+
     expect(result.accepted).toBe(true);
-    expect(result.crossGradeFallback).toBe(true);
-    expect(result.sources[0]?.slug).toBe('chien-dich-dien-bien-phu-1954');
+    // Only c1 and c2 are kept
+    expect(result.segments.map((s) => s.score)).toEqual([0.85, 0.75]);
+    expect(result.segments).toHaveLength(2);
+    // l2 should NOT be in sources because all its chunks were filtered out
+    expect(result.sources).toEqual([
+      {
+        lessonId: 'l1',
+        title: 'Bài 1',
+        slug: 'bai-1',
+      },
+    ]);
   });
 
   it('honors AI_SIMILARITY_THRESHOLD override from ConfigService', async () => {

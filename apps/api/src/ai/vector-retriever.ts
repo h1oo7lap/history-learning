@@ -79,29 +79,22 @@ export class VectorRetriever implements Retriever {
     const vectorStr = `[${queryVector.join(',')}]`;
 
     // 4. Query pgvector
-    // If gradeId is specified: first search user's grade; if top score < threshold, fallback to all grades
+    // If gradeId is specified: only search user's grade (no cross-grade fallback).
     let rows: RawChunkRow[] = [];
-    let crossGradeFallback = false;
 
     if (gradeId && !lessonId) {
       rows = await this.queryChunks(vectorStr, { gradeId, lessonId });
-      const topScore = rows[0]?.score ?? 0;
-
-      if (topScore < this.threshold) {
-        // Fallback to all grades
-        const fallbackRows = await this.queryChunks(vectorStr, { lessonId });
-        const fallbackTopScore = fallbackRows[0]?.score ?? 0;
-        if (fallbackTopScore >= this.threshold) {
-          rows = fallbackRows;
-          crossGradeFallback = true;
-        }
-      }
     } else {
       rows = await this.queryChunks(vectorStr, { gradeId: undefined, lessonId });
     }
 
-    // Filter by threshold
-    const acceptedRows = rows.filter((r) => r.score >= this.threshold);
+    // 5. Filter by threshold and relative score margin from top score
+    const topScore = rows[0]?.score ?? 0;
+    const minRelativeScore = topScore - AI.RELATIVE_SCORE_MARGIN;
+
+    const acceptedRows = rows.filter(
+      (r) => r.score >= this.threshold && r.score >= minRelativeScore - 1e-9,
+    );
     const accepted = acceptedRows.length > 0;
 
     if (!accepted) {
@@ -110,7 +103,6 @@ export class VectorRetriever implements Retriever {
         effectiveQuery,
         segments: [],
         sources: [],
-        crossGradeFallback,
       };
     }
 
@@ -143,7 +135,6 @@ export class VectorRetriever implements Retriever {
       effectiveQuery,
       segments,
       sources,
-      crossGradeFallback,
     };
   }
 

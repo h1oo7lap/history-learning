@@ -156,6 +156,75 @@ describe('ChatService (Unit)', () => {
     }
   });
 
+  it('I1: does NOT treat valid long answer containing refusal phrase in the middle as refusal', async () => {
+    vi.mocked(mockRetriever.retrieve).mockResolvedValue({
+      accepted: true,
+      effectiveQuery: 'Số lượng cọc gỗ Bạch Đằng',
+      segments: [
+        {
+          lessonId: 'lesson-bach-dang',
+          slug: 'chien-thang-bach-dang-nam-938',
+          title: 'Chiến thắng Bạch Đằng năm 938',
+          content: 'Trận chiến trên sông Bạch Đằng năm 938.',
+          score: 0.85,
+        },
+      ],
+      sources: [
+        {
+          lessonId: 'lesson-bach-dang',
+          title: 'Chiến thắng Bạch Đằng năm 938',
+          slug: 'chien-thang-bach-dang-nam-938',
+        },
+      ],
+    });
+
+    const validLongAnswer =
+      'Theo tài liệu lịch sử, hiện nay mình chưa tìm thấy đủ thông tin trong các bài học hiện có để xác định số lượng chính xác từng cây cọc gỗ lim, tuy nhiên tài liệu xác nhận Ngô Quyền đã cho đẵn gỗ rừng và đóng cọc vót nhọn bịt sắt tại cửa sông hiểm yếu.';
+    fakeAi.setMockAnswer(validLongAnswer);
+
+    const res = await chatService.chat({ question: 'Có bao nhiêu cây cọc gỗ?', history: [] });
+
+    expect(res.answer).toBe(validLongAnswer);
+    expect(res.sources).toHaveLength(1);
+    expect(res.sources[0]?.slug).toBe('chien-thang-bach-dang-nam-938');
+  });
+
+  it('scopes retrieval to gradeId for student but searches all grades for admin or users without gradeId', async () => {
+    vi.mocked(mockRetriever.retrieve).mockResolvedValue({
+      accepted: false,
+      effectiveQuery: 'Test',
+      segments: [],
+      sources: [],
+    });
+
+    // Case 1: Student with gradeId
+    await chatService.chat(
+      { question: 'Câu hỏi của học sinh', history: [] },
+      { id: 'student-1', gradeId: 'grade-4', role: 'USER' },
+    );
+    expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
+      expect.objectContaining({ gradeId: 'grade-4' }),
+    );
+
+    // Case 2: Admin with gradeId -> gradeId should be undefined (all grades)
+    await chatService.chat(
+      { question: 'Câu hỏi của admin', history: [] },
+      { id: 'admin-1', gradeId: 'grade-4', role: 'ADMIN' },
+    );
+    expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
+      expect.objectContaining({ gradeId: undefined }),
+    );
+
+    // Case 3: User without gradeId -> gradeId undefined
+    await chatService.chat(
+      { question: 'Câu hỏi của khách', history: [] },
+      { id: 'user-no-grade', gradeId: null, role: 'USER' },
+    );
+    expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
+      expect.objectContaining({ gradeId: undefined }),
+    );
+  });
+
   it('I3: propagates error when retrieval or embedding fails', async () => {
     vi.mocked(mockRetriever.retrieve).mockRejectedValue(
       new Error('AI embedding service failure'),

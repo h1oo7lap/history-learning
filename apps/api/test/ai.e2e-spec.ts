@@ -24,13 +24,28 @@ describe('AI Chat (e2e)', () => {
   let userCookie: string;
   let userACookie: string;
   let userBCookie: string;
+  let studentLopACookie: string;
+  let adminCookie: string;
   let publishedLessonId: string;
   let draftLessonId: string;
+  let gradeBLessonId: string;
 
-  async function getCookieForUser(email: string, fullName: string): Promise<string> {
+  async function getCookieForUser(
+    email: string,
+    fullName: string,
+    role: 'USER' | 'ADMIN' = 'USER',
+    gradeId?: string | null,
+  ): Promise<string> {
     await request(app.getHttpServer())
       .post('/api/auth/register')
       .send({ email, password: 'Password1!', fullName });
+
+    if (role !== 'USER' || gradeId) {
+      await prisma.user.update({
+        where: { email },
+        data: { role, gradeId },
+      });
+    }
 
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -73,39 +88,62 @@ describe('AI Chat (e2e)', () => {
     await clearAuthTables(prisma);
     await clearAiTables(prisma);
 
+    // Ensure grades exist: Grade A and Grade B
+    let edu = await prisma.educationLevel.findFirst();
+    if (!edu) {
+      edu = await prisma.educationLevel.create({
+        data: { name: 'Tiểu học', code: 'PRIMARY_TEST', displayOrder: 1 },
+      });
+    }
+
+    const gradeA = await prisma.grade.upsert({
+      where: { code: 'GRADE_4_AI_E2E' },
+      update: {},
+      create: {
+        name: 'Lớp 4 Test',
+        code: 'GRADE_4_AI_E2E',
+        educationLevelId: edu.id,
+        displayOrder: 1,
+      },
+    });
+
+    const gradeB = await prisma.grade.upsert({
+      where: { code: 'GRADE_5_AI_E2E' },
+      update: {},
+      create: {
+        name: 'Lớp 5 Test',
+        code: 'GRADE_5_AI_E2E',
+        educationLevelId: edu.id,
+        displayOrder: 2,
+      },
+    });
+
     // Register test users
     userCookie = await getCookieForUser('user-ai-general@example.com', 'General Student');
     userACookie = await getCookieForUser('user-ai-rate-a@example.com', 'Student A');
     userBCookie = await getCookieForUser('user-ai-rate-b@example.com', 'Student B');
+    studentLopACookie = await getCookieForUser(
+      'user-ai-student-grade-a@example.com',
+      'Student Grade A',
+      'USER',
+      gradeA.id,
+    );
+    adminCookie = await getCookieForUser(
+      'admin-ai-system@example.com',
+      'Admin Teacher',
+      'ADMIN',
+      gradeA.id,
+    );
 
-    // Ensure a grade exists for lessons
-    let grade = await prisma.grade.findFirst();
-    if (!grade) {
-      let edu = await prisma.educationLevel.findFirst();
-      if (!edu) {
-        edu = await prisma.educationLevel.create({
-          data: { name: 'Tiểu học', code: 'PRIMARY_TEST', displayOrder: 1 },
-        });
-      }
-      grade = await prisma.grade.create({
-        data: {
-          name: 'Lớp 4',
-          code: 'GRADE_4_TEST',
-          educationLevelId: edu.id,
-          displayOrder: 1,
-        },
-      });
-    }
-
-    // Create published test lesson
+    // Create published test lesson in Grade A (Bạch Đằng)
     const pub = await prisma.lesson.upsert({
       where: { slug: 'chien-thang-bach-dang-e2e-test' },
-      update: { status: 'PUBLISHED', gradeId: grade.id },
+      update: { status: 'PUBLISHED', gradeId: gradeA.id },
       create: {
         title: 'Chiến thắng Bạch Đằng năm 938 – Ngô Quyền',
         slug: 'chien-thang-bach-dang-e2e-test',
         status: 'PUBLISHED',
-        gradeId: grade.id,
+        gradeId: gradeA.id,
         content:
           'Năm 938, chúa Nam Hán sai Hoằng Tháo sang xâm lược nước ta. Ngô Quyền bố trí trận địa cọc ngầm cắm cọc gỗ vót nhọn bịt sắt tại cửa sông Bạch Đằng hiểm yếu, đánh tan quân giặc khi thủy triều rút.',
         difficulty: 'EASY',
@@ -115,15 +153,33 @@ describe('AI Chat (e2e)', () => {
     });
     publishedLessonId = pub.id;
 
+    // Create published test lesson in Grade B (Điện Biên Phủ)
+    const pubB = await prisma.lesson.upsert({
+      where: { slug: 'dien-bien-phu-e2e-grade-b' },
+      update: { status: 'PUBLISHED', gradeId: gradeB.id },
+      create: {
+        title: 'Chiến dịch Điện Biên Phủ 1954',
+        slug: 'dien-bien-phu-e2e-grade-b',
+        status: 'PUBLISHED',
+        gradeId: gradeB.id,
+        content:
+          'Năm 1954, quân dân ta dưới sự lãnh đạo của Đại tướng Võ Nguyên Giáp mở chiến dịch Điện Biên Phủ lừng lẫy năm châu, chấn động địa cầu, bắt sống tướng Đờ Cát.',
+        difficulty: 'EASY',
+        estimatedTime: 10,
+        displayOrder: 102,
+      },
+    });
+    gradeBLessonId = pubB.id;
+
     // Create draft test lesson
     const draft = await prisma.lesson.upsert({
       where: { slug: 'khang-chien-mong-co-e2e-draft' },
-      update: { status: 'DRAFT', gradeId: grade.id },
+      update: { status: 'DRAFT', gradeId: gradeA.id },
       create: {
         title: 'Kháng chiến chống quân Mông Cổ bản thảo',
         slug: 'khang-chien-mong-co-e2e-draft',
         status: 'DRAFT',
-        gradeId: grade.id,
+        gradeId: gradeA.id,
         content: 'Bản thảo chưa xuất bản về ba lần kháng chiến...',
         difficulty: 'EASY',
         estimatedTime: 10,
@@ -134,6 +190,7 @@ describe('AI Chat (e2e)', () => {
 
     // Manually index the test lessons
     await indexingService.reindexLesson(publishedLessonId);
+    await indexingService.reindexLesson(gradeBLessonId);
     await indexingService.reindexLesson(draftLessonId);
   });
 
@@ -317,6 +374,39 @@ describe('AI Chat (e2e)', () => {
 
       expect(resB.status).toBe(200);
       expect(resB.body.success).toBe(true);
+    });
+  });
+
+  // 11. Giới hạn theo lớp: học sinh lớp A vs admin hỏi nội dung lớp B
+  describe('Grade scoping by role', () => {
+    it('(a) student in Grade A asking content exclusive to Grade B is refused with empty sources', async () => {
+      fakeAi.reset();
+
+      const res = await request(app.getHttpServer())
+        .post('/api/ai/chat')
+        .set('Cookie', studentLopACookie)
+        .send({ question: 'Chiến dịch Điện Biên Phủ 1954 bắt sống tướng nào?' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.answer).toBe(AI.NO_CONTEXT_REFUSAL_MESSAGE);
+      expect(res.body.data.sources).toEqual([]);
+      expect(fakeAi.lastChatParams).toBeNull();
+    });
+
+    it('(b) admin asking same question gets answer with Grade B source', async () => {
+      fakeAi.setMockAnswer('Chiến dịch Điện Biên Phủ năm 1954 bắt sống tướng Đờ Cát.');
+
+      const res = await request(app.getHttpServer())
+        .post('/api/ai/chat')
+        .set('Cookie', adminCookie)
+        .send({ question: 'Chiến dịch Điện Biên Phủ 1954 bắt sống tướng nào?' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.answer).toBe('Chiến dịch Điện Biên Phủ năm 1954 bắt sống tướng Đờ Cát.');
+      expect(res.body.data.sources.length).toBeGreaterThan(0);
+      expect(res.body.data.sources[0]?.slug).toBe('dien-bien-phu-e2e-grade-b');
     });
   });
 });

@@ -1,0 +1,142 @@
+[
+  {
+    "id": "ans-01",
+    "lessonSlug": "chien-thang-bach-dang-nam-938",
+    "lessonTitle": "Chiến thắng Bạch Đằng năm 938",
+    "question": "Trận chiến trên sông Bạch Đằng diễn ra vào năm nào và do ai lãnh đạo đánh tan quân giặc nào?",
+    "expectedFacts": ["938", "Ngô Quyền", "Nam Hán"]
+  },
+  {
+    "id": "ans-02",
+    "lessonSlug": "chien-thang-bach-dang-nam-938",
+    "lessonTitle": "Chiến thắng Bạch Đằng năm 938",
+    "question": "Kế sách cọc ngầm của Ngô Quyền trên sông Bạch Đằng được chuẩn bị và cắm xuống lòng sông như thế nào?",
+    "expectedFacts": ["vót nhọn", "bịt sắt", "thủy triều"]
+  },
+  {
+    "id": "ans-03",
+    "lessonSlug": "chien-thang-bach-dang-nam-938",
+    "lessonTitle": "Chiến thắng Bạch Đằng năm 938",
+    "question": "Ý nghĩa lịch sử quan trọng nhất của chiến thắng Bạch Đằng năm 938 đối với dân tộc ta là gì?",
+    "expectedFacts": ["chấm dứt", "1000 năm Bắc thuộc", "độc lập"]
+  },
+  {
+    "id": "ans-04",
+    "lessonSlug": "ly-thai-to-va-chieu-doi-do-thang-long",
+    "lessonTitle": "Lý Thái Tổ và Chiếu dời đô Thăng Long",
+    "question": "Lý Thái Tổ ban hành Chiếu dời đô vào năm nào và quyết định dời kinh đô từ đâu về đâu?",
+    "expectedFacts": ["1010", "Hoa Lư", "Đại La"]
+  },
+  {
+    "id": "ans-05",
+    "lessonSlug": "ly-thai-to-va-chieu-doi-do-thang-long",
+    "lessonTitle": "Lý Thái Tổ và Chiếu dời đô Thăng Long",
+    "question": "Vì sao khi thuyền cập bến Đại La, Lý Thái Tổ lại quyết định đổi tên thành Thăng Long?",
+    "expectedFacts": ["rồng vàng", "bay lên"]
+  },
+  {
+    "id": "ans-06",
+    "lessonSlug": "ly-thai-to-va-chieu-doi-do-thang-long",
+    "lessonTitle": "Lý Thái Tổ và Chiếu dời đô Thăng Long",
+    "question": "Trong Chiếu dời đô, vùng đất Đại La được vua miêu tả có thế đất và vị trí địa lý như thế nào?",
+    "expectedFacts": ["rồng cuộn hổ ngồi", "trung tâm"]
+  },
+  {
+    "id": "ans-07",
+    "lessonSlug": "dinh-bo-linh-dep-loan-12-su-quan",
+    "lessonTitle": "Đinh Bộ Lĩnh dẹp loạn 12 sứ quân",
+    "question": "Đinh Bộ Lĩnh từ thuở nhỏ ở Hoa Lư có trò chơi gì và sau đó nhờ tài năng quân sự được suy tôn danh hiệu gì?",
+    "expectedFacts": ["hoa lau", "cờ", "Vạn Thắng Vương"]
+  },
+  {
+    "id": "ans-08",
+    "lessonSlug": "dinh-bo-linh-dep-loan-12-su-quan",
+    "lessonTitle": "Đinh Bộ Lĩnh dẹp loạn 12 sứ quân",
+    "question": "Sau khi thống nhất đất nước vào năm 968, Đinh Tiên Hoàng đã đặt tên nước và niên hiệu là gì?",
+    "expectedFacts": ["968", "Đại Cồ Việt", "Thái Bình"]
+  },
+  {
+    "id": "ans-09",
+    "lessonSlug": "chien-dich-dien-bien-phu-1954",
+    "lessonTitle": "Chiến dịch Điện Biên Phủ 1954",
+    "question": "Đại tướng Võ Nguyên Giáp đã đưa ra quyết định lịch sử chuyển phương châm tác chiến như thế nào ở Điện Biên Phủ?",
+    "expectedFacts": ["đánh nhanh, thắng nhanh", "đánh chắc, tiến chắc"]
+  },
+  {
+    "id": "ans-10",
+    "lessonSlug": "chien-dich-dien-bien-phu-1954",
+    "lessonTitle": "Chiến dịch Điện Biên Phủ 1954",
+    "question": "Chiến dịch Điện Biên Phủ diễn ra trong bao nhiêu ngày đêm và kết thúc thắng lợi vào ngày tháng năm nào?",
+    "expectedFacts": ["56 ngày đêm", "7/5/1954", "Đờ Cát"]
+  },
+  {
+    "id": "ans-11",
+    "lessonSlug": "chien-dich-dien-bien-phu-1954",
+    "lessonTitle": "Chiến dịch Điện Biên Phủ 1954",
+    "question": "Trong đợt 1 của chiến dịch Điện Biên Phủ, quân ta đã tiêu diệt và bức hàng những cụm cứ điểm nào?",
+    "expectedFacts": ["Him Lam", "Độc Lập", "Bản Kéo"]
+  },
+  {
+    "id": "ans-12",
+    "lessonSlug": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong",
+    "lessonTitle": "Hào khí Đông A",
+    "question": "Tại Hội nghị Diên Hồng năm 1284, khi Thượng hoàng hỏi ý kiến, các bô lão đã đồng thanh hô vang câu gì?",
+    "expectedFacts": ["1284", "Diên Hồng", "Đánh"]
+  },
+  {
+    "id": "ans-13",
+    "lessonSlug": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong",
+    "lessonTitle": "Hào khí Đông A",
+    "question": "Chiến thuật quân sự độc đáo nào được nhà Trần áp dụng khiến quân giặc Nguyên Mông sa lầy và thiếu lương ăn?",
+    "expectedFacts": ["vườn không nhà trống", "Bạch Đằng"]
+  },
+  {
+    "id": "ans-14",
+    "lessonSlug": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong",
+    "lessonTitle": "Hào khí Đông A",
+    "question": "Tác phẩm nào của Trần Quốc Tuấn đã khơi dậy lòng yêu nước nồng nàn và tinh thần Sát Thát của quân đội nhà Trần?",
+    "expectedFacts": ["Hịch tướng sĩ", "Sát Thát"]
+  },
+  {
+    "id": "ans-15",
+    "lessonSlug": "khoi-nghia-lam-son-va-binh-ngo-dai-cao",
+    "lessonTitle": "Khởi nghĩa Lam Sơn và Bình Ngô Đại Cáo",
+    "question": "Khởi nghĩa Lam Sơn bùng nổ vào năm nào, tại địa phương nào và ai là người đứng đầu?",
+    "expectedFacts": ["1418", "Lam Sơn", "Lê Lợi"]
+  },
+  {
+    "id": "ans-16",
+    "lessonSlug": "khoi-nghia-lam-son-va-binh-ngo-dai-cao",
+    "lessonTitle": "Khởi nghĩa Lam Sơn và Bình Ngô Đại Cáo",
+    "question": "Chiến thắng quân sự then chốt nào đã tiêu diệt hoàn toàn tướng giặc Liễu Thăng, buộc quân Minh phải xin hàng?",
+    "expectedFacts": ["Chi Lăng", "Xương Giang", "Liễu Thăng"]
+  },
+  {
+    "id": "ans-17",
+    "lessonSlug": "khoi-nghia-lam-son-va-binh-ngo-dai-cao",
+    "lessonTitle": "Khởi nghĩa Lam Sơn và Bình Ngô Đại Cáo",
+    "question": "Bản tuyên ngôn độc lập Bình Ngô Đại Cáo do ai phụng mệnh soạn thảo vào mùa xuân năm nào?",
+    "expectedFacts": ["1428", "Nguyễn Trãi", "Bình Ngô Đại Cáo"]
+  },
+  {
+    "id": "ans-18",
+    "lessonSlug": "quang-trung-va-dai-thang-ngoc-hoi-dong-da",
+    "lessonTitle": "Quang Trung đại phá quân Thanh",
+    "question": "Nguyễn Huệ đã làm lễ lên ngôi Hoàng đế lấy niên hiệu Quang Trung ở địa điểm nào trước khi dẫn quân thần tốc ra Bắc?",
+    "expectedFacts": ["núi Bân", "Quang Trung"]
+  },
+  {
+    "id": "ans-19",
+    "lessonSlug": "quang-trung-va-dai-thang-ngoc-hoi-dong-da",
+    "lessonTitle": "Quang Trung đại phá quân Thanh",
+    "question": "Đêm mùng 4 rạng sáng mùng 5 Tết Kỷ Dậu năm 1789, quân Tây Sơn đã công phá những cứ điểm quân sự lớn nào của quân Thanh?",
+    "expectedFacts": ["Kỷ Dậu", "Ngọc Hồi", "Đống Đa"]
+  },
+  {
+    "id": "ans-20",
+    "lessonSlug": "thoi-dai-cac-vua-hung-dung-nuoc",
+    "lessonTitle": "Thời đại các vua Hùng",
+    "question": "Nhà nước đầu tiên của người Việt thời cổ đại tên là gì và đặt kinh đô ở đâu?",
+    "expectedFacts": ["Văn Lang", "Phong Châu", "Phú Thọ"]
+  }
+]

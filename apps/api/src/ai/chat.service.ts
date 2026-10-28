@@ -6,12 +6,22 @@ import { ErrorCodes } from '../common/errors/error-codes';
 import { AI_PROVIDER, type AiProvider } from './ai.provider';
 import { RETRIEVER, type Retriever } from './retriever.interface';
 
+const REFUSAL_BOUNDARY_REGEX = /^["'«»“”„‘’`*_~\s()[\].,!?:;]+|["'«»“”„‘’`*_~\s()[\].,!?:;]+$/g;
+
 export function normalizeRefusalText(text: string): string {
   return text
     .trim()
     .toLowerCase()
-    .replace(/^["'«»“”„‘’`*_~\s([\]+|["'«»“”„‘’`*_~\s)\].,!?:;]+$/g, '')
+    .replace(REFUSAL_BOUNDARY_REGEX, '')
     .trim();
+}
+
+function checkRefusalForTarget(norm: string, target: string): boolean {
+  if (norm === target) return true;
+  if (norm.startsWith(target) && norm.length <= target.length + 40) {
+    return true;
+  }
+  return false;
 }
 
 export function isModelRefusal(answer: string): boolean {
@@ -20,13 +30,10 @@ export function isModelRefusal(answer: string): boolean {
   const normModelRefusal = normalizeRefusalText(AI.MODEL_REFUSAL_MESSAGE);
   const normNoContextRefusal = normalizeRefusalText(AI.NO_CONTEXT_REFUSAL_MESSAGE);
 
-  if (norm === normModelRefusal || norm === normNoContextRefusal) {
-    return true;
-  }
-  if (norm.includes(normModelRefusal) || norm.includes(normNoContextRefusal)) {
-    return true;
-  }
-  return false;
+  return (
+    checkRefusalForTarget(norm, normModelRefusal) ||
+    checkRefusalForTarget(norm, normNoContextRefusal)
+  );
 }
 
 export function buildChatSystemPrompt(contextText: string): string {
@@ -55,7 +62,7 @@ export class ChatService {
 
   async chat(
     dto: AiChatDto,
-    user?: { id?: string; gradeId?: string },
+    user?: { id?: string; gradeId?: string | null; role?: string },
   ): Promise<AiChatResponseDto> {
     // 1. If lessonId is explicitly provided, validate it exists and is PUBLISHED
     if (dto.lessonId) {
@@ -82,11 +89,16 @@ export class ChatService {
     }
 
     // 2. Perform retrieval with user's gradeId passed to retriever
+    // Học sinh (có gradeId, không phải ADMIN): chỉ tìm trong bài của lớp mình, KHÔNG fallback.
+    // ADMIN hoặc người dùng không có gradeId: tìm trên mọi lớp.
+    const effectiveGradeId =
+      user?.role === 'ADMIN' ? undefined : (user?.gradeId ?? undefined);
+
     const retrieval = await this.retriever.retrieve({
       question: dto.question,
       history: dto.history,
       lessonId: dto.lessonId,
-      gradeId: user?.gradeId,
+      gradeId: effectiveGradeId,
     });
 
     // 3. I2: If no relevant context found (below threshold), return refusal immediately

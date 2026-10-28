@@ -23,7 +23,8 @@
     "ai:embed-smoke": "tsx src/ai/scripts/embed-smoke.ts",
     "ai:reindex": "tsx src/ai/scripts/reindex.ts",
     "ai:eval": "tsx src/ai/scripts/eval.ts",
-    "ai:chat-smoke": "tsx src/ai/scripts/chat-smoke.ts"
+    "ai:chat-smoke": "tsx src/ai/scripts/chat-smoke.ts",
+    "ai:answer-eval": "tsx src/ai/scripts/answer-eval.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
