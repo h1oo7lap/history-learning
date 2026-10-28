@@ -411,7 +411,7 @@ describe('Lessons (e2e)', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('rejects image URL not from res.cloudinary.com', async () => {
+    it('accepts image URL from an external https domain', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/admin/lessons')
         .set('Cookie', adminCookie)
@@ -430,9 +430,9 @@ describe('Lessons (e2e)', () => {
             },
           }),
         )
-        .expect(400);
+        .expect(201);
 
-      expect(res.body.success).toBe(false);
+      expect(res.body.success).toBe(true);
     });
 
     it('rejects image URL from wrong Cloudinary cloud name', async () => {

@@ -38,7 +38,7 @@ async function getAuthCookie(
 }
 
 async function clearQuizData(prisma: PrismaService) {
-  await prisma.$executeRaw`TRUNCATE TABLE quiz_attempt_answers, quiz_attempts, answers, questions, quizzes, lesson_progress, lesson_grades, lessons CASCADE`;
+  await prisma.$executeRaw`TRUNCATE TABLE quiz_attempt_answers, quiz_attempts, answers, questions, quizzes, lesson_progress, lessons CASCADE`;
   await clearAuthTables(prisma);
 }
 

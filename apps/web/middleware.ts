@@ -14,6 +14,7 @@ const PROTECTED_PREFIXES = [
   '/dashboard',
   '/onboarding',
   '/quiz',
+  '/chat',
   '/missions',
   '/collection',
   '/progress',

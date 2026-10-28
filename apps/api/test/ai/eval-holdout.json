@@ -1,0 +1,162 @@
+[
+  {
+    "id": "holdout-in-01",
+    "category": "in-scope",
+    "question": "Ngô Quyền đã đánh tan quân Hoằng Tháo bằng chiến thuật gì?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-thang-bach-dang-nam-938"
+  },
+  {
+    "id": "holdout-in-02",
+    "category": "in-scope",
+    "question": "Điềm lành nào xuất hiện khi vua Lý Thái Tổ đến thành Đại La?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "ly-thai-to-va-chieu-doi-do-thang-long"
+  },
+  {
+    "id": "holdout-in-03",
+    "category": "in-scope",
+    "question": "Tướng Pháp nào đã chỉ huy tập đoàn cứ điểm Điện Biên Phủ?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-dich-dien-bien-phu-1954"
+  },
+  {
+    "id": "holdout-in-04",
+    "category": "in-scope",
+    "question": "Sau khi dẹp loạn 12 sứ quân, Đinh Bộ Lĩnh xưng đế và đóng đô ở đâu?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "dinh-bo-linh-dep-loan-12-su-quan"
+  },
+  {
+    "id": "holdout-in-05",
+    "category": "in-scope",
+    "question": "Hội nghị Diên Hồng và Hội nghị Bình Than diễn ra trong cuộc kháng chiến nào?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "hao-khi-dong-a-ba-lan-dai-thang-nguyen-mong"
+  },
+  {
+    "id": "holdout-in-06",
+    "category": "in-scope",
+    "question": "Ai là người viết bài Bình Ngô Đại Cáo sau khi khởi nghĩa Lam Sơn thắng lợi?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "khoi-nghia-lam-son-va-binh-ngo-dai-cao"
+  },
+  {
+    "id": "holdout-in-07",
+    "category": "in-scope",
+    "question": "Vua Quang Trung hành quân từ Phú Xuân ra Bắc đánh quân Thanh trong mấy ngày?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "quang-trung-va-dai-thang-ngoc-hoi-dong-da"
+  },
+  {
+    "id": "holdout-in-08",
+    "category": "in-scope",
+    "question": "Chính sách gửi binh ở nhà nông thời Lý - Trần có tên gọi là gì?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "tong-quan-to-chuc-quan-su-ly-tran"
+  },
+  {
+    "id": "holdout-in-09",
+    "category": "in-scope",
+    "question": "Trận Tây Kết và Hàm Tử do các tướng lĩnh nào của nhà Trần chỉ huy?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "chien-thang-chuong-duong-ham-tu"
+  },
+  {
+    "id": "holdout-in-10",
+    "category": "in-scope",
+    "question": "Cuộc khởi nghĩa của Hai Bà Trưng bùng nổ tại cửa sông nào?",
+    "expectedBehavior": "accept",
+    "expectedLessonSlug": "khoi-nghia-hai-ba-trung-lop-4"
+  },
+  {
+    "id": "holdout-out-01",
+    "category": "out-of-scope-a",
+    "question": "Hôm nay giá vàng 9999 bao nhiêu một chỉ?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-02",
+    "category": "out-of-scope-a",
+    "question": "Tỉ số trận chung kết bóng đá ngoại hạng Anh tối qua là bao nhiêu?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-03",
+    "category": "out-of-scope-a",
+    "question": "Làm thế nào để trị ho và đau họng bằng mật ong?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-04",
+    "category": "out-of-scope-a",
+    "question": "Công thức tính vận tốc, quãng đường và thời gian trong vật lý?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-05",
+    "category": "out-of-scope-a",
+    "question": "Trường Đại học Quốc gia Hà Nội ở đâu?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-06",
+    "category": "out-of-scope-a",
+    "question": "Cách nấu món phở bò truyền thống thơm ngon tại nhà?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-07",
+    "category": "out-of-scope-a",
+    "question": "Hệ điều hành Windows 11 có những tính năng gì mới?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-08",
+    "category": "out-of-scope-a",
+    "question": "Tác dụng của vitamin C đối với sức khỏe con người?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-09",
+    "category": "out-of-scope-a",
+    "question": "Dãy núi Himalaya cao nhất thế giới nằm ở đâu?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-10",
+    "category": "out-of-scope-a",
+    "question": "Cách viết một đoạn văn bằng tiếng Anh giới thiệu bản thân?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-11",
+    "category": "out-of-scope-b",
+    "question": "Kim tự tháp Giza ở Ai Cập được xây dựng vào thời gian nào?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-12",
+    "category": "out-of-scope-b",
+    "question": "Cách mạng Pháp năm 1789 bùng nổ vì nguyên nhân gì?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-13",
+    "category": "out-of-scope-b",
+    "question": "Trận Trân Châu Cảng diễn ra vào ngày tháng năm nào?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-14",
+    "category": "out-of-scope-b",
+    "question": "Khởi nghĩa Ba Tơ trong kháng chiến chống Pháp nổ ra năm nào?",
+    "expectedBehavior": "reject"
+  },
+  {
+    "id": "holdout-out-15",
+    "category": "out-of-scope-b",
+    "question": "Vua Tự Đức trị vì bao nhiêu năm và có bao nhiêu người con?",
+    "expectedBehavior": "reject"
+  }
+]

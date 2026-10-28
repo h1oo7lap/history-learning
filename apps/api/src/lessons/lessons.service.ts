@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LessonIndexingService } from '../ai/lesson-indexing.service';
 import { PublishStatus } from '@history-learning/shared';
 import { Prisma } from '../generated/prisma/client';
 import type {
@@ -56,6 +57,9 @@ export class LessonsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @Optional()
+    @Inject(forwardRef(() => LessonIndexingService))
+    private readonly indexingService?: LessonIndexingService,
   ) {
     this.cloudName = this.config.get<string>('CLOUDINARY_CLOUD_NAME', '');
   }
@@ -212,7 +216,7 @@ export class LessonsService {
       this.validatePublish(dto.title, content, contentJson, dto.gradeId);
     }
 
-    return this.prisma.lesson.create({
+    const created = await this.prisma.lesson.create({
       data: {
         title: dto.title,
         slug,
@@ -254,6 +258,9 @@ export class LessonsService {
       },
       include: LESSON_INCLUDE,
     });
+
+    this.indexingService?.triggerAsyncReindex(created.id);
+    return created;
   }
 
   /**
@@ -337,7 +344,7 @@ export class LessonsService {
     }
 
     // Build the update within a transaction for relation sync
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       // Sync relations: delete all, then re-create (only for provided arrays)
       if (dto.topicIds !== undefined) {
         await tx.lessonTopic.deleteMany({ where: { lessonId: id } });
@@ -423,6 +430,9 @@ export class LessonsService {
         include: LESSON_INCLUDE,
       });
     });
+
+    this.indexingService?.triggerAsyncReindex(updated.id);
+    return updated;
   }
 
   /**
@@ -434,6 +444,7 @@ export class LessonsService {
       where: { id },
       data: { status: PublishStatus.ARCHIVED },
     });
+    this.indexingService?.triggerAsyncReindex(id);
   }
 
   // ---------------------------------------------------------------------------

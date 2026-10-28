@@ -283,6 +283,7 @@ model Lesson {
   media         LessonMedia[]
   progress      LessonProgress[]
   quiz          Quiz?
+  chunks        LessonChunk[]
 
   @@index([gradeId])
   @@index([status, displayOrder])
@@ -352,6 +353,24 @@ model LessonMedia {
 
   @@index([lessonId, displayOrder])
   @@map("lesson_media")
+}
+
+model LessonChunk {
+  id             String                      @id @default(cuid())
+  lessonId       String
+  chunkIndex     Int
+  heading        String?
+  content        String
+  contentHash    String
+  embedding      Unsupported("vector(768)")?
+  embeddingModel String
+  createdAt      DateTime                    @default(now())
+
+  lesson         Lesson                      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, chunkIndex])
+  @@index([lessonId])
+  @@map("lesson_chunks")
 }
 
 // ----------------------------------------------------------------------------
