@@ -46,6 +46,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [thumbnail, setThumbnail] = useState('');
+  const [isFeatured, setIsFeatured] = useState<boolean>(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('EASY');
   const [estimatedTime, setEstimatedTime] = useState('10');
   const [displayOrder, setDisplayOrder] = useState('0');
@@ -81,6 +82,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
         setSummary(lesson.summary ?? '');
         setContent(lesson.content);
         setThumbnail(lesson.thumbnail ?? '');
+        setIsFeatured(lesson.isFeatured ?? false);
         setDifficulty(lesson.difficulty);
         setEstimatedTime(String(lesson.estimatedTime));
         setDisplayOrder(String(lesson.displayOrder));
@@ -109,6 +111,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
         setSummary('');
         setContent('');
         setThumbnail('');
+        setIsFeatured(false);
         setDifficulty('EASY');
         setEstimatedTime('10');
         setDisplayOrder('0');
@@ -199,6 +202,7 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
       estimatedTime: Number(estimatedTime) || 10,
       displayOrder: Number(displayOrder) || 0,
       status,
+      isFeatured,
       gradeId,
       topicIds,
       periodIds,
@@ -356,6 +360,8 @@ export function LessonForm({ open, lesson, isPending, onSubmit, onClose }: Lesso
                 setBlocks={setBlocks}
                 thumbnail={thumbnail}
                 setThumbnail={setThumbnail}
+                isFeatured={isFeatured}
+                setIsFeatured={setIsFeatured}
                 errors={errors}
                 clearError={clearError}
               />

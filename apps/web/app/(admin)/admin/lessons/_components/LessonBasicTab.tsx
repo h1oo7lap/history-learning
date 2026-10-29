@@ -18,6 +18,8 @@ export interface LessonBasicTabProps {
   setBlocks: Dispatch<SetStateAction<ContentBlock[]>>;
   thumbnail: string;
   setThumbnail: Dispatch<SetStateAction<string>>;
+  isFeatured: boolean;
+  setIsFeatured: Dispatch<SetStateAction<boolean>>;
   errors: Record<string, string>;
   clearError: (field: string) => void;
 }
@@ -37,6 +39,8 @@ export function LessonBasicTab({
   setBlocks,
   thumbnail,
   setThumbnail,
+  isFeatured,
+  setIsFeatured,
   errors,
   clearError,
 }: LessonBasicTabProps) {
@@ -75,6 +79,25 @@ export function LessonBasicTab({
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
         />
+      </div>
+
+      {/* isFeatured checkbox */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.75rem 1rem', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+        <input
+          id="lesson-is-featured"
+          type="checkbox"
+          checked={isFeatured}
+          onChange={(e) => setIsFeatured(e.target.checked)}
+          style={{ width: 18, height: 18, marginTop: '0.15rem', accentColor: 'var(--brand-600)', cursor: 'pointer' }}
+        />
+        <label htmlFor="lesson-is-featured" style={{ cursor: 'pointer', userSelect: 'none' }}>
+          <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--foreground)' }}>
+            ⭐ Bài tiêu biểu
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
+            Đánh dấu là bài học tiêu biểu để hiển thị cho khách, người dùng mới và ưu tiên xuất hiện tại trang chủ.
+          </div>
+        </label>
       </div>
 
       {/* Summary */}

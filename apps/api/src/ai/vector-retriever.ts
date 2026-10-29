@@ -45,7 +45,7 @@ export class VectorRetriever implements Retriever {
   }
 
   async retrieve(params: RetrieveParams): Promise<RetrieverResult> {
-    const { question, history, lessonId, gradeId } = params;
+    const { question, history, lessonId, gradeId, maxDisplayOrder, maxGradeRank, isFeatured } = params;
 
     // 1. Resolve follow-up effective query (reusing existing tested helper)
     const effectiveQuery = resolveEffectiveQuery(question, history);
@@ -79,14 +79,13 @@ export class VectorRetriever implements Retriever {
     const vectorStr = `[${queryVector.join(',')}]`;
 
     // 4. Query pgvector
-    // If gradeId is specified: only search user's grade (no cross-grade fallback).
-    let rows: RawChunkRow[] = [];
-
-    if (gradeId && !lessonId) {
-      rows = await this.queryChunks(vectorStr, { gradeId, lessonId });
-    } else {
-      rows = await this.queryChunks(vectorStr, { gradeId: undefined, lessonId });
-    }
+    const rows = await this.queryChunks(vectorStr, {
+      gradeId: lessonId ? undefined : gradeId,
+      lessonId,
+      maxDisplayOrder: lessonId ? undefined : maxDisplayOrder,
+      maxGradeRank: lessonId ? undefined : maxGradeRank,
+      isFeatured: lessonId ? undefined : isFeatured,
+    });
 
     // 5. Filter by threshold and relative score margin from top score
     const topScore = rows[0]?.score ?? 0;
@@ -140,9 +139,15 @@ export class VectorRetriever implements Retriever {
 
   private async queryChunks(
     vectorStr: string,
-    filters: { gradeId?: string; lessonId?: string },
+    filters: {
+      gradeId?: string;
+      lessonId?: string;
+      maxDisplayOrder?: number;
+      maxGradeRank?: number;
+      isFeatured?: boolean;
+    },
   ): Promise<RawChunkRow[]> {
-    const { gradeId, lessonId } = filters;
+    const { gradeId, lessonId, maxDisplayOrder, maxGradeRank, isFeatured } = filters;
 
     // Use parameterized query with row_number partitioning to limit max 2 chunks per lesson
     const result = await this.prisma.$queryRaw<RawChunkRow[]>`
@@ -163,9 +168,14 @@ export class VectorRetriever implements Retriever {
           ) AS rn
         FROM lesson_chunks lc
         JOIN lessons l ON lc."lessonId" = l.id
+        JOIN grades g ON l."gradeId" = g.id
+        LEFT JOIN education_levels e ON g."educationLevelId" = e.id
         WHERE l.status = 'PUBLISHED'
           AND (${lessonId ?? null}::text IS NULL OR lc."lessonId" = ${lessonId})
           AND (${gradeId ?? null}::text IS NULL OR l."gradeId" = ${gradeId})
+          AND (${maxGradeRank ?? null}::int IS NULL OR (COALESCE(e."displayOrder", 1) * 100 + g."displayOrder") <= ${maxGradeRank})
+          AND (${maxDisplayOrder ?? null}::int IS NULL OR g."displayOrder" <= ${maxDisplayOrder})
+          AND (${isFeatured ?? null}::boolean IS NULL OR l."isFeatured" = ${isFeatured})
       )
       SELECT *
       FROM ranked

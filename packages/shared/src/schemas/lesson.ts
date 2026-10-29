@@ -211,6 +211,7 @@ export const CreateLessonSchema = z.object({
     .default(10),
   displayOrder: z.number().int().default(0),
   status: z.nativeEnum(PublishStatus).default(PublishStatus.DRAFT),
+  isFeatured: z.boolean().default(false).optional(),
   // Relations
   gradeId: z.string().min(1, 'Lớp học là bắt buộc'),
   topicIds: z.array(z.string()).default([]),
@@ -231,5 +232,12 @@ export const LessonListQuerySchema = PaginationSchema.extend({
   difficulty: z.nativeEnum(Difficulty).optional(),
   search: z.string().optional(),
   status: z.nativeEnum(PublishStatus).optional(),
+  isFeatured: z
+    .preprocess((val) => {
+      if (val === 'true' || val === true) return true;
+      if (val === 'false' || val === false) return false;
+      return undefined;
+    }, z.boolean().optional())
+    .optional(),
 });
 export type LessonListQueryDto = z.infer<typeof LessonListQuerySchema>;

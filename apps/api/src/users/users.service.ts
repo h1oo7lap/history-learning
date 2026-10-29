@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
+import { ErrorCodes } from '../common/errors/error-codes';
 import type { UpdateProfileDto } from '@history-learning/shared';
 
 @Injectable()
@@ -28,10 +29,28 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    // Validate gradeId if provided
-    if (dto.gradeId) {
-      const grade = await this.prisma.grade.findUnique({ where: { id: dto.gradeId } });
-      if (!grade) throw new AppError('GRADE_NOT_FOUND', 404, 'Grade not found');
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, gradeId: true },
+    });
+    if (!existing) {
+      throw new AppError(ErrorCodes.NOT_FOUND, 404, 'User not found');
+    }
+
+    // A4: Học sinh đã có gradeId thì KHÔNG được tự đổi lớp -> 403 GRADE_LOCKED
+    if (dto.gradeId !== undefined && dto.gradeId !== existing.gradeId) {
+      if (existing.role !== 'ADMIN' && existing.gradeId !== null) {
+        throw new AppError(
+          ErrorCodes.GRADE_LOCKED,
+          403,
+          'Học sinh không thể tự đổi lớp',
+        );
+      }
+
+      if (dto.gradeId) {
+        const grade = await this.prisma.grade.findUnique({ where: { id: dto.gradeId } });
+        if (!grade) throw new AppError('GRADE_NOT_FOUND', 404, 'Grade not found');
+      }
     }
 
     return this.prisma.user.update({

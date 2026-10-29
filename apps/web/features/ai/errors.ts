@@ -30,6 +30,10 @@ export function getAiErrorMessage(error: unknown): string {
       return 'Bài học này chưa được xuất bản.';
     }
 
+    if (error.errorCode === 'LESSON_GRADE_RESTRICTED') {
+      return error.message || 'Bài học này thuộc lớp cao hơn lớp của bạn.';
+    }
+
     if (error.status === 401 || error.errorCode === 'UNAUTHORIZED') {
       return 'Phiên đăng nhập đã hết hạn. Đang chuyển hướng về trang đăng nhập...';
     }

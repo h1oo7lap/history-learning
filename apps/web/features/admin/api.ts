@@ -108,6 +108,7 @@ export interface Lesson {
   estimatedTime: number;
   displayOrder: number;
   status: LessonStatus;
+  isFeatured?: boolean;
   createdAt: string;
   updatedAt: string;
   gradeId?: string;
@@ -132,6 +133,7 @@ export interface CreateLessonPayload {
   estimatedTime?: number;
   displayOrder?: number;
   status?: LessonStatus;
+  isFeatured?: boolean;
   gradeId: string;
   gradeIds?: string[];
   topicIds?: string[];
@@ -171,6 +173,7 @@ export interface AdminUser {
   status: UserStatus;
   totalExp?: number;
   gradeId?: string | null;
+  grade?: { id: string; name: string; code: string } | null;
   createdAt: string;
 }
 
@@ -386,7 +389,7 @@ export const usersAdminApi = {
 
   getOne: (id: string) => api.get<AdminUser>(`admin/users/${id}`),
 
-  update: (id: string, dto: { status?: UserStatus; role?: UserRole }) =>
+  update: (id: string, dto: { status?: UserStatus; role?: UserRole; gradeId?: string | null }) =>
     api.patch<AdminUser>(`admin/users/${id}`, dto),
 };
 

@@ -271,6 +271,7 @@ model Lesson {
   estimatedTime Int           @default(10) // minutes
   displayOrder  Int           @default(0)
   status        PublishStatus @default(DRAFT)
+  isFeatured    Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -287,6 +288,7 @@ model Lesson {
 
   @@index([gradeId])
   @@index([status, displayOrder])
+  @@index([isFeatured])
   @@map("lessons")
 }
 

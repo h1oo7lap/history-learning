@@ -85,6 +85,44 @@ describe('Users (e2e)', () => {
       expect(res.body.data.fullName).toBe('Updated Name');
     });
 
+    it('A4: allows setting gradeId when user has no grade yet', async () => {
+      const grades = await prisma.grade.findMany({ take: 2, orderBy: { displayOrder: 'asc' } });
+      const firstGrade = grades[0]!;
+
+      const res = await request(app.getHttpServer())
+        .patch('/api/users/me')
+        .set('Cookie', userCookie)
+        .send({ gradeId: firstGrade.id })
+        .expect(200);
+
+      expect(res.body.data.gradeId).toBe(firstGrade.id);
+    });
+
+    it('A4: rejects grade change with 403 GRADE_LOCKED when student already has gradeId', async () => {
+      const grades = await prisma.grade.findMany({ take: 2, orderBy: { displayOrder: 'asc' } });
+      const [firstGrade, secondGrade] = grades;
+      if (!firstGrade || !secondGrade) return;
+
+      // Set first grade
+      await request(app.getHttpServer())
+        .patch('/api/users/me')
+        .set('Cookie', userCookie)
+        .send({ gradeId: firstGrade.id })
+        .expect(200);
+
+      // Student attempts to switch to second grade
+      const res = await request(app.getHttpServer())
+        .patch('/api/users/me')
+        .set('Cookie', userCookie)
+        .send({ gradeId: secondGrade.id })
+        .expect(403);
+
+      expect(res.body).toMatchObject({
+        success: false,
+        errorCode: 'GRADE_LOCKED',
+      });
+    });
+
     it('rejects update with invalid gradeId', async () => {
       const res = await request(app.getHttpServer())
         .patch('/api/users/me')
@@ -123,6 +161,23 @@ describe('Users (e2e)', () => {
 
       // Should be 200 (not 403)
       expect(res.status).not.toBe(403);
+    });
+
+    it('A4: allows ADMIN to change a student grade via PATCH /api/admin/users/:id', async () => {
+      const student = await prisma.user.findUnique({ where: { email: 'user@example.com' } });
+      expect(student).toBeDefined();
+
+      const grades = await prisma.grade.findMany({ take: 2, orderBy: { displayOrder: 'desc' } });
+      const targetGrade = grades[0]!;
+
+      const res = await request(app.getHttpServer())
+        .patch(`/api/admin/users/${student!.id}`)
+        .set('Cookie', adminCookie)
+        .send({ gradeId: targetGrade.id })
+        .expect(200);
+
+      expect(res.body.data.gradeId).toBe(targetGrade.id);
+      expect(res.body.data.grade).toMatchObject({ id: targetGrade.id });
     });
   });
 });

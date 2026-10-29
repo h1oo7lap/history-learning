@@ -765,7 +765,7 @@ describe('Lessons (e2e)', () => {
       const createRes = await request(app.getHttpServer())
         .post('/api/admin/lessons')
         .set('Cookie', adminCookie)
-        .send(blockLessonDto(extra))
+        .send(blockLessonDto({ isFeatured: true, ...extra }))
         .expect(201);
 
       const id: string = createRes.body.data.id;
@@ -774,7 +774,7 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/lessons/${id}`)
         .set('Cookie', adminCookie)
-        .send({ status: 'PUBLISHED', gradeId })
+        .send({ status: 'PUBLISHED', isFeatured: true, gradeId })
         .expect(200);
 
       return id;
@@ -821,7 +821,7 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/lessons/${id}`)
         .set('Cookie', adminCookie)
-        .send({ status: 'PUBLISHED', gradeId })
+        .send({ status: 'PUBLISHED', isFeatured: true, gradeId })
         .expect(200);
 
       const res = await request(app.getHttpServer())
@@ -845,7 +845,7 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/api/admin/lessons/${id}`)
         .set('Cookie', adminCookie)
-        .send({ status: 'PUBLISHED', gradeId })
+        .send({ status: 'PUBLISHED', isFeatured: true, gradeId })
         .expect(200);
 
       const res = await request(app.getHttpServer())
@@ -888,6 +888,104 @@ describe('Lessons (e2e)', () => {
       await request(app.getHttpServer())
         .get(`/api/lessons/${slug}`)
         .expect(404);
+    });
+
+    it('L6: student with grade 4 gets 403 LESSON_GRADE_RESTRICTED on grade 5 lesson, but 200 on grade 4 lesson', async () => {
+      let edu = await prisma.educationLevel.findFirst();
+      if (!edu) {
+        edu = await prisma.educationLevel.create({
+          data: { name: 'Tiểu học Test', code: 'PRIMARY_TEST', displayOrder: 1 },
+        });
+      }
+
+      const gradeLow = await prisma.grade.upsert({
+        where: { code: 'GRADE_TEST_LOW' },
+        update: { displayOrder: 1 },
+        create: {
+          name: 'Lớp 4 Test',
+          code: 'GRADE_TEST_LOW',
+          educationLevelId: edu.id,
+          displayOrder: 1,
+        },
+      });
+
+      const gradeHigh = await prisma.grade.upsert({
+        where: { code: 'GRADE_TEST_HIGH' },
+        update: { displayOrder: 2 },
+        create: {
+          name: 'Lớp 5 Test',
+          code: 'GRADE_TEST_HIGH',
+          educationLevelId: edu.id,
+          displayOrder: 2,
+        },
+      });
+
+      const studentEmail = 'student-grade4@example.com';
+      await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send({ email: studentEmail, password: 'Password1!', fullName: 'Student Grade 4' });
+      await prisma.user.update({ where: { email: studentEmail }, data: { gradeId: gradeLow.id } });
+
+      const loginRes = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: studentEmail, password: 'Password1!' });
+      const studentCookie = loginRes.headers['set-cookie']![0]!;
+
+      // Create lesson in gradeLow
+      const l4Res = await request(app.getHttpServer())
+        .post('/api/admin/lessons')
+        .set('Cookie', adminCookie)
+        .send(legacyLessonDto({ title: 'Lesson Grade Low Only', gradeId: gradeLow.id }))
+        .expect(201);
+      await request(app.getHttpServer())
+        .patch(`/api/admin/lessons/${l4Res.body.data.id}`)
+        .set('Cookie', adminCookie)
+        .send({ status: 'PUBLISHED', gradeId: gradeLow.id });
+
+      // Create lesson in gradeHigh
+      const l5Res = await request(app.getHttpServer())
+        .post('/api/admin/lessons')
+        .set('Cookie', adminCookie)
+        .send(legacyLessonDto({ title: 'Lesson Grade High Restricted', gradeId: gradeHigh.id }))
+        .expect(201);
+      await request(app.getHttpServer())
+        .patch(`/api/admin/lessons/${l5Res.body.data.id}`)
+        .set('Cookie', adminCookie)
+        .send({ status: 'PUBLISHED', gradeId: gradeHigh.id });
+
+      // Student views gradeLow lesson -> 200 OK
+      await request(app.getHttpServer())
+        .get(`/api/lessons/${l4Res.body.data.slug}`)
+        .set('Cookie', studentCookie)
+        .expect(200);
+
+      // Student views gradeHigh lesson -> 403 LESSON_GRADE_RESTRICTED
+      const res5 = await request(app.getHttpServer())
+        .get(`/api/lessons/${l5Res.body.data.slug}`)
+        .set('Cookie', studentCookie)
+        .expect(403);
+
+      expect(res5.body).toMatchObject({
+        success: false,
+        errorCode: 'LESSON_GRADE_RESTRICTED',
+      });
+    });
+
+    it('guest can only read isFeatured=true lesson and gets 403 on non-featured lesson', async () => {
+      // Create non-featured lesson
+      const res = await request(app.getHttpServer())
+        .post('/api/admin/lessons')
+        .set('Cookie', adminCookie)
+        .send(legacyLessonDto({ title: 'Non-featured lesson', isFeatured: false }))
+        .expect(201);
+      await request(app.getHttpServer())
+        .patch(`/api/admin/lessons/${res.body.data.id}`)
+        .set('Cookie', adminCookie)
+        .send({ status: 'PUBLISHED', isFeatured: false, gradeId });
+
+      await request(app.getHttpServer())
+        .get(`/api/lessons/${res.body.data.slug}`)
+        .expect(403);
     });
   });
 

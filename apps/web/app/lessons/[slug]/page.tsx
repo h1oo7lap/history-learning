@@ -26,18 +26,30 @@ import type { PublicLessonDetail } from '@/features/lessons/api';
 
 // ─── Data fetching (Server Component) ──────────────────────────
 
-async function fetchLesson(slug: string): Promise<PublicLessonDetail | null> {
+async function fetchLesson(
+  slug: string,
+  token?: string,
+): Promise<{ data: PublicLessonDetail | null; restricted?: boolean; message?: string }> {
   try {
     const baseUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
     const res = await fetch(`${baseUrl}/api/lessons/${slug}`, {
-      next: { revalidate: 60 }, // ISR: revalidate every 60s
+      headers: token ? { Cookie: `access_token=${token}`, Authorization: `Bearer ${token}` } : {},
+      cache: 'no-store',
     });
-    if (res.status === 404) return null;
+    if (res.status === 403) {
+      const body = await res.json().catch(() => null);
+      return {
+        data: null,
+        restricted: true,
+        message: body?.message || 'Bài học này thuộc lớp cao hơn lớp của bạn',
+      };
+    }
+    if (res.status === 404) return { data: null };
     if (!res.ok) throw new Error(`Failed to fetch lesson: ${res.status}`);
     const body = await res.json();
-    return body.success ? (body.data as PublicLessonDetail) : null;
+    return { data: body.success ? (body.data as PublicLessonDetail) : null };
   } catch {
-    return null;
+    return { data: null };
   }
 }
 
@@ -49,8 +61,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const lesson = await fetchLesson(slug);
-  if (!lesson) return { title: 'Bài học không tồn tại' };
+  const cookieStore = await cookies();
+  const token = cookieStore.get('access_token')?.value;
+  const { data: lesson } = await fetchLesson(slug, token);
+  if (!lesson) return { title: 'Bài học Lịch sử' };
 
   return {
     title: lesson.title,
@@ -83,11 +97,37 @@ export default async function LessonPage({
   const { slug } = await params;
   const cookieStore = await cookies();
   const token = cookieStore.get('access_token')?.value;
-  if (!token) {
-    redirect(`/login?from=/lessons/${slug}`);
-  }
 
-  const lesson = await fetchLesson(slug);
+  const { data: lesson, restricted, message } = await fetchLesson(slug, token);
+
+  if (restricted) {
+    if (!token) {
+      redirect(`/login?from=/lessons/${slug}`);
+    }
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 sm:py-24 text-center space-y-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-seal/10 text-seal text-3xl border border-seal/20">
+          🔒
+        </div>
+        <div className="space-y-2">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-ink">
+            {message || 'Bài học này thuộc lớp cao hơn lớp của bạn'}
+          </h1>
+          <p className="text-muted text-sm sm:text-base max-w-md mx-auto">
+            Nội dung bài học này nằm ngoài phạm vi khối lớp hiện tại của bạn. Bạn có thể quay lại danh sách để tiếp tục các bài học trong chương trình của mình.
+          </p>
+        </div>
+        <div className="pt-2">
+          <Link href="/lessons">
+            <Button variant="primary" size="md">
+              <ArrowLeft size={16} aria-hidden="true" />
+              <span>Quay lại danh sách bài học</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!lesson) {
     notFound();
