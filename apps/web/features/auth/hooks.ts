@@ -79,7 +79,7 @@ export function useLogin() {
         if (from && from.startsWith('/') && !from.startsWith('//')) {
           router.push(from);
         } else {
-          router.push('/dashboard');
+          router.push('/');
         }
       }
     },

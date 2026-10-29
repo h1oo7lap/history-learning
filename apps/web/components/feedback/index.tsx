@@ -107,7 +107,7 @@ export function Forbidden() {
       icon="🔒"
       title="Không có quyền truy cập"
       description="Bạn không có quyền xem trang này."
-      action={{ label: 'Về trang chủ', href: '/dashboard' }}
+      action={{ label: 'Về trang chủ', href: '/' }}
     />
   );
 }

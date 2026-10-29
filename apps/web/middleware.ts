@@ -22,7 +22,6 @@ const PROTECTED_PREFIXES = [
   '/profile',
   '/admin',
   '/search',
-  '/lessons',
 ];
 
 export function middleware(request: NextRequest) {

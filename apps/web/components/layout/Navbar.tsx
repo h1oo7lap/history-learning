@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { History, User, Settings, LogOut, ChevronDown, Star, Menu, X } from 'lucide-react';
+import { History, User, Settings, LogOut, ChevronDown, Star, Menu, X, LayoutDashboard } from 'lucide-react';
 import { useMe, useLogout } from '@/features/auth/hooks';
 import { Button, buttonStyles } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -25,8 +25,8 @@ export interface NavItem {
  * - { href: '/ai', label: 'Hỏi đáp AI', authRequired: true }
  */
 export const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'Bảng điều khiển', authRequired: true },
-  { href: '/lessons', label: 'Bài học', authRequired: true },
+  { href: '/', label: 'Trang chủ' },
+  { href: '/lessons', label: 'Bài học' },
   { href: '/quiz', label: 'Quiz', authRequired: true },
   { href: '/chat', label: 'Hỏi đáp', authRequired: true },
 ];
@@ -126,13 +126,22 @@ export function Navbar() {
 
   const initials = user?.fullName
     ? user.fullName
-        .trim()
-        .split(' ')
-        .slice(-2)
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
+      .trim()
+      .split(' ')
+      .slice(-2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
     : 'U';
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (pathname === href) {
+      e.preventDefault();
+      setDropdownOpen(false);
+      setMobileOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <>
@@ -141,6 +150,7 @@ export function Navbar() {
           {/* ─── Logo ─── */}
           <Link
             href="/"
+            onClick={(e) => handleLinkClick(e, '/')}
             id="nav-logo"
             className="flex items-center gap-2.5 text-ink hover:text-seal transition-colors shrink-0 select-none group"
           >
@@ -163,6 +173,7 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
                   id={`nav-link-${item.href.replace('/', '') || 'home'}`}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
@@ -247,6 +258,7 @@ export function Navbar() {
                       <Link
                         id="nav-profile-link"
                         href="/profile"
+                        onClick={(e) => handleLinkClick(e, '/profile')}
                         role="menuitem"
                         className="flex items-center gap-2 px-3 py-2 text-ink-soft hover:bg-paper hover:text-ink transition-colors"
                       >
@@ -254,10 +266,22 @@ export function Navbar() {
                         <span>Hồ sơ cá nhân</span>
                       </Link>
 
+                      <Link
+                        id="nav-dashboard-link"
+                        href="/dashboard"
+                        onClick={(e) => handleLinkClick(e, '/dashboard')}
+                        role="menuitem"
+                        className="flex items-center gap-2 px-3 py-2 text-ink-soft hover:bg-paper hover:text-ink transition-colors"
+                      >
+                        <LayoutDashboard size={15} aria-hidden="true" />
+                        <span>Bảng điều khiển</span>
+                      </Link>
+
                       {user.role === 'ADMIN' && (
                         <Link
                           id="nav-admin-link"
                           href="/admin"
+                          onClick={(e) => handleLinkClick(e, '/admin')}
                           role="menuitem"
                           className="flex items-center gap-2 px-3 py-2 text-ink-soft hover:bg-paper hover:text-ink transition-colors border-t border-line/40"
                         >
@@ -374,6 +398,10 @@ export function Navbar() {
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={(e) => {
+                        handleLinkClick(e, item.href);
+                        closeMobileMenu();
+                      }}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
                         'flex items-center h-11 px-3 rounded-md text-[15px] font-sans transition-colors',
