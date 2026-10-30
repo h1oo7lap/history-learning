@@ -78,7 +78,7 @@ async function fetchHomeData(simulateError: boolean): Promise<HomeData> {
   try {
     const [levelsRes, lessonsRes, periodsRes] = await Promise.all([
       fetch(`${baseUrl}/api/education-levels`, { next: { revalidate: 3600 } }),
-      fetch(`${baseUrl}/api/lessons?pageSize=6`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/api/lessons?pageSize=6&isFeatured=true`, { next: { revalidate: 60 } }),
       fetch(`${baseUrl}/api/periods`, { next: { revalidate: 3600 } }),
     ]);
 
@@ -118,8 +118,12 @@ export default async function HomePage({
 
   const { educationLevels, latestLessons, periods, error } = await fetchHomeData(simulateError);
 
-  // Chọn bài học nổi bật có thumbnail cho khung ảnh tư liệu bên phải Hero
-  const featuredLesson = latestLessons.find((l) => l.thumbnail) ?? latestLessons[0];
+  // Chọn bài học tiêu biểu (isFeatured) cho khung ảnh tư liệu bên phải Hero
+  const featuredLesson =
+    latestLessons.find((l) => l.isFeatured && l.thumbnail) ??
+    latestLessons.find((l) => l.isFeatured) ??
+    latestLessons.find((l) => l.thumbnail) ??
+    latestLessons[0];
 
   return (
     <div className="min-h-screen flex flex-col bg-paper">

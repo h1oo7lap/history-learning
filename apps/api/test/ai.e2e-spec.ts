@@ -138,12 +138,13 @@ describe('AI Chat (e2e)', () => {
     // Create published test lesson in Grade A (Bạch Đằng)
     const pub = await prisma.lesson.upsert({
       where: { slug: 'chien-thang-bach-dang-e2e-test' },
-      update: { status: 'PUBLISHED', gradeId: gradeA.id },
+      update: { status: 'PUBLISHED', gradeId: gradeA.id, isFeatured: true },
       create: {
         title: 'Chiến thắng Bạch Đằng năm 938 – Ngô Quyền',
         slug: 'chien-thang-bach-dang-e2e-test',
         status: 'PUBLISHED',
         gradeId: gradeA.id,
+        isFeatured: true,
         content:
           'Năm 938, chúa Nam Hán sai Hoằng Tháo sang xâm lược nước ta. Ngô Quyền bố trí trận địa cọc ngầm cắm cọc gỗ vót nhọn bịt sắt tại cửa sông Bạch Đằng hiểm yếu, đánh tan quân giặc khi thủy triều rút.',
         difficulty: 'EASY',
@@ -407,6 +408,45 @@ describe('AI Chat (e2e)', () => {
       expect(res.body.data.answer).toBe('Chiến dịch Điện Biên Phủ năm 1954 bắt sống tướng Đờ Cát.');
       expect(res.body.data.sources.length).toBeGreaterThan(0);
       expect(res.body.data.sources[0]?.slug).toBe('dien-bien-phu-e2e-grade-b');
+    });
+    it('(c) student in Grade A gets 403 LESSON_GRADE_RESTRICTED when passing lessonId of Grade B', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/ai/chat')
+        .set('Cookie', studentLopACookie)
+        .send({
+          question: 'Hỏi về chiến dịch Điện Biên Phủ',
+          lessonId: gradeBLessonId,
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body.errorCode).toBe(ErrorCodes.LESSON_GRADE_RESTRICTED);
+    });
+
+    it('(d) student in Grade A gets 200 when passing lessonId of Grade A', async () => {
+      fakeAi.setMockAnswer('Ngô Quyền cắm cọc ngầm.');
+      const res = await request(app.getHttpServer())
+        .post('/api/ai/chat')
+        .set('Cookie', studentLopACookie)
+        .send({
+          question: 'Hỏi về trận Bạch Đằng',
+          lessonId: publishedLessonId,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('(e) user without grade gets 403 LESSON_GRADE_RESTRICTED when passing lessonId of non-featured lesson', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/ai/chat')
+        .set('Cookie', userCookie)
+        .send({
+          question: 'Hỏi về Điện Biên Phủ',
+          lessonId: gradeBLessonId,
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body.errorCode).toBe(ErrorCodes.LESSON_GRADE_RESTRICTED);
     });
   });
 });

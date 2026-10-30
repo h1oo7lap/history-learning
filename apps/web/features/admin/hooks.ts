@@ -301,7 +301,7 @@ export function useAdminUsers() {
 export function useUpdateAdminUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, dto }: { id: string; dto: { status?: UserStatus; role?: UserRole } }) =>
+    mutationFn: ({ id, dto }: { id: string; dto: { status?: UserStatus; role?: UserRole; gradeId?: string | null } }) =>
       usersAdminApi.update(id, dto),
     onSuccess: () => qc.invalidateQueries({ queryKey: [ADMIN_USERS_KEY] }),
   });

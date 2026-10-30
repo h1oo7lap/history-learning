@@ -8,6 +8,7 @@ import {
   type SlugParamDto,
 } from '@history-learning/shared';
 import { Public } from '../common/decorators/public';
+import { CurrentUser } from '../common/decorators/current-user';
 import { LessonsService } from './lessons.service';
 
 @ApiTags('Lessons')
@@ -32,8 +33,9 @@ export class LessonsController {
   async findAll(
     @Query(new ZodValidationPipe(LessonListQuerySchema))
     query: LessonListQueryDto,
+    @CurrentUser() user?: any,
   ) {
-    return this.lessonsService.findAllPublic(query);
+    return this.lessonsService.findAllPublic(query, user);
   }
 
   @Get(':slug')
@@ -42,7 +44,8 @@ export class LessonsController {
   })
   async findOne(
     @Param(new ZodValidationPipe(SlugParamSchema)) { slug }: SlugParamDto,
+    @CurrentUser() user?: any,
   ) {
-    return this.lessonsService.findOneBySlug(slug);
+    return this.lessonsService.findOneBySlug(slug, user);
   }
 }

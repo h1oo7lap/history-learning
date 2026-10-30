@@ -3,6 +3,9 @@ export interface RetrieveParams {
   history?: Array<{ role: 'user' | 'model'; content: string }>;
   lessonId?: string;
   gradeId?: string;
+  maxDisplayOrder?: number;
+  maxGradeRank?: number;
+  isFeatured?: boolean;
 }
 
 export interface RetrievedSegment {

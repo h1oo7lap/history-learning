@@ -16,6 +16,7 @@ export interface PublicLessonSummary {
   estimatedTime: number;
   displayOrder: number;
   status: LessonStatus;
+  isFeatured?: boolean;
   gradeId?: string;
   grade?: { id: string; name: string; code: string };
   grades?: { gradeId: string; grade: { id: string; name: string; code: string } }[];

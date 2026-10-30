@@ -22,7 +22,7 @@ import {
 
 /** Fields included when returning a lesson in admin/public detail (includes contentJson) */
 const LESSON_INCLUDE = {
-  grade: true,
+  grade: { include: { educationLevel: true } },
   topics: { include: { topic: true } },
   periods: { include: { period: true } },
   characters: { include: { character: true } },
@@ -42,6 +42,7 @@ const LESSON_LIST_SELECT = {
   estimatedTime: true,
   displayOrder: true,
   status: true,
+  isFeatured: true,
   createdAt: true,
   updatedAt: true,
   // content and contentJson intentionally excluded from list
@@ -73,15 +74,59 @@ export class LessonsService {
    * Supports pagination + optional search + grade/topic/period/difficulty filter.
    * Does NOT return content or contentJson.
    */
-  async findAllPublic(query: LessonListQueryDto) {
+  async findAllPublic(
+    query: LessonListQueryDto,
+    user?: { id?: string; gradeId?: string | null; role?: string },
+  ) {
     const { skip, take, page, pageSize } = getPaginationArgs(query);
 
-    const where = {
+    let gradeFilter: Prisma.GradeWhereInput | undefined;
+    let isFeaturedFilter: boolean | undefined = query.isFeatured;
+
+    if (user?.role === 'ADMIN') {
+      // Admin sees everything according to query params
+    } else if (user?.gradeId) {
+      // Student with gradeId: can only view lessons with rank <= user's grade rank
+      const userGrade = await this.prisma.grade.findUnique({
+        where: { id: user.gradeId },
+        include: { educationLevel: true },
+      });
+      if (userGrade) {
+        const userLevelOrder = userGrade.educationLevel?.displayOrder ?? 1;
+        const userGradeOrder = userGrade.displayOrder;
+        gradeFilter = {
+          OR: [
+            {
+              educationLevel: {
+                displayOrder: { lt: userLevelOrder },
+              },
+            },
+            {
+              AND: [
+                {
+                  educationLevel: {
+                    displayOrder: userLevelOrder,
+                  },
+                },
+                { displayOrder: { lte: userGradeOrder } },
+              ],
+            },
+          ],
+        };
+      }
+    } else {
+      // Guests / new users without gradeId: only see isFeatured = true
+      isFeaturedFilter = true;
+    }
+
+    const where: Prisma.LessonWhereInput = {
       status: PublishStatus.PUBLISHED,
+      ...(isFeaturedFilter !== undefined ? { isFeatured: isFeaturedFilter } : {}),
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' as const } }
         : {}),
       ...(query.gradeId ? { gradeId: query.gradeId } : {}),
+      ...(gradeFilter ? { grade: gradeFilter } : {}),
       ...(query.topicId
         ? { topics: { some: { topicId: query.topicId } } }
         : {}),
@@ -109,7 +154,10 @@ export class LessonsService {
    * Get a single published lesson by slug (public).
    * Returns contentJson so the student renderer (round B) can display blocks.
    */
-  async findOneBySlug(slug: string) {
+  async findOneBySlug(
+    slug: string,
+    user?: { id?: string; gradeId?: string | null; role?: string },
+  ) {
     const lesson = await this.prisma.lesson.findFirst({
       where: { slug, status: PublishStatus.PUBLISHED },
       include: LESSON_INCLUDE,
@@ -121,6 +169,46 @@ export class LessonsService {
         'Lesson not found',
       );
     }
+
+    if (user?.role === 'ADMIN') {
+      return lesson;
+    }
+
+    if (user?.gradeId) {
+      const userGrade = await this.prisma.grade.findUnique({
+        where: { id: user.gradeId },
+        include: { educationLevel: true },
+      });
+      if (userGrade) {
+        const lessonLevelOrder = (lesson.grade as any)?.educationLevel?.displayOrder ?? 1;
+        const lessonGradeOrder = lesson.grade.displayOrder;
+        const userLevelOrder = userGrade.educationLevel?.displayOrder ?? 1;
+        const userGradeOrder = userGrade.displayOrder;
+
+        const isHigher =
+          lessonLevelOrder > userLevelOrder ||
+          (lessonLevelOrder === userLevelOrder && lessonGradeOrder > userGradeOrder);
+
+        if (isHigher) {
+          throw new AppError(
+            ErrorCodes.LESSON_GRADE_RESTRICTED,
+            403,
+            'Bài học này thuộc lớp cao hơn lớp của bạn',
+          );
+        }
+      }
+      return lesson;
+    }
+
+    // Guest or user without gradeId: only allowed to see and read isFeatured = true
+    if (!lesson.isFeatured) {
+      throw new AppError(
+        ErrorCodes.LESSON_GRADE_RESTRICTED,
+        403,
+        'Bài học này thuộc lớp cao hơn lớp của bạn',
+      );
+    }
+
     return lesson;
   }
 
@@ -138,6 +226,7 @@ export class LessonsService {
 
     const where = {
       ...(query.status ? { status: query.status } : {}),
+      ...(query.isFeatured !== undefined ? { isFeatured: query.isFeatured } : {}),
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' as const } }
         : {}),
@@ -228,6 +317,7 @@ export class LessonsService {
         estimatedTime: dto.estimatedTime,
         displayOrder: dto.displayOrder,
         status,
+        isFeatured: dto.isFeatured ?? false,
         gradeId: dto.gradeId,
         topics: {
           create: (dto.topicIds ?? []).map((topicId) => ({ topicId })),
@@ -381,6 +471,7 @@ export class LessonsService {
             ? { displayOrder: dto.displayOrder }
             : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),
+          ...(dto.isFeatured !== undefined ? { isFeatured: dto.isFeatured } : {}),
           ...(dto.gradeId !== undefined ? { gradeId: dto.gradeId } : {}),
           ...(dto.topicIds !== undefined
             ? {

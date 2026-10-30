@@ -73,11 +73,35 @@ export class ChatService {
     dto: AiChatDto,
     user?: { id?: string; gradeId?: string | null; role?: string },
   ): Promise<AiChatResponseDto> {
-    // 1. If lessonId is explicitly provided, validate it exists and is PUBLISHED
+    let userGradeDisplayOrder: number | undefined;
+    let userMaxGradeRank: number | undefined;
+    if (user?.role !== 'ADMIN' && user?.gradeId) {
+      const userGrade = await this.prisma.grade.findUnique({
+        where: { id: user.gradeId },
+        include: { educationLevel: true },
+      });
+      if (userGrade) {
+        userGradeDisplayOrder = userGrade.displayOrder;
+        userMaxGradeRank =
+          (userGrade.educationLevel?.displayOrder ?? 1) * 100 + userGrade.displayOrder;
+      }
+    }
+
+    // 1. If lessonId is explicitly provided, validate it exists, is PUBLISHED, and check access permissions
     if (dto.lessonId) {
       const lesson = await this.prisma.lesson.findUnique({
         where: { id: dto.lessonId },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          isFeatured: true,
+          grade: {
+            select: {
+              displayOrder: true,
+              educationLevel: { select: { displayOrder: true } },
+            },
+          },
+        },
       });
 
       if (!lesson) {
@@ -95,13 +119,51 @@ export class ChatService {
           'Bài học chưa được xuất bản',
         );
       }
+
+      if (user?.role !== 'ADMIN') {
+        if (userMaxGradeRank !== undefined) {
+          const lessonRank =
+            (lesson.grade?.educationLevel?.displayOrder ?? 1) * 100 +
+            (lesson.grade?.displayOrder ?? 0);
+          if (lessonRank > userMaxGradeRank) {
+            throw new AppError(
+              ErrorCodes.LESSON_GRADE_RESTRICTED,
+              HttpStatus.FORBIDDEN,
+              'Bài học này thuộc lớp cao hơn lớp của bạn',
+            );
+          }
+        } else {
+          // Guest or user without gradeId: only allowed to ask about featured lessons
+          if (!lesson.isFeatured) {
+            throw new AppError(
+              ErrorCodes.LESSON_GRADE_RESTRICTED,
+              HttpStatus.FORBIDDEN,
+              'Bài học này thuộc lớp cao hơn lớp của bạn',
+            );
+          }
+        }
+      }
     }
 
-    // 2. Perform retrieval with user's gradeId passed to retriever
-    // Học sinh (có gradeId, không phải ADMIN): chỉ tìm trong bài của lớp mình, KHÔNG fallback.
-    // ADMIN hoặc người dùng không có gradeId: tìm trên mọi lớp.
-    const effectiveGradeId =
-      user?.role === 'ADMIN' ? undefined : (user?.gradeId ?? undefined);
+    // 2. Perform retrieval with access scoping:
+    // - Học sinh có gradeId (không phải ADMIN): tìm trong các bài có rank <= lớp của mình.
+    // - Khách hoặc người dùng chưa có gradeId: chỉ tìm trong các bài isFeatured = true.
+    // - ADMIN: tìm trên mọi lớp.
+    let maxDisplayOrder: number | undefined;
+    let maxGradeRank: number | undefined;
+    let isFeatured: boolean | undefined;
+
+    if (user?.role === 'ADMIN') {
+      maxDisplayOrder = undefined;
+      maxGradeRank = undefined;
+      isFeatured = undefined;
+    } else if (userMaxGradeRank !== undefined) {
+      maxDisplayOrder = userGradeDisplayOrder;
+      maxGradeRank = userMaxGradeRank;
+      isFeatured = undefined;
+    } else {
+      isFeatured = true;
+    }
 
     let retrieval;
     try {
@@ -109,7 +171,9 @@ export class ChatService {
         question: dto.question,
         history: dto.history,
         lessonId: dto.lessonId,
-        gradeId: effectiveGradeId,
+        maxDisplayOrder,
+        maxGradeRank,
+        isFeatured,
       });
     } catch (err: any) {
       if (err instanceof AppError) {

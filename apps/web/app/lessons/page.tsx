@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import {
   BookOpen,
@@ -100,6 +99,7 @@ async function fetchLessons(params: {
   difficulty?: string;
   gradeId?: string;
   simulate_error?: string;
+  token?: string;
 }): Promise<FetchResult> {
   // Chỉ kích hoạt giả lập lỗi khi kiểm thử trong dev
   if (process.env.NODE_ENV !== 'production' && params.simulate_error === '1') {
@@ -117,7 +117,13 @@ async function fetchLessons(params: {
 
   try {
     const res = await fetch(`${baseUrl}/api/lessons?${qs.toString()}`, {
-      next: { revalidate: 30 },
+      headers: params.token
+        ? {
+            Cookie: `access_token=${params.token}`,
+            Authorization: `Bearer ${params.token}`,
+          }
+        : {},
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -143,9 +149,6 @@ export default async function LessonsPage({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get('access_token')?.value;
-  if (!token) {
-    redirect('/login?from=/lessons');
-  }
 
   const sp = await searchParams;
 
@@ -189,6 +192,7 @@ export default async function LessonsPage({
     difficulty,
     gradeId: activeGradeId,
     simulate_error: sp.simulate_error,
+    token,
   });
 
   const { data, error } = lessonsResult;

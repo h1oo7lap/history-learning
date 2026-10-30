@@ -18,14 +18,14 @@ export function OnboardingGradeForm() {
       { gradeId: selectedGradeId },
       {
         onSuccess: () => {
-          router.push('/dashboard');
+          router.push('/');
         },
       },
     );
   };
 
   const handleSkip = () => {
-    router.push('/dashboard');
+    router.push('/');
   };
 
   if (levelsLoading) {

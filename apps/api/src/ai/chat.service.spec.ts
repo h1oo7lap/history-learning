@@ -22,6 +22,9 @@ describe('ChatService (Unit)', () => {
       lesson: {
         findUnique: vi.fn(),
       },
+      grade: {
+        findUnique: vi.fn(),
+      },
     };
     chatService = new ChatService(mockRetriever, fakeAi, mockPrisma);
   });
@@ -191,7 +194,7 @@ describe('ChatService (Unit)', () => {
     expect(res.sources[0]?.slug).toBe('chien-thang-bach-dang-nam-938');
   });
 
-  it('scopes retrieval to gradeId for student but searches all grades for admin or users without gradeId', async () => {
+  it('I5: scopes retrieval to maxDisplayOrder for student, isFeatured for guest, and all for admin', async () => {
     vi.mocked(mockRetriever.retrieve).mockResolvedValue({
       accepted: false,
       effectiveQuery: 'Test',
@@ -199,32 +202,83 @@ describe('ChatService (Unit)', () => {
       sources: [],
     });
 
-    // Case 1: Student with gradeId
+    vi.mocked(mockPrisma.grade.findUnique).mockResolvedValue({
+      id: 'grade-4',
+      name: 'Lớp 4',
+      code: 'GRADE_4',
+      educationLevelId: 'edu-1',
+      displayOrder: 1,
+    } as any);
+
+    // Case 1: Student with gradeId -> maxDisplayOrder = 1
     await chatService.chat(
       { question: 'Câu hỏi của học sinh', history: [] },
       { id: 'student-1', gradeId: 'grade-4', role: 'USER' },
     );
     expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
-      expect.objectContaining({ gradeId: 'grade-4' }),
+      expect.objectContaining({ maxDisplayOrder: 1, isFeatured: undefined }),
     );
 
-    // Case 2: Admin with gradeId -> gradeId should be undefined (all grades)
+    // Case 2: Admin with gradeId -> maxDisplayOrder = undefined, isFeatured = undefined (all grades)
     await chatService.chat(
       { question: 'Câu hỏi của admin', history: [] },
       { id: 'admin-1', gradeId: 'grade-4', role: 'ADMIN' },
     );
     expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
-      expect.objectContaining({ gradeId: undefined }),
+      expect.objectContaining({ maxDisplayOrder: undefined, isFeatured: undefined }),
     );
 
-    // Case 3: User without gradeId -> gradeId undefined
+    // Case 3: User without gradeId -> isFeatured = true
     await chatService.chat(
       { question: 'Câu hỏi của khách', history: [] },
       { id: 'user-no-grade', gradeId: null, role: 'USER' },
     );
     expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
-      expect.objectContaining({ gradeId: undefined }),
+      expect.objectContaining({ maxDisplayOrder: undefined, isFeatured: true }),
     );
+  });
+
+  it('I5: chat throws 403 LESSON_GRADE_RESTRICTED when lessonId belongs to higher grade for student', async () => {
+    vi.mocked(mockPrisma.grade.findUnique).mockResolvedValue({
+      id: 'grade-4',
+      displayOrder: 1,
+    } as any);
+
+    vi.mocked(mockPrisma.lesson.findUnique).mockResolvedValue({
+      id: 'lesson-grade-5',
+      status: 'PUBLISHED',
+      isFeatured: false,
+      grade: { displayOrder: 2 },
+    } as any);
+
+    await expect(
+      chatService.chat(
+        { question: 'Chi tiết bài lớp 5', lessonId: 'lesson-grade-5' },
+        { id: 'student-1', gradeId: 'grade-4', role: 'USER' },
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCodes.LESSON_GRADE_RESTRICTED,
+      status: 403,
+    });
+  });
+
+  it('I5: chat throws 403 LESSON_GRADE_RESTRICTED when guest asks about non-featured lesson', async () => {
+    vi.mocked(mockPrisma.lesson.findUnique).mockResolvedValue({
+      id: 'lesson-not-featured',
+      status: 'PUBLISHED',
+      isFeatured: false,
+      grade: { displayOrder: 1 },
+    } as any);
+
+    await expect(
+      chatService.chat(
+        { question: 'Chi tiết bài', lessonId: 'lesson-not-featured' },
+        undefined,
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCodes.LESSON_GRADE_RESTRICTED,
+      status: 403,
+    });
   });
 
   it('I3: propagates error when retrieval or embedding fails', async () => {

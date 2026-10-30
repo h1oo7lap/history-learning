@@ -56,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           Bạn không có quyền truy cập vào trang quản trị. Khu vực này chỉ dành riêng cho quản trị viên.
         </p>
         <Button asChild variant="primary" size="md">
-          <Link href="/dashboard">Về trang chủ</Link>
+          <Link href="/">Về trang chủ</Link>
         </Button>
       </div>
     );
@@ -98,7 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="pt-4 mt-4 border-t border-line/60">
             <Link
-              href="/dashboard"
+              href="/"
               className="flex items-center h-10 px-3 rounded-md text-sm text-muted hover:text-ink hover:bg-paper transition-colors"
             >
               ← Về trang học sinh

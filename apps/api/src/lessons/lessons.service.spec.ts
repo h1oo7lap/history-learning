@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LessonsService } from './lessons.service';
 import { PublishStatus, Difficulty } from '@history-learning/shared';
 import { AppError } from '../common/errors/app-error';
+import { ErrorCodes } from '../common/errors/error-codes';
 
 // ---------------------------------------------------------------------------
 // Mock PrismaService — all Prisma model methods are vi.fn() by default.
@@ -24,7 +25,7 @@ function createMockPrisma() {
     lessonCharacter: { deleteMany: vi.fn() },
     lessonEvent: { deleteMany: vi.fn() },
     lessonMedia: { deleteMany: vi.fn() },
-    grade: { count: vi.fn() },
+    grade: { count: vi.fn(), findUnique: vi.fn() },
     topic: { count: vi.fn() },
     historicalPeriod: { count: vi.fn() },
     historicalCharacter: { count: vi.fn() },
@@ -509,11 +510,12 @@ describe('LessonsService', () => {
   });
 
   describe('findOneBySlug', () => {
-    it('should return a published lesson by slug', async () => {
+    it('should return a published lesson by slug when isFeatured is true for guest', async () => {
       const lesson = {
         id: 'l1',
         slug: 'tran-bach-dang',
         status: PublishStatus.PUBLISHED,
+        isFeatured: true,
       };
       prisma.lesson.findFirst.mockResolvedValue(lesson);
 
@@ -524,6 +526,51 @@ describe('LessonsService', () => {
         where: { slug: 'tran-bach-dang', status: PublishStatus.PUBLISHED },
         include: expect.any(Object),
       });
+    });
+
+    it('L6: throws 403 LESSON_GRADE_RESTRICTED when student accesses higher grade lesson', async () => {
+      const lesson = {
+        id: 'l2',
+        slug: 'lesson-grade-5',
+        status: PublishStatus.PUBLISHED,
+        grade: { displayOrder: 2 },
+      };
+      prisma.lesson.findFirst.mockResolvedValue(lesson);
+      prisma.grade.findUnique.mockResolvedValue({ id: 'grade-4', displayOrder: 1 });
+
+      await expect(
+        service.findOneBySlug('lesson-grade-5', { id: 'u1', role: 'USER', gradeId: 'grade-4' }),
+      ).rejects.toMatchObject({
+        code: ErrorCodes.LESSON_GRADE_RESTRICTED,
+        status: 403,
+      });
+    });
+
+    it('L6: allows student to access lesson of same or lower grade', async () => {
+      const lesson = {
+        id: 'l1',
+        slug: 'lesson-grade-4',
+        status: PublishStatus.PUBLISHED,
+        grade: { displayOrder: 1 },
+      };
+      prisma.lesson.findFirst.mockResolvedValue(lesson);
+      prisma.grade.findUnique.mockResolvedValue({ id: 'grade-5', displayOrder: 2 });
+
+      const result = await service.findOneBySlug('lesson-grade-4', { id: 'u1', role: 'USER', gradeId: 'grade-5' });
+      expect(result).toEqual(lesson);
+    });
+
+    it('L6: allows admin to access any grade lesson', async () => {
+      const lesson = {
+        id: 'l2',
+        slug: 'lesson-grade-5',
+        status: PublishStatus.PUBLISHED,
+        grade: { displayOrder: 2 },
+      };
+      prisma.lesson.findFirst.mockResolvedValue(lesson);
+
+      const result = await service.findOneBySlug('lesson-grade-5', { id: 'admin-1', role: 'ADMIN', gradeId: 'grade-4' });
+      expect(result).toEqual(lesson);
     });
 
     it('should throw LESSON_NOT_FOUND when lesson does not exist', async () => {

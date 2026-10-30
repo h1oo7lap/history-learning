@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useAdminUsers, useUpdateAdminUser } from '@/features/admin/hooks';
+import { useAdminUsers, useUpdateAdminUser, useGradeOptions } from '@/features/admin/hooks';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import type { AdminUser, UserRole, UserStatus } from '@/features/admin/api';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 interface UserFormData {
   role: UserRole;
   status: UserStatus;
+  gradeId: string;
 }
 
 interface UserModalProps {
@@ -22,17 +23,23 @@ interface UserModalProps {
 function UserModal({ open, user, onClose }: UserModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const updateMutation = useUpdateAdminUser();
+  const { data: gradeOptions = [] } = useGradeOptions();
 
   const [form, setForm] = useState<UserFormData>({
     role: 'USER',
     status: 'ACTIVE',
+    gradeId: '',
   });
 
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
     if (open && user) {
-      setForm({ role: user.role, status: user.status });
+      setForm({
+        role: user.role,
+        status: user.status,
+        gradeId: user.gradeId || '',
+      });
       if (!el.open) el.showModal();
     } else {
       if (el.open) el.close();
@@ -44,7 +51,14 @@ function UserModal({ open, user, onClose }: UserModalProps) {
     if (!user) return;
 
     try {
-      await updateMutation.mutateAsync({ id: user.id, dto: form });
+      await updateMutation.mutateAsync({
+        id: user.id,
+        dto: {
+          role: form.role,
+          status: form.status,
+          gradeId: form.gradeId || null,
+        },
+      });
       toast.success('Cập nhật người dùng thành công');
       onClose();
     } catch (err: unknown) {
@@ -100,6 +114,23 @@ function UserModal({ open, user, onClose }: UserModalProps) {
             >
               <option value="USER">Người dùng (USER)</option>
               <option value="ADMIN">Quản trị viên (ADMIN)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="label" htmlFor="user-grade">Khối lớp</label>
+            <select
+              id="user-grade"
+              className="input"
+              value={form.gradeId}
+              onChange={(e) => setForm((f) => ({ ...f, gradeId: e.target.value }))}
+            >
+              <option value="">-- Chưa gán lớp --</option>
+              {gradeOptions.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} ({g.code})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -297,6 +328,7 @@ export default function AdminUsersPage() {
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Họ tên & Email</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Vai trò</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Khối lớp</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Trạng thái</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Tổng EXP</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Ngày tham gia</th>
@@ -345,6 +377,13 @@ export default function AdminUsersPage() {
                       <code style={{ fontSize: '0.8rem', background: user.role === 'ADMIN' ? 'rgb(239 68 68 / 0.1)' : 'var(--surface-2)', color: user.role === 'ADMIN' ? 'var(--error)' : 'var(--brand-600)', padding: '0.15rem 0.4rem', borderRadius: 4 }}>
                         {user.role}
                       </code>
+                    </td>
+                    <td style={{ padding: '0.875rem 1rem' }}>
+                      {user.grade?.name ? (
+                        <span style={{ fontWeight: 500, color: 'var(--foreground)' }}>{user.grade.name}</span>
+                      ) : (
+                        <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Chưa có</span>
+                      )}
                     </td>
                     <td style={{ padding: '0.875rem 1rem' }}>
                       <StatusBadge status={user.status} />

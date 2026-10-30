@@ -118,6 +118,8 @@ export default function ProfilePage() {
             <select
               id="profile-grade"
               className="input"
+              disabled={Boolean(user?.role !== 'ADMIN' && user?.gradeId)}
+              style={user?.role !== 'ADMIN' && user?.gradeId ? { opacity: 0.75, cursor: 'not-allowed', background: 'var(--surface-2)' } : {}}
               {...register('gradeId')}
             >
               <option value="">-- Chưa chọn lớp --</option>
@@ -127,6 +129,11 @@ export default function ProfilePage() {
                 </option>
               ))}
             </select>
+            {user?.role !== 'ADMIN' && user?.gradeId && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.35rem' }}>
+                🔒 Khối lớp đã được cố định. Vui lòng liên hệ Quản trị viên nếu cần thay đổi lớp học.
+              </p>
+            )}
           </div>
 
           {/* Stats */}
