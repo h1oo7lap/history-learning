@@ -45,7 +45,7 @@ export class VectorRetriever implements Retriever {
   }
 
   async retrieve(params: RetrieveParams): Promise<RetrieverResult> {
-    const { question, history, lessonId, gradeId, maxDisplayOrder, maxGradeRank, isFeatured } = params;
+    const { question, history, lessonId, gradeId, maxGradeRank, isFeatured } = params;
 
     // 1. Resolve follow-up effective query (reusing existing tested helper)
     const effectiveQuery = resolveEffectiveQuery(question, history);
@@ -82,7 +82,6 @@ export class VectorRetriever implements Retriever {
     const rows = await this.queryChunks(vectorStr, {
       gradeId: lessonId ? undefined : gradeId,
       lessonId,
-      maxDisplayOrder: lessonId ? undefined : maxDisplayOrder,
       maxGradeRank: lessonId ? undefined : maxGradeRank,
       isFeatured: lessonId ? undefined : isFeatured,
     });
@@ -142,12 +141,11 @@ export class VectorRetriever implements Retriever {
     filters: {
       gradeId?: string;
       lessonId?: string;
-      maxDisplayOrder?: number;
       maxGradeRank?: number;
       isFeatured?: boolean;
     },
   ): Promise<RawChunkRow[]> {
-    const { gradeId, lessonId, maxDisplayOrder, maxGradeRank, isFeatured } = filters;
+    const { gradeId, lessonId, maxGradeRank, isFeatured } = filters;
 
     // Use parameterized query with row_number partitioning to limit max 2 chunks per lesson
     const result = await this.prisma.$queryRaw<RawChunkRow[]>`
@@ -174,7 +172,6 @@ export class VectorRetriever implements Retriever {
           AND (${lessonId ?? null}::text IS NULL OR lc."lessonId" = ${lessonId})
           AND (${gradeId ?? null}::text IS NULL OR l."gradeId" = ${gradeId})
           AND (${maxGradeRank ?? null}::int IS NULL OR (COALESCE(e."displayOrder", 1) * 100 + g."displayOrder") <= ${maxGradeRank})
-          AND (${maxDisplayOrder ?? null}::int IS NULL OR g."displayOrder" <= ${maxDisplayOrder})
           AND (${isFeatured ?? null}::boolean IS NULL OR l."isFeatured" = ${isFeatured})
       )
       SELECT *

@@ -194,7 +194,7 @@ describe('ChatService (Unit)', () => {
     expect(res.sources[0]?.slug).toBe('chien-thang-bach-dang-nam-938');
   });
 
-  it('I5: scopes retrieval to maxDisplayOrder for student, isFeatured for guest, and all for admin', async () => {
+  it('I5: scopes retrieval to maxGradeRank for student, isFeatured for guest, and all for admin', async () => {
     vi.mocked(mockRetriever.retrieve).mockResolvedValue({
       accepted: false,
       effectiveQuery: 'Test',
@@ -208,24 +208,25 @@ describe('ChatService (Unit)', () => {
       code: 'GRADE_4',
       educationLevelId: 'edu-1',
       displayOrder: 1,
+      educationLevel: { displayOrder: 1 },
     } as any);
 
-    // Case 1: Student with gradeId -> maxDisplayOrder = 1
+    // Case 1: Student with gradeId -> maxGradeRank = 101
     await chatService.chat(
       { question: 'Câu hỏi của học sinh', history: [] },
       { id: 'student-1', gradeId: 'grade-4', role: 'USER' },
     );
     expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxDisplayOrder: 1, isFeatured: undefined }),
+      expect.objectContaining({ maxGradeRank: 101, isFeatured: undefined }),
     );
 
-    // Case 2: Admin with gradeId -> maxDisplayOrder = undefined, isFeatured = undefined (all grades)
+    // Case 2: Admin with gradeId -> maxGradeRank = undefined, isFeatured = undefined (all grades)
     await chatService.chat(
       { question: 'Câu hỏi của admin', history: [] },
       { id: 'admin-1', gradeId: 'grade-4', role: 'ADMIN' },
     );
     expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxDisplayOrder: undefined, isFeatured: undefined }),
+      expect.objectContaining({ maxGradeRank: undefined, isFeatured: undefined }),
     );
 
     // Case 3: User without gradeId -> isFeatured = true
@@ -234,7 +235,7 @@ describe('ChatService (Unit)', () => {
       { id: 'user-no-grade', gradeId: null, role: 'USER' },
     );
     expect(mockRetriever.retrieve).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxDisplayOrder: undefined, isFeatured: true }),
+      expect.objectContaining({ maxGradeRank: undefined, isFeatured: true }),
     );
   });
 
@@ -253,7 +254,7 @@ describe('ChatService (Unit)', () => {
 
     await expect(
       chatService.chat(
-        { question: 'Chi tiết bài lớp 5', lessonId: 'lesson-grade-5' },
+        { question: 'Chi tiết bài lớp 5', history: [], lessonId: 'lesson-grade-5' },
         { id: 'student-1', gradeId: 'grade-4', role: 'USER' },
       ),
     ).rejects.toMatchObject({
@@ -272,7 +273,7 @@ describe('ChatService (Unit)', () => {
 
     await expect(
       chatService.chat(
-        { question: 'Chi tiết bài', lessonId: 'lesson-not-featured' },
+        { question: 'Chi tiết bài', history: [], lessonId: 'lesson-not-featured' },
         undefined,
       ),
     ).rejects.toMatchObject({

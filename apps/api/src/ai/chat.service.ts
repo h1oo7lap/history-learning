@@ -73,7 +73,6 @@ export class ChatService {
     dto: AiChatDto,
     user?: { id?: string; gradeId?: string | null; role?: string },
   ): Promise<AiChatResponseDto> {
-    let userGradeDisplayOrder: number | undefined;
     let userMaxGradeRank: number | undefined;
     if (user?.role !== 'ADMIN' && user?.gradeId) {
       const userGrade = await this.prisma.grade.findUnique({
@@ -81,7 +80,6 @@ export class ChatService {
         include: { educationLevel: true },
       });
       if (userGrade) {
-        userGradeDisplayOrder = userGrade.displayOrder;
         userMaxGradeRank =
           (userGrade.educationLevel?.displayOrder ?? 1) * 100 + userGrade.displayOrder;
       }
@@ -149,16 +147,13 @@ export class ChatService {
     // - Học sinh có gradeId (không phải ADMIN): tìm trong các bài có rank <= lớp của mình.
     // - Khách hoặc người dùng chưa có gradeId: chỉ tìm trong các bài isFeatured = true.
     // - ADMIN: tìm trên mọi lớp.
-    let maxDisplayOrder: number | undefined;
     let maxGradeRank: number | undefined;
     let isFeatured: boolean | undefined;
 
     if (user?.role === 'ADMIN') {
-      maxDisplayOrder = undefined;
       maxGradeRank = undefined;
       isFeatured = undefined;
     } else if (userMaxGradeRank !== undefined) {
-      maxDisplayOrder = userGradeDisplayOrder;
       maxGradeRank = userMaxGradeRank;
       isFeatured = undefined;
     } else {
@@ -171,7 +166,6 @@ export class ChatService {
         question: dto.question,
         history: dto.history,
         lessonId: dto.lessonId,
-        maxDisplayOrder,
         maxGradeRank,
         isFeatured,
       });
