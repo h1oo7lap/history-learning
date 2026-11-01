@@ -1,33 +1,40 @@
 ---
 name: history-learning-features
-description: Nguyên tắc nghiệp vụ bất biến của History Learning (nội dung bài học, quyền theo lớp, quiz, tiến độ, AI hỏi đáp, phần thưởng, bảo mật, triển khai). Dùng khi xây hoặc sửa tính năng nghiệp vụ.
+description: Các nguyên tắc nghiệp vụ cốt lõi của History Learning. Dùng khi xây hoặc sửa hành vi học tập, quyền truy cập, quiz, tiến độ, AI và gamification.
 ---
-# Nguyên tắc nghiệp vụ
+# Business Rules
 
-Chỉ ghi điều luôn đúng. Chi tiết hành vi: đọc code và test, không đoán từ skill này. Phạm vi và trạng thái: `SPEC.md`.
+Chỉ đặt ở đây những quy tắc nghiệp vụ cần được giữ nhất quán giữa nhiều phần của hệ thống. Chi tiết implementation phải đọc từ source và test hiện tại.
 
-## Nội dung và quyền
-- Bài học thuộc một lớp. `Grade.displayOrder` là số lớp (4–12), dùng để so sánh quyền.
-- Học sinh có lớp xem và hỏi AI được bài có số lớp nhỏ hơn hoặc bằng lớp mình. Khách và người chưa chọn lớp chỉ thấy bài `isFeatured`. Admin xem tất cả. Người thường chỉ thấy bài đã xuất bản. Dùng helper chung, không tự viết lại điều kiện.
-- Học sinh không tự đổi lớp sau lần chọn đầu; Admin đổi được.
-- Nội dung bài là dữ liệu có cấu trúc, validate ở server. Ảnh và audio: https, Cloudinary của dự án. Video: chỉ lưu id YouTube. "Xóa" bài học nghĩa là lưu trữ, không xóa cứng.
-- Bài học thay đổi thì chỉ mục AI phải được dựng lại.
+## Học tập và quyền truy cập
+- Quyền truy cập bài học và tính năng học tập phải được quyết định ở backend.
+- Mỗi bài học thuộc một lớp. Học sinh có lớp xem và hỏi AI được bài của lớp mình và các lớp thấp hơn; khách và người chưa chọn lớp chỉ thấy bài tiêu biểu (`isFeatured`); Admin xem tất cả; người thường chỉ thấy bài đã xuất bản.
+- Học sinh chọn lớp một lần, sau đó không tự đổi; chỉ Admin đổi được. Quyền luôn xác định ở backend từ lớp đã lưu, không từ giá trị client gửi kèm mỗi request.
+- Lesson, progress, quiz, search và AI phải dùng cùng một helper xác định quyền truy cập, không copy điều kiện.
+
+## Nội dung
+- Nội dung bài học phải được validate ở server theo schema hiện hành.
+- Media phải tuân theo các giới hạn và nguồn được project cho phép.
+- Thay đổi nội dung cần xem xét ảnh hưởng tới search/RAG/indexing nếu tính năng đó đang sử dụng nội dung.
 
 ## Quiz và tiến độ
-- Chấm điểm ở server. Không gửi đáp án hay giải thích trước khi nộp. Nộp bài idempotent. Lượt làm thuộc đúng người, thời hạn tính theo giờ server.
-- Tiến độ học ghi bằng thao tác lặp lại an toàn; trạng thái hoàn thành không bị hạ.
-- Số liệu thống kê chỉ từ dữ liệu thật.
+- Chấm điểm và trạng thái học tập do server quyết định.
+- Không để frontend tự quyết định điểm, EXP, cấp độ hoặc quyền.
+- Các thao tác nộp bài và cập nhật tiến độ phải an toàn khi request bị gửi lặp.
+- Không trả dữ liệu đáp án hoặc kết quả mà người học chưa được phép xem.
 
-## AI hỏi đáp
-- Chỉ trả lời từ nội dung truy xuất của bài và nêu nguồn. Ngoài phạm vi thì từ chối cố định, không bịa.
-- Khóa API chỉ ở backend; có timeout và giới hạn tần suất; quá tải hoặc hết hạn mức trả lỗi rõ (`AI_BUSY`); không lộ prompt hệ thống.
+## AI
+- AI phải tuân theo phạm vi dữ liệu và quyền truy cập của người dùng.
+- Chỉ trả lời từ nội dung truy xuất và nêu nguồn do server xác thực; ngoài phạm vi thì từ chối cố định, không bịa. Quá tải hoặc hết hạn mức trả lỗi rõ (`AI_BUSY`).
 - Không gửi thông tin cá nhân của học sinh cho nhà cung cấp AI; log không chứa nội dung câu hỏi.
 - Nội dung do AI tạo (câu hỏi, quiz) là bản nháp, Admin duyệt mới dùng.
+- Không để AI tự vượt qua quyền truy cập hoặc tự biến dữ liệu chưa được duyệt thành nội dung chính thức.
+- Secret và cấu hình AI chỉ ở backend.
 
-## Phần thưởng
-- EXP, thẻ, nhiệm vụ chỉ cấp qua một service riêng, idempotent. Frontend không tự quyết điểm, cấp độ, quyền.
+## Gamification
+- Điểm thưởng, cấp độ, thẻ, nhiệm vụ hoặc phần thưởng phải được tính ở server.
+- Các phần thưởng quan trọng phải tránh cấp trùng khi cùng một hành động được gửi nhiều lần.
 
-## Bảo mật và triển khai
-- Token trong cookie httpOnly; vai trò USER hoặc ADMIN; route admin chỉ ADMIN; đăng nhập sai không lộ lý do cụ thể.
-- Bí mật chỉ ở backend và cấu hình nền tảng, không trong repo. Web gọi API qua proxy cùng origin.
-- Migration áp bằng `prisma migrate deploy`. Chạy thử toàn luồng (đăng ký, chọn lớp, học, quiz, AI) trên môi trường thật trước khi coi là xong.
+## Nguyên tắc thay đổi
+- Nếu một rule ảnh hưởng nhiều module, tìm hoặc tạo một nguồn xử lý chung thay vì copy logic.
+- Khi thay đổi một business rule, cập nhật test và các phần phụ thuộc liên quan.

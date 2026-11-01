@@ -1,37 +1,47 @@
 ---
 name: history-learning-backend
-description: Quy ước backend và dữ liệu cho History Learning (NestJS, Prisma, Zod, PostgreSQL + pgvector). Dùng khi thêm hoặc sửa module API, schema Zod trong packages/shared, migration Prisma, truy vấn, hoặc test backend.
+description: Nguyên tắc backend cho History Learning. Dùng khi thêm hoặc sửa API, nghiệp vụ, dữ liệu, schema dùng chung hoặc test backend.
 ---
-# Quy ước backend
+# Backend
 
 ## Kiến trúc
-- Controller mỏng; logic ở service. Validate đầu vào bằng Zod, schema đặt trong `packages/shared/src/schemas` để web và api dùng chung.
-- Lỗi nghiệp vụ dùng `AppError` với mã trong `common/errors/error-codes.ts`. Response đi qua envelope sẵn có, không tự bọc.
-- Route công khai: `@Public()`. Route admin: `@Roles('ADMIN')` ở cấp controller; không để route admin thiếu `@Roles`.
-- Danh sách dùng tiện ích phân trang sẵn có. Slug dùng tiện ích slugify; slug không tự đổi khi đổi tên.
-- Quyền truy cập bài học theo lớp dùng helper chung (`common/utils/grade-access`), không viết lại điều kiện ở từng nơi.
-- AI qua interface nhà cung cấp (chat, embedding) để thay được bằng bản giả khi test.
+- Controller nhận request và điều phối; business logic nằm ở service/domain phù hợp.
+- Request validation dùng schema chung và cơ chế validation hiện có của repo.
+- Dùng cơ chế lỗi và response envelope chung của project; không tạo cách xử lý song song.
+- Phân quyền và route public/admin phải dùng cơ chế auth hiện có; route admin không được thiếu guard vai trò (`@Roles('ADMIN')`).
+- Tái sử dụng helper/service cho business rule dùng chung, không copy điều kiện giữa module.
+- Không tin dữ liệu quyền, user, grade hoặc trạng thái do client tự quyết định.
 
 ## Dữ liệu
-- Không xóa cứng bản ghi có quan hệ Restrict; "xóa" nghĩa là đổi status (ARCHIVED, INACTIVE).
-- Không tin client: sanitize HTML, kiểm tra URL (https, Cloudinary của dự án), nội dung có cấu trúc validate ở server.
-- Quan hệ nhiều-nhiều: kiểm tra id tồn tại trước khi ghi; trả 400 thay vì để lỗi FK thành 500. Thay cả tập quan hệ trong một lần ghi.
-- Thao tác có thể bị gọi lặp (nộp bài, tiến độ, thưởng) phải idempotent: upsert, hoặc "giành quyền" nguyên tử bằng `updateMany` có điều kiện; phần giành quyền và phần ghi phụ thuộc nằm CÙNG một transaction.
-- SQL thô luôn dùng tham số, không nối chuỗi.
-- Nội dung bài học đổi thì chỉ mục RAG phải được dựng lại (`ai:reindex`); ghi vào báo cáo để người dùng chạy.
+- Tôn trọng quan hệ và lifecycle của model; không hard delete khi domain yêu cầu lưu trạng thái.
+- Kiểm tra dữ liệu liên quan trước khi ghi; không biến lỗi ràng buộc database thành lỗi 500 không chủ đích.
+- Sanitize và validate dữ liệu ở server theo rule hiện có của project.
+- Thao tác có thể lặp phải có cơ chế idempotent hoặc chống ghi trùng phù hợp.
+- Các ghi dữ liệu phụ thuộc nhau phải có tính nguyên tử khi business rule yêu cầu.
+- SQL thô phải an toàn và có tham số.
 
 ## Schema và migration
-- Không sửa `schema.prisma` khi chưa được duyệt.
-- Migration: tạo bằng `--create-only`, đọc SQL (không DROP hay TRUNCATE dữ liệu) rồi mới áp dụng lên DB test. Người dùng tự chạy `db:deploy` trên DB dev.
-- Migration viết tay (ví dụ extension, index đặc biệt): nếu Prisma báo drift thì DỪNG và hỏi, không reset DB.
-- Migration chỉ sửa dữ liệu (UPDATE) thì ghi rõ trong tên và nội dung.
+- Không sửa Prisma schema khi chưa được duyệt; trước khi đổi, kiểm tra ảnh hưởng tới API, frontend, seed và test.
+- Migration: tạo bằng `--create-only`, đọc SQL (không DROP/TRUNCATE dữ liệu) rồi mới áp dụng lên DB test. Người dùng tự chạy `db:deploy` trên DB dev.
+- Không reset hoặc phá dữ liệu để xử lý lỗi schema/drift.
+- Các extension/index đặc biệt phải tuân theo cách project hiện đang quản lý.
+
+## AI và dữ liệu đặc thù
+- AI backend đi qua abstraction/provider hiện có để có thể thay bằng fake provider khi test.
+- Không đưa secret hoặc dữ liệu nhạy cảm vào source, log hoặc request không cần thiết.
+- Khi thay đổi dữ liệu được AI/RAG sử dụng, kiểm tra cơ chế indexing hiện có và nhắc người dùng chạy `ai:reindex`.
 
 ## Test
-- E2E theo mẫu sẵn có trong `apps/api/test`; unit test cho logic thuần.
-- Mỗi tính năng: trường hợp thành công, validation sai (400), chưa đăng nhập (401), không đủ quyền (403), không tìm thấy (404), xung đột (409) nếu có.
-- Không TRUNCATE bảng dữ liệu seed dùng chung; tạo dữ liệu riêng bằng mã riêng.
-- Test không gọi AI thật; dùng nhà cung cấp giả.
-- Không xóa hay bỏ qua test cũ để qua.
+- Bảo vệ các business rule quan trọng bằng test.
+- Kiểm tra happy path và các lỗi/quyền/trạng thái quan trọng của endpoint.
+- Test không gọi nhà cung cấp AI thật trừ các script được thiết kế riêng cho việc đó.
+- Không xóa hoặc bỏ qua test cũ chỉ để làm suite pass; không TRUNCATE bảng dữ liệu seed dùng chung.
 
-## Lệnh kiểm tra
-`pnpm --filter @history-learning/shared build`, `pnpm --filter api test`, `pnpm --filter api test:e2e` (cần DB test chạy). Quy trình chung: skill `history-learning-dev`.
+## Kiểm tra
+Dùng các script hiện có trong repo, tối thiểu tùy phạm vi:
+- shared build
+- API unit test
+- API e2e
+- các kiểm tra CI liên quan
+
+Không tự đặt lại lệnh hoặc phiên bản nếu repo đã có script tương ứng.

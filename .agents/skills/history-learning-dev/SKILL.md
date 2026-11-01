@@ -1,38 +1,34 @@
 ---
 name: history-learning-dev
-description: Quy trình làm việc, kiểm tra và báo cáo chung cho dự án History Learning. Dùng cho mọi việc code (tính năng, sửa lỗi, đổi schema hay kiến trúc, tài liệu); bắt đầu bằng phân loại việc nhỏ hoặc lớn.
+description: Quy trình làm việc chung cho History Learning. Dùng khi làm việc với code, test, tài liệu hoặc thay đổi kiến trúc; ưu tiên đọc source hiện tại, làm đúng phạm vi và kiểm tra kết quả thật.
 ---
-# Cách làm việc
+# History Learning Development
 
-Quy tắc an toàn nằm ở `AGENTS.md` và luôn áp dụng. Skill này nói về quy trình.
+Skill này quy định cách làm việc chung. Quy tắc an toàn nằm ở `AGENTS.md`.
 
-## Bước 0: phân loại việc
-- **Nhỏ**: yêu cầu nêu rõ thay đổi cụ thể (đổi chữ hay màu, ẩn thành phần, sửa lỗi, 1-4 file, không đổi schema hay API). Làm ngay: tìm file, sửa, chạy lint và typecheck phần đó, báo 2-3 dòng gồm nguyên nhân, file đã sửa, lệnh đã chạy. Không lập kế hoạch, không đọc thêm skill, không chạy toàn bộ kiểm tra.
-- **Lớn**: tính năng mới, logic nghiệp vụ, đổi schema, API hay kiến trúc, nhiều trang.
-- Nghi ngờ thì coi là nhỏ. "Chỉ đổi X" nghĩa là chỉ đổi X, không dọn thêm.
-- Chỉ dừng hỏi ở việc nhỏ khi cách sửa đúng cần đổi schema, đổi hành vi API, hoặc có nhiều hướng với hậu quả khác nhau.
+## Nguyên tắc
+- Source code và test là nguồn sự thật về hành vi hiện tại. Nếu tài liệu khác code, báo rõ chênh lệch.
+- Đọc đúng phần liên quan trước khi sửa; không đọc hoặc thay đổi lan sang phần không cần thiết.
+- Tái sử dụng kiến trúc, helper, component và pattern đã có trước khi tạo mới.
+- Không suy đoán API, schema, phiên bản thư viện hoặc hành vi chưa kiểm tra trong repo.
+- Làm đúng phạm vi yêu cầu; không refactor tiện tay.
 
-## Việc lớn: giữ quyền kiểm soát cho người dùng
-Mỗi lần giao chỉ làm MỘT lượt (một lát cắt có thể review và commit riêng); không làm lấn sang lượt sau.
-1. **Đọc trước**: file liên quan và một module tương tự đã có. Liệt kê file sẽ tạo hoặc sửa.
-2. **Dừng chờ duyệt** nếu đụng logic nghiệp vụ, schema, API hay kiến trúc. Kế hoạch gồm: dữ liệu, API, quy tắc sẽ cài, rủi ro. Giao diện thuần thì làm thẳng.
-3. **Test cùng code**: mỗi quy tắc nghiệp vụ có ít nhất một test.
-4. **Đúng phạm vi**: không refactor tiện tay, không đổi phiên bản thư viện, không đổi hành vi module khác.
-5. **Kiểm tra rồi mới báo xong.**
-6. **Cuối lượt**: đề xuất các dòng `SPEC.md` cần đổi trạng thái; không tự sửa khi chưa được duyệt.
+## Phân loại công việc
+- **Nhỏ**: yêu cầu nêu rõ thay đổi cụ thể (đổi chữ/màu, ẩn thành phần, sửa lỗi, 1-4 file, không đổi schema/API/kiến trúc). Làm ngay: tìm file, sửa, chạy lint/typecheck phần đó, báo 2-3 dòng. Không lập kế hoạch, không đọc thêm skill, không chạy toàn bộ kiểm tra.
+- **Lớn**: tính năng mới, thay đổi nghiệp vụ, schema, API, kiến trúc hoặc nhiều phần liên quan. Trước khi code, đọc các phần liên quan (kèm một module tương tự đã có) và nêu kế hoạch ngắn; nếu đụng nghiệp vụ, schema, API hoặc có rủi ro thì dừng để người dùng duyệt. Mỗi lần giao chỉ làm MỘT lượt (một lát cắt có thể review và commit riêng).
+- Nghi ngờ thì coi là nhỏ. "Chỉ đổi X" nghĩa là chỉ đổi X. Việc khác đáng sửa thì ghi một dòng cuối báo cáo, không tự làm.
+- Nếu chưa rõ phạm vi, kiểm tra source trước; chỉ hỏi khi có nhiều hướng với hậu quả khác nhau.
 
-## Kiểm tra tương xứng với thay đổi
-- Nhỏ: lint, typecheck, test của phần đã sửa.
-- Backend: build `shared`, `pnpm --filter api test`, e2e module liên quan; chạy toàn bộ e2e trước khi báo xong một lượt lớn.
-- Frontend: lint, typecheck, test liên quan; build khi đổi route hay layout.
-- Đổi schema hoặc kiến trúc: toàn bộ lệnh như CI (shared build, typecheck, lint, test, e2e, web build).
-- CI đỏ: đọc log thật, sửa nguyên nhân gốc; không tắt bước kiểm tra, không bỏ test để qua.
-- Không thêm fallback che lỗi cấu hình: thiếu biến môi trường phải báo lỗi rõ.
-- Không để file rác (script thử, ảnh chụp, log) trong repo.
+## Kiểm tra
+- Chọn kiểm tra phù hợp với phần thay đổi: lint, typecheck, unit test, e2e hoặc build.
+- Thay đổi lớn hoặc ảnh hưởng nhiều package thì chạy bộ kiểm tra rộng hơn theo cấu hình CI của repo.
+- Không báo "đã xong" hoặc "đã chạy" nếu chưa thực sự kiểm tra.
+- Khi CI lỗi, sửa nguyên nhân; không tắt bước kiểm tra hoặc bỏ test chỉ để pass.
 
-## Mẫu báo cáo (việc lớn)
-1. Đã làm gì (1-3 dòng).
-2. File đã đổi; file ngoài kế hoạch phải nêu lý do.
-3. Quy tắc nghiệp vụ → tên test.
-4. Lệnh đã chạy và kết quả thật (số test pass/fail). Phần chưa chạy ghi rõ "chưa chạy".
-5. Chưa làm, rủi ro, điều cần người dùng quyết định, việc người dùng cần tự làm (ví dụ `db:deploy`).
+## Báo cáo
+Nêu ngắn gọn:
+1. Đã thay đổi gì.
+2. File/phạm vi chính.
+3. Kiểm tra đã chạy và kết quả.
+4. Phần chưa chạy (ghi rõ "chưa chạy"), chưa làm, rủi ro, việc người dùng cần tự làm (ví dụ `db:deploy`).
+5. Cuối lượt lớn: đề xuất các dòng `SPEC.md` cần đổi trạng thái; không tự sửa khi chưa được duyệt.
