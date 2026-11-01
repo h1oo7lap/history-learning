@@ -44,6 +44,16 @@ export interface PublicLessonDetail extends PublicLessonSummary {
     description: string | null;
     displayOrder: number;
   }[];
+  quiz?: {
+    id: string;
+    title: string;
+    status: LessonStatus;
+  } | null;
+  nextLesson?: {
+    id: string;
+    title: string;
+    slug: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

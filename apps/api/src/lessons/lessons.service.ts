@@ -171,7 +171,7 @@ export class LessonsService {
     }
 
     if (user?.role === 'ADMIN') {
-      return lesson;
+      return this.attachNextLesson(lesson, user);
     }
 
     if (user?.gradeId) {
@@ -197,7 +197,7 @@ export class LessonsService {
           );
         }
       }
-      return lesson;
+      return this.attachNextLesson(lesson, user);
     }
 
     // Guest or user without gradeId: only allowed to see and read isFeatured = true
@@ -209,7 +209,44 @@ export class LessonsService {
       );
     }
 
-    return lesson;
+    return this.attachNextLesson(lesson, user);
+  }
+
+  /** Attach next published lesson in the same grade based on display order */
+  private async attachNextLesson(
+    lesson: any,
+    user?: { id?: string; gradeId?: string | null; role?: string },
+  ) {
+    if (!lesson.gradeId) {
+      return {
+        ...lesson,
+        nextLesson: null,
+      };
+    }
+
+    const isGuest = !user?.role && !user?.gradeId;
+    const nextLesson = await this.prisma.lesson.findFirst({
+      where: {
+        gradeId: lesson.gradeId,
+        status: PublishStatus.PUBLISHED,
+        id: { not: lesson.id },
+        ...(isGuest ? { isFeatured: true } : {}),
+        OR: [
+          { displayOrder: { gt: lesson.displayOrder } },
+          {
+            displayOrder: lesson.displayOrder,
+            createdAt: { lt: lesson.createdAt },
+          },
+        ],
+      },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
+      select: { id: true, title: true, slug: true },
+    });
+
+    return {
+      ...lesson,
+      nextLesson: nextLesson ?? null,
+    };
   }
 
   // ---------------------------------------------------------------------------

@@ -76,10 +76,14 @@ export default function QuizAttemptReviewPage({
       <Card className="border-line shadow-card overflow-hidden">
         <CardHeader className="border-b border-line/60 pb-5 space-y-3 bg-paper/50">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-bronze-ink bg-bronze/10 px-2.5 py-1 rounded-sm border border-bronze/20">
+            <Link
+              href={`/lessons/${quiz.lesson.slug}`}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-bronze-ink bg-bronze/10 hover:bg-bronze/20 px-2.5 py-1 rounded-sm border border-bronze/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+              title="Quay lại ôn lý thuyết bài học"
+            >
               <BookOpen size={13} aria-hidden="true" />
               <span>Bài học: {quiz.lesson.title}</span>
-            </span>
+            </Link>
 
             <Badge variant={attempt.passed ? 'success' : 'danger'} className="text-sm px-2.5 py-1">
               {attempt.passed ? (
@@ -138,12 +142,23 @@ export default function QuizAttemptReviewPage({
             </Link>
           </Button>
 
-          <Button asChild variant="primary" size="md" className="gap-2">
-            <Link href={`/quiz/${quiz.id}`}>
-              <RotateCcw size={16} aria-hidden="true" />
-              <span>Làm lại bài thi này</span>
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {!attempt.passed && (
+              <Button asChild variant="secondary" size="md" className="gap-2">
+                <Link href={`/lessons/${quiz.lesson.slug}`}>
+                  <BookOpen size={16} aria-hidden="true" />
+                  <span>Ôn lại bài học</span>
+                </Link>
+              </Button>
+            )}
+
+            <Button asChild variant="primary" size="md" className="gap-2">
+              <Link href={`/quiz/${quiz.id}`}>
+                <RotateCcw size={16} aria-hidden="true" />
+                <span>Làm lại bài thi này</span>
+              </Link>
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 
@@ -166,17 +181,28 @@ export default function QuizAttemptReviewPage({
       </section>
 
       {/* Điều hướng chân trang */}
-      <div className="flex items-center justify-between pt-6 border-t border-line">
+      <div className="flex items-center justify-between pt-6 border-t border-line flex-wrap gap-3">
         <Button asChild variant="secondary" size="md">
           <Link href="/quiz">Về danh sách bài quiz</Link>
         </Button>
 
-        <Button asChild variant="primary" size="md" className="gap-2">
-          <Link href={`/quiz/${quiz.id}`}>
-            <RotateCcw size={16} aria-hidden="true" />
-            <span>Làm lại bài thi</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {!attempt.passed && (
+            <Button asChild variant="secondary" size="md" className="gap-2">
+              <Link href={`/lessons/${quiz.lesson.slug}`}>
+                <BookOpen size={16} aria-hidden="true" />
+                <span>Ôn lại bài học</span>
+              </Link>
+            </Button>
+          )}
+
+          <Button asChild variant="primary" size="md" className="gap-2">
+            <Link href={`/quiz/${quiz.id}`}>
+              <RotateCcw size={16} aria-hidden="true" />
+              <span>Làm lại bài thi</span>
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

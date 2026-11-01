@@ -521,7 +521,7 @@ describe('LessonsService', () => {
 
       const result = await service.findOneBySlug('tran-bach-dang');
 
-      expect(result).toEqual(lesson);
+      expect(result).toEqual({ ...lesson, nextLesson: null });
       expect(prisma.lesson.findFirst).toHaveBeenCalledWith({
         where: { slug: 'tran-bach-dang', status: PublishStatus.PUBLISHED },
         include: expect.any(Object),
@@ -557,7 +557,7 @@ describe('LessonsService', () => {
       prisma.grade.findUnique.mockResolvedValue({ id: 'grade-5', displayOrder: 2 });
 
       const result = await service.findOneBySlug('lesson-grade-4', { id: 'u1', role: 'USER', gradeId: 'grade-5' });
-      expect(result).toEqual(lesson);
+      expect(result).toEqual({ ...lesson, nextLesson: null });
     });
 
     it('L6: allows admin to access any grade lesson', async () => {
@@ -570,9 +570,34 @@ describe('LessonsService', () => {
       prisma.lesson.findFirst.mockResolvedValue(lesson);
 
       const result = await service.findOneBySlug('lesson-grade-5', { id: 'admin-1', role: 'ADMIN', gradeId: 'grade-4' });
-      expect(result).toEqual(lesson);
+      expect(result).toEqual({ ...lesson, nextLesson: null });
     });
 
+    it('attaches next published lesson in the same grade when available', async () => {
+      const currentLesson = {
+        id: 'l1',
+        slug: 'lesson-1',
+        gradeId: 'grade-4',
+        displayOrder: 1,
+        createdAt: new Date(),
+        status: PublishStatus.PUBLISHED,
+        isFeatured: true,
+      };
+      const nextLesson = {
+        id: 'l2',
+        title: 'Bài 2',
+        slug: 'lesson-2',
+      };
+      prisma.lesson.findFirst
+        .mockResolvedValueOnce(currentLesson)
+        .mockResolvedValueOnce(nextLesson);
+
+      const result = await service.findOneBySlug('lesson-1');
+      expect(result).toEqual({
+        ...currentLesson,
+        nextLesson,
+      });
+    });
     it('should throw LESSON_NOT_FOUND when lesson does not exist', async () => {
       prisma.lesson.findFirst.mockResolvedValue(null);
 

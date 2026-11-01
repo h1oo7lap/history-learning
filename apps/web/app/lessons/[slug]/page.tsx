@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Calendar,
   ArrowLeft,
+  ArrowRight,
   Users,
   Bookmark,
   Info,
@@ -282,7 +283,19 @@ export default async function LessonPage({
                   <span>Hỏi về bài này</span>
                 </Button>
               </Link>
-              <LessonProgressControl lessonId={lesson.id} />
+              <LessonProgressControl
+                lessonId={lesson.id}
+                quiz={lesson.quiz}
+                nextLesson={lesson.nextLesson}
+              />
+              {!token && lesson.nextLesson && (
+                <Link href={`/lessons/${lesson.nextLesson.slug}`}>
+                  <Button variant="primary" size="md" className="gap-2" title={lesson.nextLesson.title}>
+                    <span>Bài tiếp theo</span>
+                    <ArrowRight size={14} aria-hidden="true" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </footer>
         </main>
