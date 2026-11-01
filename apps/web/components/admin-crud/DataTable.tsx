@@ -69,6 +69,12 @@ export interface DataTableProps<T extends { id: string }> {
   onCreate?: () => void;
   /** Optional row actions renderer */
   renderActions?: (item: T) => ReactNode;
+  /** Custom extra filter elements */
+  extraFilters?: ReactNode;
+  /** Whether extra filters are currently active */
+  hasExtraFilters?: boolean;
+  /** Callback to reset extra filters */
+  onClearExtraFilters?: () => void;
   /** Unique id prefix for testing */
   idPrefix?: string;
 }
@@ -93,6 +99,9 @@ export function DataTable<T extends { id: string }>({
   entityIcon,
   searchPlaceholder,
   createLabel,
+  extraFilters,
+  hasExtraFilters,
+  onClearExtraFilters,
   onCreate,
   renderActions,
   idPrefix,
@@ -134,10 +143,11 @@ export function DataTable<T extends { id: string }>({
     setSearchInput('');
     onSearchChange('');
     onStatusFilterChange('');
+    onClearExtraFilters?.();
     onPageChange(1);
   };
 
-  const hasFilters = search || statusFilter;
+  const hasFilters = Boolean(search || statusFilter || hasExtraFilters);
   const totalPages = data?.totalPages ?? 1;
   const defaultStatusOptions = statusOptions ?? [
     { value: 'ACTIVE', label: 'Hoạt động' },
@@ -225,6 +235,7 @@ export function DataTable<T extends { id: string }>({
             id={idPrefix ? `input-search-${idPrefix}` : undefined}
           />
         </div>
+        {extraFilters}
         <select
           className="input"
           value={statusFilter}

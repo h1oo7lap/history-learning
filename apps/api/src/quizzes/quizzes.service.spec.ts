@@ -86,6 +86,20 @@ describe('QuizzesService', () => {
       });
     });
 
+it('applies gradeId filter via linked lesson', async () => {
+      prisma.$transaction.mockResolvedValue([[], 0]);
+
+      await service.adminFindAll({ gradeId: 'grade-4' });
+
+      expect(prisma.quiz.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            lesson: { gradeId: 'grade-4' },
+          },
+        }),
+      );
+    });
+
     it('applies search and status filters', async () => {
       prisma.$transaction.mockResolvedValue([[], 0]);
 

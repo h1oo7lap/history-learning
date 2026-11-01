@@ -24,6 +24,9 @@ export interface Period {
   id: string;
   name: string;
   slug: string;
+  displayOrder?: number;
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string } | null;
   description: string | null;
   imageUrl: string | null;
   startYear: number | null;
@@ -37,6 +40,9 @@ export interface Character {
   id: string;
   name: string;
   slug: string;
+  displayOrder?: number;
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string } | null;
   avatar: string | null;
   shortDescription: string | null;
   biography: string | null;
@@ -51,6 +57,9 @@ export interface HistoricalEvent {
   id: string;
   name: string;
   slug: string;
+  displayOrder?: number;
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string } | null;
   description: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -112,7 +121,7 @@ export interface Lesson {
   createdAt: string;
   updatedAt: string;
   gradeId?: string;
-  grade?: { id: string; name: string; code: string };
+  grade?: { id: string; name: string; code: string } | null;
   grades?: LessonGradeRel[];
   topics: LessonTopicRel[];
   periods: LessonPeriodRel[];
@@ -163,6 +172,9 @@ export interface TaxonomyOption {
   id: string;
   name: string;
   slug: string;
+  displayOrder?: number;
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string } | null;
 }
 
 export interface AdminUser {
@@ -423,6 +435,9 @@ export interface AdminQuizLesson {
   id: string;
   title: string;
   slug: string;
+  displayOrder?: number;
+  gradeId?: string;
+  grade?: { id: string; name: string; code: string } | null;
 }
 
 export interface AdminQuiz {
@@ -456,6 +471,7 @@ export interface QuizListQuery {
   pageSize?: number;
   search?: string;
   status?: QuizStatus | '';
+  gradeId?: string;
 }
 
 export interface AnswerPayload {
@@ -482,6 +498,7 @@ export const quizzesAdminApi = {
       ...(q.pageSize !== undefined && { pageSize: q.pageSize }),
       ...(q.search && { search: q.search }),
       ...(q.status && { status: q.status }),
+      ...(q.gradeId && { gradeId: q.gradeId }),
     }),
 
   getOne: (id: string) => api.get<AdminQuiz>(`admin/quizzes/${id}`),

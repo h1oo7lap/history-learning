@@ -22,7 +22,7 @@ const QUIZ_INCLUDE = {
     include: { answers: { orderBy: { displayOrder: 'asc' as const } } },
     orderBy: { displayOrder: 'asc' as const },
   },
-  lesson: { select: { id: true, title: true, slug: true } },
+  lesson: { select: { id: true, title: true, slug: true, displayOrder: true, gradeId: true, grade: { select: { id: true, name: true, code: true } } } },
 } as const;
 
 const QUIZ_LIST_SELECT = {
@@ -47,7 +47,7 @@ export class QuizzesService {
   // Admin methods (unchanged)
   // =========================================================================
 
-  async adminFindAll(query: { page?: number; pageSize?: number; search?: string; status?: string }) {
+  async adminFindAll(query: { page?: number; pageSize?: number; search?: string; status?: string; gradeId?: string }) {
     const pageSize = Math.min(query.pageSize ?? PAGINATION.DEFAULT_PAGE_SIZE, PAGINATION.MAX_PAGE_SIZE);
     const page = Math.max(query.page ?? 1, 1);
     const skip = (page - 1) * pageSize;
@@ -58,10 +58,17 @@ export class QuizzesService {
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' as const } }
         : {}),
+      ...(query.gradeId ? { lesson: { gradeId: query.gradeId } } : {}),
     };
 
     const [items, total] = await this.prisma.$transaction([
-      this.prisma.quiz.findMany({ where, select: QUIZ_LIST_SELECT, skip, take, orderBy: { createdAt: 'desc' } }),
+      this.prisma.quiz.findMany({
+        where,
+        select: QUIZ_LIST_SELECT,
+        skip,
+        take,
+        orderBy: [{ lesson: { displayOrder: 'asc' } }, { createdAt: 'desc' }],
+      }),
       this.prisma.quiz.count({ where }),
     ]);
 

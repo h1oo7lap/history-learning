@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { DataTable, ConfirmDialog, actionButtons } from '@/components/admin-crud';
 import { useAdminResource } from '@/components/admin-crud/useAdminResource';
@@ -10,6 +10,7 @@ import {
   useUpdateQuiz,
   useDeleteQuiz,
   useSetQuizQuestions,
+  useGradeOptions,
 } from '@/features/admin/hooks';
 import type {
   AdminQuiz,
@@ -19,14 +20,27 @@ import type {
   QuestionPayload,
 } from '@/features/admin/api';
 import { quizColumns, QuizForm, type QuizTabKey } from './_components';
+import { AdminGradeSwitcher } from '@/components/admin/AdminGradeSwitcher';
 
 export default function AdminQuizzesPage() {
   const resource = useAdminResource<AdminQuiz>();
   const [initialTab, setInitialTab] = useState<QuizTabKey>('basic');
+  const { data: gradeOptions = [] } = useGradeOptions();
+  const [selectedGradeId, setSelectedGradeId] = useState<string | null>(null);
+
+  // Mặc định lọc theo lớp đầu tiên trong danh sách (vd: Lớp 4)
+  useEffect(() => {
+    if (selectedGradeId === null && gradeOptions.length > 0) {
+      setSelectedGradeId(gradeOptions[0].id);
+    }
+  }, [selectedGradeId, gradeOptions]);
+
+  const activeGradeId = selectedGradeId ?? (gradeOptions[0]?.id || '');
 
   const { data, isLoading, isError } = useAdminQuizzes({
     ...resource.query,
     status: resource.query.status as QuizStatus | '' | undefined,
+    gradeId: activeGradeId && activeGradeId !== 'ALL' ? activeGradeId : undefined,
   });
 
   const createQuiz = useCreateQuiz();
@@ -108,6 +122,16 @@ export default function AdminQuizzesPage() {
 
   return (
     <div>
+      <AdminGradeSwitcher
+        grades={gradeOptions}
+        selectedGradeId={activeGradeId}
+        onSelectGrade={(gradeId) => {
+          setSelectedGradeId(gradeId);
+          resource.setPage(1);
+        }}
+        entityName="bài quiz"
+      />
+
       <DataTable<AdminQuiz>
         columns={quizColumns}
         data={data}

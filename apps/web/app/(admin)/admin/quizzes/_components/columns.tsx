@@ -45,6 +45,7 @@ export const quizLessonColumn: ColumnDef<AdminQuiz> = {
   maxWidth: 240,
   render: (item) => {
     const text = item.lesson?.title ?? item.lessonId ?? '—';
+    const gradeName = item.lesson?.grade?.name;
     return (
       <div
         title={text}
@@ -59,6 +60,11 @@ export const quizLessonColumn: ColumnDef<AdminQuiz> = {
         <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>
           📖 {text}
         </div>
+        {gradeName && (
+          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
+            🎓 {gradeName}
+          </div>
+        )}
       </div>
     );
   },

@@ -31,6 +31,7 @@ describe('AdminQuizzesController', () => {
       pageSize: 10,
       search: 'demo',
       status: 'PUBLISHED',
+      gradeId: undefined,
     });
     expect(result).toBe(mockRes);
   });

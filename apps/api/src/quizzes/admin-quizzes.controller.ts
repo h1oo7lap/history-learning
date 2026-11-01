@@ -41,6 +41,7 @@ export class AdminQuizzesController {
       pageSize: query['pageSize'] ? Number(query['pageSize']) : undefined,
       search: query['search'],
       status: query['status'],
+      gradeId: query['gradeId'],
     });
   }
 

@@ -10,6 +10,7 @@ import {
   useCreateLesson,
   useUpdateLesson,
   useDeleteLesson,
+  useGradeOptions,
 } from '@/features/admin/hooks';
 import type {
   Lesson,
@@ -18,16 +19,29 @@ import type {
   LessonStatus,
 } from '@/features/admin/api';
 import { lessonColumns, LessonForm } from './_components';
+import { AdminGradeSwitcher } from '@/components/admin/AdminGradeSwitcher';
 
 export default function AdminLessonsPage() {
   const resource = useAdminResource<Lesson>();
+  const { data: gradeOptions = [] } = useGradeOptions();
+  const [selectedGradeId, setSelectedGradeId] = useState<string | null>(null);
 
-  // Extend query to support lesson-specific status filter values
+  // Mặc định lọc theo lớp đầu tiên trong danh sách (vd: Lớp 4)
+  useEffect(() => {
+    if (selectedGradeId === null && gradeOptions.length > 0) {
+      setSelectedGradeId(gradeOptions[0].id);
+    }
+  }, [selectedGradeId, gradeOptions]);
+
+  const activeGradeId = selectedGradeId ?? (gradeOptions[0]?.id || '');
+
+  // Extend query to support lesson-specific status filter values and default grade filter
   const lessonsQuery = {
     page: resource.page,
     pageSize: resource.pageSize,
     search: resource.search || undefined,
     status: (resource.statusFilter || undefined) as LessonStatus | undefined,
+    gradeId: activeGradeId && activeGradeId !== 'ALL' ? activeGradeId : undefined,
   };
 
   const { data, isLoading, isError } = useAdminLessons(lessonsQuery);
@@ -82,6 +96,16 @@ export default function AdminLessonsPage() {
 
   return (
     <div>
+      <AdminGradeSwitcher
+        grades={gradeOptions}
+        selectedGradeId={activeGradeId}
+        onSelectGrade={(gradeId) => {
+          setSelectedGradeId(gradeId);
+          resource.setPage(1);
+        }}
+        entityName="bài học"
+      />
+
       <DataTable<Lesson>
         columns={lessonColumns}
         data={data}

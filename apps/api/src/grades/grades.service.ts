@@ -19,7 +19,10 @@ export class GradesService {
 
   async findAllGrades() {
     return this.prisma.grade.findMany({
-      orderBy: { displayOrder: 'asc' },
+      orderBy: [
+        { educationLevel: { displayOrder: 'asc' } },
+        { displayOrder: 'asc' },
+      ],
       select: {
         id: true,
         name: true,
