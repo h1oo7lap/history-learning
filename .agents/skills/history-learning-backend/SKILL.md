@@ -1,30 +1,37 @@
 ---
 name: history-learning-backend
-description: Quy ước backend, dữ liệu và test cho History Learning (NestJS, Prisma, Zod, Postgres; phiên bản theo package.json). Dùng khi thêm/sửa module API, schema Zod trong packages/shared, migration Prisma hoặc test e2e.
+description: Quy ước backend và dữ liệu cho History Learning (NestJS, Prisma, Zod, PostgreSQL + pgvector). Dùng khi thêm hoặc sửa module API, schema Zod trong packages/shared, migration Prisma, truy vấn, hoặc test backend.
 ---
-# Quy ước backend (đọc trước khi sửa apps/api hoặc packages/shared)
+# Quy ước backend
 
 ## Kiến trúc
-- Controller mỏng. Validate bằng `ZodValidationPipe(Schema)` với schema đặt trong `packages/shared/src/schemas`. Logic nằm trong service.
-- Lỗi nghiệp vụ: `throw new AppError(ErrorCodes.X, status, message)`. Thêm mã mới vào `common/errors/error-codes.ts`.
-- Response luôn qua envelope `{success, data}` / `{success:false, message, errorCode}` (đã có interceptor + filter), không tự bọc lại.
-- Route công khai: `@Public()`. Route admin: `@Roles('ADMIN')` ở cấp controller. KHÔNG để route admin thiếu `@Roles`.
-- Danh sách: dùng `getPaginationArgs` + `paginate` (page, pageSize). Slug: `slugify`/`uniqueSlug`; slug không tự đổi khi đổi tên.
+- Controller mỏng; logic ở service. Validate đầu vào bằng Zod, schema đặt trong `packages/shared/src/schemas` để web và api dùng chung.
+- Lỗi nghiệp vụ dùng `AppError` với mã trong `common/errors/error-codes.ts`. Response đi qua envelope sẵn có, không tự bọc.
+- Route công khai: `@Public()`. Route admin: `@Roles('ADMIN')` ở cấp controller; không để route admin thiếu `@Roles`.
+- Danh sách dùng tiện ích phân trang sẵn có. Slug dùng tiện ích slugify; slug không tự đổi khi đổi tên.
+- Quyền truy cập bài học theo lớp dùng helper chung (`common/utils/grade-access`), không viết lại điều kiện ở từng nơi.
+- AI qua interface nhà cung cấp (chat, embedding) để thay được bằng bản giả khi test.
 
 ## Dữ liệu
-- Không xóa cứng bản ghi có FK Restrict (lesson, topic, period...). "Xóa" = đổi status (ARCHIVED/INACTIVE).
-- Quan hệ nhiều-nhiều: kiểm tra id tồn tại trước khi ghi (trả 400 VALIDATION_ERROR, không để lỗi FK thành 500). Thay thế toàn bộ tập quan hệ trong một lần ghi.
-- Không tin client: sanitize HTML (`sanitizeContent`), kiểm tra URL (https, Cloudinary của dự án), video chỉ lưu youtubeId.
-- Nội dung có cấu trúc phải theo schema chuẩn và được validate ở server. Quy tắc cụ thể: skill history-learning-features.
-- Không sửa `apps/api/prisma/schema.prisma` khi chưa được duyệt. Migration: `prisma migrate dev --create-only`, đọc SQL, rồi mới áp dụng. Migration `search_extensions` là thủ công: nếu Prisma báo drift thì DỪNG và hỏi, không reset DB.
-- Thao tác ghi có thể bị gọi lặp (nộp bài, tiến độ) phải idempotent: upsert/createMany skipDuplicates, hoặc "giành quyền" nguyên tử bằng `updateMany` có điều kiện. Phần giành quyền và phần ghi dữ liệu phụ thuộc phải CÙNG một `$transaction`. Không bắt lỗi unique bên trong transaction Postgres.
+- Không xóa cứng bản ghi có quan hệ Restrict; "xóa" nghĩa là đổi status (ARCHIVED, INACTIVE).
+- Không tin client: sanitize HTML, kiểm tra URL (https, Cloudinary của dự án), nội dung có cấu trúc validate ở server.
+- Quan hệ nhiều-nhiều: kiểm tra id tồn tại trước khi ghi; trả 400 thay vì để lỗi FK thành 500. Thay cả tập quan hệ trong một lần ghi.
+- Thao tác có thể bị gọi lặp (nộp bài, tiến độ, thưởng) phải idempotent: upsert, hoặc "giành quyền" nguyên tử bằng `updateMany` có điều kiện; phần giành quyền và phần ghi phụ thuộc nằm CÙNG một transaction.
+- SQL thô luôn dùng tham số, không nối chuỗi.
+- Nội dung bài học đổi thì chỉ mục RAG phải được dựng lại (`ai:reindex`); ghi vào báo cáo để người dùng chạy.
+
+## Schema và migration
+- Không sửa `schema.prisma` khi chưa được duyệt.
+- Migration: tạo bằng `--create-only`, đọc SQL (không DROP hay TRUNCATE dữ liệu) rồi mới áp dụng lên DB test. Người dùng tự chạy `db:deploy` trên DB dev.
+- Migration viết tay (ví dụ extension, index đặc biệt): nếu Prisma báo drift thì DỪNG và hỏi, không reset DB.
+- Migration chỉ sửa dữ liệu (UPDATE) thì ghi rõ trong tên và nội dung.
 
 ## Test
-- E2E theo mẫu `test/topics.e2e-spec.ts` (`createTestApp`, `clearAuthTables`, cookie admin/user).
-- Không TRUNCATE bảng `grades`/`education_levels` (test khác dùng dữ liệu seed); tạo dữ liệu riêng bằng upsert với mã riêng.
-- Test nghiệp vụ gắn mã quy tắc trong tên test (ví dụ `Q5: ...`).
-- Mỗi tính năng cần: trường hợp thành công, validation sai (400), 401 khi chưa đăng nhập, 403 khi không phải admin, 404, xung đột (409) nếu có.
-- Không xóa hay bỏ qua test cũ để cho pass.
+- E2E theo mẫu sẵn có trong `apps/api/test`; unit test cho logic thuần.
+- Mỗi tính năng: trường hợp thành công, validation sai (400), chưa đăng nhập (401), không đủ quyền (403), không tìm thấy (404), xung đột (409) nếu có.
+- Không TRUNCATE bảng dữ liệu seed dùng chung; tạo dữ liệu riêng bằng mã riêng.
+- Test không gọi AI thật; dùng nhà cung cấp giả.
+- Không xóa hay bỏ qua test cũ để qua.
 
-## Lệnh kiểm tra backend
-`pnpm --filter @history-learning/shared build`, `pnpm --filter api test`, `pnpm --filter api test:e2e` (cần TEST_DATABASE_URL và CLOUDINARY_CLOUD_NAME). Quy trình chung xem skill history-learning-dev.
+## Lệnh kiểm tra
+`pnpm --filter @history-learning/shared build`, `pnpm --filter api test`, `pnpm --filter api test:e2e` (cần DB test chạy). Quy trình chung: skill `history-learning-dev`.

@@ -1,10 +1,5 @@
 # Học Lịch Sử — History Learning Platform
 
-Nền tảng học lịch sử Việt Nam cho học sinh từ lớp 4 đến lớp 12.
-
-> 📖 Đọc [`SPEC.md`](./SPEC.md) để hiểu yêu cầu, [`PLAYBOOK.md`](./PLAYBOOK.md) để biết cách triển khai, và [`PROGRESS.md`](./PROGRESS.md) để theo dõi tiến độ.
-
----
 
 ## Cài đặt nhanh (Development)
 

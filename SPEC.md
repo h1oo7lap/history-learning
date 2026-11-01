@@ -1,5 +1,7 @@
 # History Learning Platform — SPEC
 
+> Trạng thái: [x] xong · [~] làm một phần · [ ] chưa làm · [-] ngoài phạm vi / cắt
+
 ## 1. Mục tiêu
 
 Website hỗ trợ học tập môn Lịch sử cho học sinh lớp 4–12, kết hợp nội dung học tập, quiz, theo dõi tiến độ và AI.
@@ -13,57 +15,63 @@ Website hỗ trợ học tập môn Lịch sử cho học sinh lớp 4–12, k�
 - Authentication: JWT, httpOnly Cookie, Argon2
 - Validation: Zod
 - Media: Cloudinary
-- Testing: Vitest, Supertest, Playwright
+- Testing: Vitest, Supertest (Playwright: chưa có test, cân nhắc bỏ khỏi danh sách)
 - Dev/CI: pnpm, Docker, GitHub Actions
 
 ## 3. Chức năng học sinh
 
-- Đăng ký, đăng nhập, quản lý tài khoản
-- Chọn và quản lý lớp học
-- Xem và học bài học
-- Hình ảnh, audio, video trong bài học
-- Tìm kiếm và lọc bài học
-- Làm quiz và xem kết quả
-- Theo dõi tiến độ học tập
-- Tính điểm, EXP và Level
-- Thẻ lịch sử
-- AI hỗ trợ hỏi đáp và giải thích kiến thức
-- Ôn tập kiến thức
+- [x] Đăng ký, đăng nhập, quản lý tài khoản
+- [x] Chọn và quản lý lớp học
+- [x] Xem và học bài học
+- [x] Hình ảnh, audio, video trong bài học
+- [~] Tìm kiếm và lọc bài học (lọc theo chủ đề, giai đoạn, độ khó; tìm theo tiêu đề, chưa tìm trong nội dung / không dấu)
+- [x] Làm quiz và xem kết quả
+- [x] Theo dõi tiến độ học tập
+- [ ] Tính điểm, EXP và Level
+- [ ] Thẻ lịch sử
+- [x] AI hỗ trợ hỏi đáp và giải thích kiến thức
+- [ ] Ôn tập kiến thức
 
 ## 4. Chức năng Admin
 
-- Quản lý người dùng
-- Quản lý lớp học
-- Quản lý chủ đề, thời kỳ, nhân vật, sự kiện
-- Quản lý bài học và nội dung media
-- Quản lý quiz và ngân hàng câu hỏi
-- Quản lý nội dung AI tạo
-- Theo dõi dữ liệu học tập
+- [x] Quản lý người dùng
+- [-] Quản lý lớp học (lớp cố định theo seed, không có trang quản lý)
+- [x] Quản lý chủ đề, thời kỳ, nhân vật, sự kiện
+- [x] Quản lý bài học và nội dung media
+- [x] Quản lý quiz và ngân hàng câu hỏi
+- [ ] Quản lý nội dung AI tạo
+- [ ] Theo dõi dữ liệu học tập
 
 ## 5. AI
 
-- AI hỏi đáp về kiến thức Lịch sử
-- AI giải thích và tóm tắt nội dung
-- AI sử dụng Vector RAG để tìm kiếm nội dung bài học
-- AI hỗ trợ tạo câu hỏi cho ngân hàng câu hỏi
-- Nội dung AI tạo được kiểm soát trước khi sử dụng
+- [x] AI hỏi đáp về kiến thức Lịch sử
+- [~] AI giải thích và tóm tắt nội dung (qua khung chat; chưa có nút riêng)
+- [x] AI sử dụng Vector RAG để tìm kiếm nội dung bài học
+- [ ] AI hỗ trợ tạo câu hỏi cho ngân hàng câu hỏi
+- [ ] Nội dung AI tạo được kiểm soát trước khi sử dụng
 
 ## 6. Gamification
 
-- EXP
-- Level
-- Thẻ lịch sử
-- Nhiệm vụ
-- Thành tích / phần thưởng học tập
+- [ ] EXP
+- [ ] Level
+- [ ] Thẻ lịch sử
+- [ ] Nhiệm vụ
+- [ ] Thành tích / phần thưởng học tập
 
-## 7. Mailler
-- Dịch vụ hỗ trợ
+## 7. Mailer
+
+- [x] Gửi liên kết đặt lại mật khẩu
+- [ ] Hỗ trợ người dùng (liên hệ Admin)
+- [ ] Thông báo thay đổi thông tin tài khoản
 
 ## 8. Quyền truy cập theo lớp
 
-- Nội dung được phân loại theo lớp học.
-- Học sinh được tiếp cận nội dung phù hợp với lớp của mình.
-- Nội dung các lớp cao hơn có thể được mở khóa theo tiến độ học tập.
+- [~] Mỗi bài học thuộc một lớp; số lớp (4–12) dùng để so sánh quyền truy cập (đang dùng công thức cũ trên main; bản chuẩn hóa nằm ở nhánh fix/grade-access-v2)
+- [~] Học sinh đã chọn lớp xem và hỏi AI được bài của lớp mình và các lớp thấp hơn (đã có cho bài học và AI; chưa áp cho quiz, tiến độ, tìm kiếm, dashboard)
+- [x] Khách và người chưa chọn lớp chỉ thấy các bài tiêu biểu
+- [x] Admin xem tất cả
+- [x] Học sinh không tự đổi lớp sau lần chọn đầu; chỉ Admin đổi được
+- [ ] Kênh liên hệ hỗ trợ đổi lớp qua Mailer
 
 ## 9. Mục tiêu nền tảng
 
