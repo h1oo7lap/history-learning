@@ -78,6 +78,8 @@ export async function seedCore(prisma: PrismaClient) {
     create: {
       email: adminEmail,
       passwordHash: await argon2.hash(adminPassword),
+      firstName: 'Admin',
+      lastName: '',
       fullName: 'Admin',
       role: 'ADMIN',
     },
@@ -89,6 +91,8 @@ export async function seedCore(prisma: PrismaClient) {
     create: {
       email: userEmail,
       passwordHash: await argon2.hash(userPassword),
+      firstName: 'User',
+      lastName: 'Demo',
       fullName: 'Demo User',
       role: 'USER',
     },

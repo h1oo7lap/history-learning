@@ -4,6 +4,8 @@ import type { RegisterDto, LoginDto, UpdateProfileDto } from '@history-learning/
 export interface UserProfile {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   fullName: string;
   avatar: string | null;
   role: 'USER' | 'ADMIN';

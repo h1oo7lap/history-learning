@@ -118,7 +118,12 @@ function UserModal({ open, user, onClose }: UserModalProps) {
           </div>
 
           <div>
-            <label className="label" htmlFor="user-grade">Khối lớp</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <label className="label" htmlFor="user-grade" style={{ marginBottom: 0 }}>Khối lớp</label>
+              <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
+                Hiện tại: <strong style={{ color: 'var(--foreground)' }}>{user?.grade?.name || 'Chưa gán'}</strong>
+              </span>
+            </div>
             <select
               id="user-grade"
               className="input"

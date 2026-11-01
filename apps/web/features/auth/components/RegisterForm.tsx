@@ -84,17 +84,31 @@ export function RegisterForm() {
         onSubmit={handleSubmit(onSubmit)}
         style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}
       >
-        <div>
-          <label className="label" htmlFor="register-fullname">Họ và tên</label>
-          <input
-            id="register-fullname"
-            type="text"
-            className={`input${errors.fullName ? ' error' : ''}`}
-            placeholder="Nguyễn Văn An"
-            autoComplete="name"
-            {...register('fullName')}
-          />
-          {errors.fullName && <p className="field-error">{errors.fullName.message}</p>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div>
+            <label className="label" htmlFor="register-lastname">Họ & tên đệm</label>
+            <input
+              id="register-lastname"
+              type="text"
+              className={`input${errors.lastName ? ' error' : ''}`}
+              placeholder="Nguyễn Văn"
+              autoComplete="family-name"
+              {...register('lastName')}
+            />
+            {errors.lastName && <p className="field-error">{errors.lastName.message}</p>}
+          </div>
+          <div>
+            <label className="label" htmlFor="register-firstname">Tên</label>
+            <input
+              id="register-firstname"
+              type="text"
+              className={`input${errors.firstName ? ' error' : ''}`}
+              placeholder="An"
+              autoComplete="given-name"
+              {...register('firstName')}
+            />
+            {errors.firstName && <p className="field-error">{errors.firstName.message}</p>}
+          </div>
         </div>
 
         <div>

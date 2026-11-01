@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp, clearAuthTables } from './setup';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { ErrorCodes } from '../src/common/errors/error-codes';
 
 async function getAuthCookie(app: INestApplication, email: string): Promise<string> {
   await request(app.getHttpServer())
@@ -75,14 +76,24 @@ describe('Users (e2e)', () => {
   // PATCH /api/users/me
   // ──────────────────────────────────────────────
   describe('PATCH /api/users/me', () => {
-    it('updates fullName', async () => {
+    it('rejects name change with 403 NAME_LOCKED when student tries to update name', async () => {
       const res = await request(app.getHttpServer())
         .patch('/api/users/me')
         .set('Cookie', userCookie)
         .send({ fullName: 'Updated Name' })
+        .expect(403);
+
+      expect(res.body.errorCode).toBe(ErrorCodes.NAME_LOCKED);
+    });
+
+    it('allows admin to update their own name', async () => {
+      const res = await request(app.getHttpServer())
+        .patch('/api/users/me')
+        .set('Cookie', adminCookie)
+        .send({ fullName: 'Updated Admin Name' })
         .expect(200);
 
-      expect(res.body.data.fullName).toBe('Updated Name');
+      expect(res.body.data.fullName).toBe('Updated Admin Name');
     });
 
     it('A4: allows setting gradeId when user has no grade yet', async () => {

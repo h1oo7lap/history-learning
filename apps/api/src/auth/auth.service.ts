@@ -23,14 +23,42 @@ export class AuthService {
     });
     if (existing) throw new AppError('EMAIL_TAKEN', 409, 'Email already in use');
 
+    let firstName = dto.firstName?.trim() || '';
+    let lastName = dto.lastName?.trim() || '';
+    let fullName = dto.fullName?.trim() || '';
+
+    if (!firstName && fullName) {
+      const parts = fullName.split(/\s+/);
+      if (parts.length > 1) {
+        firstName = parts.pop() || '';
+        lastName = parts.join(' ');
+      } else {
+        firstName = fullName;
+        lastName = '';
+      }
+    } else if (firstName && !fullName) {
+      fullName = `${lastName} ${firstName}`.trim();
+    }
+
     const passwordHash = await argon2.hash(dto.password);
     const user = await this.prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
         passwordHash,
-        fullName: dto.fullName,
+        firstName,
+        lastName,
+        fullName,
       },
-      select: { id: true, email: true, fullName: true, role: true, gradeId: true, totalExp: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        fullName: true,
+        role: true,
+        gradeId: true,
+        totalExp: true,
+      },
     });
     return user;
   }
@@ -57,6 +85,8 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
         fullName: true,
         avatar: true,
         role: true,

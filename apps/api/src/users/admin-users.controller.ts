@@ -7,6 +7,8 @@ import { AppError } from '../common/errors/app-error';
 const ADMIN_USER_SELECT = {
   id: true,
   email: true,
+  firstName: true,
+  lastName: true,
   fullName: true,
   role: true,
   status: true,

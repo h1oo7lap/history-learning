@@ -16,6 +16,8 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
         fullName: true,
         avatar: true,
         role: true,
@@ -31,10 +33,31 @@ export class UsersService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, gradeId: true },
+      select: {
+        id: true,
+        role: true,
+        gradeId: true,
+        firstName: true,
+        lastName: true,
+        fullName: true,
+      },
     });
     if (!existing) {
       throw new AppError(ErrorCodes.NOT_FOUND, 404, 'User not found');
+    }
+
+    // Name lock: chỉ ADMIN mới được đổi tên của mình
+    const isChangingFirstName = dto.firstName !== undefined && dto.firstName.trim() !== (existing.firstName || '');
+    const isChangingLastName = dto.lastName !== undefined && dto.lastName.trim() !== (existing.lastName || '');
+    const isChangingFullName = dto.fullName !== undefined && dto.fullName.trim() !== existing.fullName;
+    const isChangingName = isChangingFirstName || isChangingLastName || isChangingFullName;
+
+    if (existing.role !== 'ADMIN' && isChangingName) {
+      throw new AppError(
+        ErrorCodes.NAME_LOCKED,
+        403,
+        'Học sinh không thể tự đổi họ tên',
+      );
     }
 
     // A4: Học sinh đã có gradeId thì KHÔNG được tự đổi lớp -> 403 GRADE_LOCKED
@@ -53,12 +76,41 @@ export class UsersService {
       }
     }
 
+    let firstName = dto.firstName?.trim();
+    let lastName = dto.lastName?.trim();
+    let fullName = dto.fullName?.trim();
+
+    if (firstName !== undefined || lastName !== undefined) {
+      const finalFirstName = firstName !== undefined ? firstName : (existing.firstName || '');
+      const finalLastName = lastName !== undefined ? lastName : (existing.lastName || '');
+      fullName = `${finalLastName} ${finalFirstName}`.trim();
+    } else if (fullName !== undefined) {
+      const parts = fullName.split(/\s+/);
+      if (parts.length > 1) {
+        firstName = parts.pop() || '';
+        lastName = parts.join(' ');
+      } else {
+        firstName = fullName;
+        lastName = '';
+      }
+    }
+
+    const dataToUpdate: any = {
+      ...(firstName !== undefined ? { firstName } : {}),
+      ...(lastName !== undefined ? { lastName } : {}),
+      ...(fullName !== undefined ? { fullName } : {}),
+      ...(dto.avatar !== undefined ? { avatar: dto.avatar } : {}),
+      ...(dto.gradeId !== undefined ? { gradeId: dto.gradeId } : {}),
+    };
+
     return this.prisma.user.update({
       where: { id: userId },
-      data: dto,
+      data: dataToUpdate,
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
         fullName: true,
         avatar: true,
         role: true,

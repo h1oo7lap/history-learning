@@ -113,6 +113,8 @@ model User {
   id           String     @id @default(cuid())
   email        String     @unique // always stored lowercase
   passwordHash String
+  firstName    String     @default("")
+  lastName     String     @default("")
   fullName     String
   avatar       String?
   role         Role       @default(USER)
