@@ -67,3 +67,15 @@ export const QuizRewardResultSchema = z.object({
 });
 export type QuizRewardResultDto = z.infer<typeof QuizRewardResultSchema>;
 
+// ---- User Level Progress Schema (Dữ liệu tính từ bảng Level trong database) ----
+export const UserLevelProgressSchema = z.object({
+  currentLevel: GamificationRewardLevelSchema,
+  nextLevel: GamificationRewardLevelSchema.nullable(),
+  totalExp: z.number(),
+  expInCurrentLevel: z.number(),
+  expNeededForNextLevel: z.number(),
+  expRemaining: z.number(),
+  progressPercentage: z.number(),
+  isMaxLevel: z.boolean(),
+});
+export type UserLevelProgressDto = z.infer<typeof UserLevelProgressSchema>;

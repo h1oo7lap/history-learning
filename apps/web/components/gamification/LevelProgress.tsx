@@ -2,11 +2,14 @@
 
 import React from 'react';
 import { Award, ShieldCheck } from 'lucide-react';
-import { getUserLevelProgress } from '@/lib/gamification';
+import type { UserLevelProgressDto } from '@history-learning/shared';
 import { cn } from '@/lib/cn';
 
 export interface LevelProgressProps {
-  totalExp: number;
+  /**
+   * Dữ liệu tiến trình cấp độ được backend tính toán từ bảng Level trong database.
+   */
+  level?: UserLevelProgressDto | null;
   /**
    * 'card': Khối đầy đủ chi tiết cho Dashboard / Profile / Drawer.
    * 'compact': Phiên bản nhỏ gọn cho Navbar Dropdown.
@@ -16,19 +19,22 @@ export interface LevelProgressProps {
 }
 
 export function LevelProgress({
-  totalExp,
+  level,
   variant = 'card',
   className,
 }: LevelProgressProps) {
+  if (!level) return null;
+
   const {
     currentLevel,
     nextLevel,
+    totalExp,
     expInCurrentLevel,
     expNeededForNextLevel,
     expRemaining,
     progressPercentage,
     isMaxLevel,
-  } = getUserLevelProgress(totalExp);
+  } = level;
 
   // Phiên bản nhỏ gọn (Compact) dùng trong dropdown menu
   if (variant === 'compact') {
@@ -155,4 +161,3 @@ export function LevelProgress({
     </div>
   );
 }
-

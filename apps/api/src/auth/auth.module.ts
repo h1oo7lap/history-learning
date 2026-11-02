@@ -6,10 +6,12 @@ import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { GamificationModule } from '../gamification/gamification.module';
 
 @Module({
   imports: [
     MailerModule,
+    GamificationModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],

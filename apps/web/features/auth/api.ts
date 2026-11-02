@@ -1,5 +1,5 @@
 import { api } from '@/lib/api-client';
-import type { RegisterDto, LoginDto, UpdateProfileDto } from '@history-learning/shared';
+import type { RegisterDto, LoginDto, UpdateProfileDto, UserLevelProgressDto } from '@history-learning/shared';
 
 export interface UserProfile {
   id: string;
@@ -14,6 +14,7 @@ export interface UserProfile {
   status: string;
   createdAt: string;
   grade?: { id: string; name: string; code: string } | null;
+  level?: UserLevelProgressDto | null;
 }
 
 export interface Grade {

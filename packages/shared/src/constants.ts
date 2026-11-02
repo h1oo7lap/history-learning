@@ -56,17 +56,3 @@ export const SEARCH = {
   MAX_RESULTS_PER_GROUP: 5,
   DEBOUNCE_MS: 300,
 } as const;
-
-export const LEVELS = [
-  { name: 'Tân sinh', requiredExp: 0, displayOrder: 1 },
-  { name: 'Học trò', requiredExp: 100, displayOrder: 2 },
-  { name: 'Học giả', requiredExp: 250, displayOrder: 3 },
-  { name: 'Hiền tài', requiredExp: 500, displayOrder: 4 },
-  { name: 'Sử gia', requiredExp: 1000, displayOrder: 5 },
-] as const;
-
-export type LevelConfig = {
-  name: string;
-  requiredExp: number;
-  displayOrder: number;
-};

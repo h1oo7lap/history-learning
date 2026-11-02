@@ -13,7 +13,7 @@ export class UsersService {
   ) {}
 
   async findById(id: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -30,6 +30,17 @@ export class UsersService {
         grade: { select: { id: true, name: true, code: true } },
       },
     });
+
+    if (!user) return null;
+
+    const level = this.gamificationService
+      ? await this.gamificationService.getUserLevelProgress(user.totalExp)
+      : null;
+
+    return {
+      ...user,
+      level,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

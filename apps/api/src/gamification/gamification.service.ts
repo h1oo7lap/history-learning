@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { EXP } from '../common/config/constants';
+import type { UserLevelProgressDto, GamificationRewardLevelDto } from '@history-learning/shared';
 
 type TransactionClient = Parameters<Parameters<PrismaService['$transaction']>[0]>[0];
 
@@ -235,34 +236,98 @@ export class GamificationService {
       orderBy: { requiredExp: 'asc' },
     });
 
-    const getLevel = (exp: number) => {
-      let current = levels[0] ?? {
+    const oldProgress = this.computeLevelProgress(oldExp, levels);
+    const newProgress = this.computeLevelProgress(newExp, levels);
+
+    return {
+      leveledUp: newProgress.currentLevel.displayOrder > oldProgress.currentLevel.displayOrder,
+      currentLevel: newProgress.currentLevel,
+    };
+  }
+
+  /**
+   * Tính toán tiến trình cấp độ người dùng dựa trên totalExp và dữ liệu bảng Level trong DB.
+   */
+  async getUserLevelProgress(totalExp: number = 0): Promise<UserLevelProgressDto> {
+    const levels = await this.prisma.level.findMany({
+      orderBy: { requiredExp: 'asc' },
+    });
+    return this.computeLevelProgress(totalExp, levels);
+  }
+
+  /**
+   * Thuật toán tính toán tiến trình cấp độ thuần túy nhận danh sách Level từ database.
+   * Xử lý chính xác các trường hợp biên: 0 EXP, đúng mốc, giữa mốc, vượt mốc, mốc tối đa.
+   */
+  computeLevelProgress(
+    totalExp: number = 0,
+    levels: Array<{ id: string; name: string; displayOrder: number; requiredExp: number }>,
+  ): UserLevelProgressDto {
+    const safeExp = Math.max(0, Math.floor(totalExp));
+
+    if (!levels || levels.length === 0) {
+      const defaultLevel: GamificationRewardLevelDto = {
         id: 'default',
         name: 'Tân sinh',
         requiredExp: 0,
         displayOrder: 1,
       };
-      for (const lvl of levels) {
-        if (exp >= lvl.requiredExp) {
-          current = lvl;
-        } else {
-          break;
-        }
-      }
-      return current;
-    };
+      return {
+        currentLevel: defaultLevel,
+        nextLevel: null,
+        totalExp: safeExp,
+        expInCurrentLevel: safeExp,
+        expNeededForNextLevel: 0,
+        expRemaining: 0,
+        progressPercentage: 100,
+        isMaxLevel: true,
+      };
+    }
 
-    const oldLvl = getLevel(oldExp);
-    const newLvl = getLevel(newExp);
+    const sorted = [...levels].sort((a, b) => a.requiredExp - b.requiredExp);
+
+    let currentIndex = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      if (safeExp >= sorted[i]!.requiredExp) {
+        currentIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    const currentLevel = sorted[currentIndex]!;
+    const nextLevel = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1]! : null;
+
+    if (!nextLevel) {
+      return {
+        currentLevel,
+        nextLevel: null,
+        totalExp: safeExp,
+        expInCurrentLevel: safeExp - currentLevel.requiredExp,
+        expNeededForNextLevel: 0,
+        expRemaining: 0,
+        progressPercentage: 100,
+        isMaxLevel: true,
+      };
+    }
+
+    const expInCurrentLevel = safeExp - currentLevel.requiredExp;
+    const expNeededForNextLevel = nextLevel.requiredExp - currentLevel.requiredExp;
+    const expRemaining = Math.max(0, nextLevel.requiredExp - safeExp);
+    const progressPercentage = Math.min(
+      100,
+      Math.max(0, Math.round((expInCurrentLevel / expNeededForNextLevel) * 100)),
+    );
 
     return {
-      leveledUp: newLvl.displayOrder > oldLvl.displayOrder,
-      currentLevel: {
-        id: newLvl.id,
-        name: newLvl.name,
-        displayOrder: newLvl.displayOrder,
-        requiredExp: newLvl.requiredExp,
-      },
+      currentLevel,
+      nextLevel,
+      totalExp: safeExp,
+      expInCurrentLevel,
+      expNeededForNextLevel,
+      expRemaining,
+      progressPercentage,
+      isMaxLevel: false,
     };
   }
 
@@ -323,4 +388,3 @@ export class GamificationService {
     };
   }
 }
-

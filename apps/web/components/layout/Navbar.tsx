@@ -7,7 +7,6 @@ import { History, User, Settings, LogOut, ChevronDown, Award, Menu, X, LayoutDas
 import { useMe, useLogout } from '@/features/auth/hooks';
 import { Button, buttonStyles } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { getUserLevelProgress } from '@/lib/gamification';
 import { LevelProgress } from '@/components/gamification/LevelProgress';
 import { cn } from '@/lib/cn';
 
@@ -197,26 +196,34 @@ export function Navbar() {
               <div className="w-8 h-8 rounded-full bg-line/60 animate-pulse" />
             ) : user ? (
               <>
-                {/* Level & EXP Badge (Lấy từ dữ liệu thật qua API /auth/me) */}
-                {typeof user.totalExp === 'number' && (() => {
-                  const { currentLevel } = getUserLevelProgress(user.totalExp);
-                  return (
-                    <Badge
-                      variant="warning"
-                      id="nav-level-exp-badge"
-                      className="hidden sm:inline-flex items-center gap-1.5 font-medium px-2.5 py-1 text-xs"
-                    >
-                      <Award size={13} className="text-bronze-ink shrink-0" aria-hidden="true" />
-                      <span className="font-semibold text-ink">
-                        Cấp {currentLevel.displayOrder}: {currentLevel.name}
-                      </span>
-                      <span className="text-line-heavy">·</span>
-                      <span className="text-bronze-ink font-semibold">
-                        {user.totalExp.toLocaleString('vi-VN')} EXP
-                      </span>
-                    </Badge>
-                  );
-                })()}
+                {/* Level & EXP Badge (Lấy từ dữ liệu thật qua API /auth/me do DB tính toán) */}
+                {user.level ? (
+                  <Badge
+                    variant="warning"
+                    id="nav-level-exp-badge"
+                    className="hidden sm:inline-flex items-center gap-1.5 font-medium px-2.5 py-1 text-xs"
+                  >
+                    <Award size={13} className="text-bronze-ink shrink-0" aria-hidden="true" />
+                    <span className="font-semibold text-ink">
+                      Cấp {user.level.currentLevel.displayOrder}: {user.level.currentLevel.name}
+                    </span>
+                    <span className="text-line-heavy">·</span>
+                    <span className="text-bronze-ink font-semibold">
+                      {user.level.totalExp.toLocaleString('vi-VN')} EXP
+                    </span>
+                  </Badge>
+                ) : typeof user.totalExp === 'number' ? (
+                  <Badge
+                    variant="warning"
+                    id="nav-level-exp-badge"
+                    className="hidden sm:inline-flex items-center gap-1.5 font-medium px-2.5 py-1 text-xs"
+                  >
+                    <Award size={13} className="text-bronze-ink shrink-0" aria-hidden="true" />
+                    <span className="text-bronze-ink font-semibold">
+                      {user.totalExp.toLocaleString('vi-VN')} EXP
+                    </span>
+                  </Badge>
+                ) : null}
 
                 {/* User Dropdown */}
                 <div className="relative" ref={dropdownRef}>
@@ -271,9 +278,9 @@ export function Navbar() {
                           )}
                         </div>
 
-                        {typeof user.totalExp === 'number' && (
-                          <LevelProgress totalExp={user.totalExp} variant="compact" />
-                        )}
+                        {user.level ? (
+                          <LevelProgress level={user.level} variant="compact" />
+                        ) : null}
                       </div>
 
                       <Link
@@ -467,9 +474,9 @@ export function Navbar() {
                     )}
                   </div>
 
-                  {typeof user.totalExp === 'number' && (
-                    <LevelProgress totalExp={user.totalExp} variant="compact" />
-                  )}
+                  {user.level ? (
+                    <LevelProgress level={user.level} variant="compact" />
+                  ) : null}
 
                   <Button
                     variant="ghost"

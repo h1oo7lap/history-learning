@@ -125,9 +125,11 @@ export default function ProfilePage() {
         </div>
 
         {/* Tiến trình cấp độ và EXP */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <LevelProgress totalExp={user?.totalExp ?? 0} variant="card" />
-        </div>
+        {user?.level && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <LevelProgress level={user.level} variant="card" />
+          </div>
+        )}
 
         {/* Form */}
         <form

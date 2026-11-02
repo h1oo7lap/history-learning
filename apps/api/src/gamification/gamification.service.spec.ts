@@ -49,6 +49,9 @@ function createMockPrisma() {
     userEvent: {
       findMany: vi.fn(),
     },
+    level: {
+      findMany: vi.fn().mockResolvedValue(levels),
+    },
     $transaction: vi.fn(async (cb: (prismaTx: typeof tx) => Promise<any>) => cb(tx)),
     _tx: tx,
   } as any;
@@ -335,6 +338,86 @@ describe('GamificationService', () => {
         slug: 'chien-thang-bach-dang-938',
         unlockedAt: now,
       });
+    });
+  });
+
+  // =========================================================================
+  // Level Progress calculation from Database Level table
+  // =========================================================================
+  describe('getUserLevelProgress & computeLevelProgress', () => {
+    it('handles totalExp = 0: Cấp 1 Tân sinh, 0% tiến trình, cần 100 EXP để lên Học trò', async () => {
+      const progress = await service.getUserLevelProgress(0);
+      expect(progress.currentLevel.name).toBe('Tân sinh');
+      expect(progress.currentLevel.displayOrder).toBe(1);
+      expect(progress.nextLevel?.name).toBe('Học trò');
+      expect(progress.expInCurrentLevel).toBe(0);
+      expect(progress.expRemaining).toBe(100);
+      expect(progress.progressPercentage).toBe(0);
+      expect(progress.isMaxLevel).toBe(false);
+    });
+
+    it('handles đúng mốc: totalExp = 100: Cấp 2 Học trò, 0% tiến trình tới Học giả', async () => {
+      const progress = await service.getUserLevelProgress(100);
+      expect(progress.currentLevel.name).toBe('Học trò');
+      expect(progress.currentLevel.displayOrder).toBe(2);
+      expect(progress.nextLevel?.name).toBe('Học giả');
+      expect(progress.expInCurrentLevel).toBe(0);
+      expect(progress.expNeededForNextLevel).toBe(150);
+      expect(progress.expRemaining).toBe(150);
+      expect(progress.progressPercentage).toBe(0);
+      expect(progress.isMaxLevel).toBe(false);
+    });
+
+    it('handles giữa hai mốc: totalExp = 150: Cấp 2 Học trò, 33% tiến trình, cần thêm 100 EXP', async () => {
+      const progress = await service.getUserLevelProgress(150);
+      expect(progress.currentLevel.name).toBe('Học trò');
+      expect(progress.nextLevel?.name).toBe('Học giả');
+      expect(progress.expInCurrentLevel).toBe(50);
+      expect(progress.expNeededForNextLevel).toBe(150);
+      expect(progress.expRemaining).toBe(100);
+      expect(progress.progressPercentage).toBe(33);
+      expect(progress.isMaxLevel).toBe(false);
+    });
+
+    it('handles vượt mốc: totalExp = 260: Cấp 3 Học giả, 4% tiến trình tới Hiền tài', async () => {
+      const progress = await service.getUserLevelProgress(260);
+      expect(progress.currentLevel.name).toBe('Học giả');
+      expect(progress.nextLevel?.name).toBe('Hiền tài');
+      expect(progress.expInCurrentLevel).toBe(10);
+      expect(progress.expNeededForNextLevel).toBe(250);
+      expect(progress.expRemaining).toBe(240);
+      expect(progress.progressPercentage).toBe(4);
+      expect(progress.isMaxLevel).toBe(false);
+    });
+
+    it('handles đúng mốc cấp cao nhất: totalExp = 1000: Cấp 5 Sử gia, 100%, isMaxLevel = true', async () => {
+      const progress = await service.getUserLevelProgress(1000);
+      expect(progress.currentLevel.name).toBe('Sử gia');
+      expect(progress.currentLevel.displayOrder).toBe(5);
+      expect(progress.nextLevel).toBeNull();
+      expect(progress.expRemaining).toBe(0);
+      expect(progress.progressPercentage).toBe(100);
+      expect(progress.isMaxLevel).toBe(true);
+    });
+
+    it('handles vượt mốc cấp cao nhất: totalExp = 2500: Cấp 5 Sử gia, 100%, isMaxLevel = true', async () => {
+      const progress = await service.getUserLevelProgress(2500);
+      expect(progress.currentLevel.name).toBe('Sử gia');
+      expect(progress.nextLevel).toBeNull();
+      expect(progress.progressPercentage).toBe(100);
+      expect(progress.isMaxLevel).toBe(true);
+    });
+
+    it('handles số âm: totalExp = -50: clamp về 0', async () => {
+      const progress = await service.getUserLevelProgress(-50);
+      expect(progress.totalExp).toBe(0);
+      expect(progress.currentLevel.name).toBe('Tân sinh');
+    });
+
+    it('handles danh sách level rỗng: fallback an toàn không gây crash', () => {
+      const progress = service.computeLevelProgress(100, []);
+      expect(progress.currentLevel.name).toBe('Tân sinh');
+      expect(progress.isMaxLevel).toBe(true);
     });
   });
 });

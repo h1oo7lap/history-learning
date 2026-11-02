@@ -1,39 +1,53 @@
-import { LEVELS, type LevelConfig } from '@history-learning/shared';
+import type {
+  UserLevelProgressDto,
+  GamificationRewardLevelDto,
+} from '@history-learning/shared';
 
-export interface UserLevelProgress {
-  currentLevel: LevelConfig;
-  nextLevel: LevelConfig | null;
-  totalExp: number;
-  expInCurrentLevel: number;
-  expNeededForNextLevel: number;
-  expRemaining: number;
-  progressPercentage: number;
-  isMaxLevel: boolean;
-}
+export type { UserLevelProgressDto, GamificationRewardLevelDto };
 
 /**
- * Tính toán cấp độ hiện tại, cấp độ tiếp theo và tiến trình EXP của người dùng.
- * Quy tắc:
- * - Cấp 1: Tân sinh (0 EXP)
- * - Cấp 2: Học trò (100 EXP)
- * - Cấp 3: Học giả (250 EXP)
- * - Cấp 4: Hiền tài (500 EXP)
- * - Cấp 5: Sử gia (1000 EXP)
+ * Tính toán cấp độ hiện tại, cấp độ tiếp theo và tiến trình EXP
+ * từ danh sách Level do backend/database cung cấp.
+ * Hàm thuần túy, KHÔNG hard-code bất kỳ mốc EXP hay danh sách Level nào.
  */
-export function getUserLevelProgress(totalExp: number = 0): UserLevelProgress {
+export function computeLevelProgress(
+  totalExp: number = 0,
+  levels: GamificationRewardLevelDto[] = [],
+): UserLevelProgressDto {
   const safeExp = Math.max(0, Math.floor(totalExp));
-  let currentIndex = 0;
 
-  for (let i = 0; i < LEVELS.length; i++) {
-    if (safeExp >= LEVELS[i]!.requiredExp) {
+  if (!levels || levels.length === 0) {
+    const defaultLevel: GamificationRewardLevelDto = {
+      id: 'default',
+      name: 'Tân sinh',
+      requiredExp: 0,
+      displayOrder: 1,
+    };
+    return {
+      currentLevel: defaultLevel,
+      nextLevel: null,
+      totalExp: safeExp,
+      expInCurrentLevel: safeExp,
+      expNeededForNextLevel: 0,
+      expRemaining: 0,
+      progressPercentage: 100,
+      isMaxLevel: true,
+    };
+  }
+
+  const sorted = [...levels].sort((a, b) => a.requiredExp - b.requiredExp);
+
+  let currentIndex = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    if (safeExp >= sorted[i]!.requiredExp) {
       currentIndex = i;
     } else {
       break;
     }
   }
 
-  const currentLevel = LEVELS[currentIndex]!;
-  const nextLevel = currentIndex < LEVELS.length - 1 ? LEVELS[currentIndex + 1]! : null;
+  const currentLevel = sorted[currentIndex]!;
+  const nextLevel = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1]! : null;
 
   if (!nextLevel) {
     return {
@@ -53,7 +67,7 @@ export function getUserLevelProgress(totalExp: number = 0): UserLevelProgress {
   const expRemaining = Math.max(0, nextLevel.requiredExp - safeExp);
   const progressPercentage = Math.min(
     100,
-    Math.max(0, Math.round((expInCurrentLevel / expNeededForNextLevel) * 100))
+    Math.max(0, Math.round((expInCurrentLevel / expNeededForNextLevel) * 100)),
   );
 
   return {
@@ -67,4 +81,3 @@ export function getUserLevelProgress(totalExp: number = 0): UserLevelProgress {
     isMaxLevel: false,
   };
 }
-

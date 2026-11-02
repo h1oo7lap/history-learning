@@ -7,6 +7,7 @@ import { MailerService } from '../mailer/mailer.service';
 import { AppError } from '../common/errors/app-error';
 import { generateToken, hashToken } from '../common/utils/hash';
 import type { RegisterDto, LoginDto } from '@history-learning/shared';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly mailerService: MailerService,
+    private readonly gamificationService?: GamificationService,
   ) { }
 
   async register(dto: RegisterDto) {
@@ -80,7 +82,7 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -94,8 +96,20 @@ export class AuthService {
         totalExp: true,
         status: true,
         createdAt: true,
+        grade: { select: { id: true, name: true, code: true } },
       },
     });
+
+    if (!user) return null;
+
+    const level = this.gamificationService
+      ? await this.gamificationService.getUserLevelProgress(user.totalExp)
+      : null;
+
+    return {
+      ...user,
+      level,
+    };
   }
 
   async forgotPassword(email: string): Promise<void> {
