@@ -79,3 +79,38 @@ export const UserLevelProgressSchema = z.object({
   isMaxLevel: z.boolean(),
 });
 export type UserLevelProgressDto = z.infer<typeof UserLevelProgressSchema>;
+
+// ---- User Collection Schemas ----
+export const UserCollectionCharacterSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  avatar: z.string().nullable().optional(),
+  shortDescription: z.string().nullable().optional(),
+  biography: z.string().nullable().optional(),
+  birthYear: z.number().int().nullable().optional(),
+  deathYear: z.number().int().nullable().optional(),
+  unlockedAt: z.union([z.string(), z.date()]),
+});
+export type UserCollectionCharacterDto = z.infer<typeof UserCollectionCharacterSchema>;
+
+export const UserCollectionEventSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable().optional(),
+  startDate: z.union([z.string(), z.date()]).nullable().optional(),
+  endDate: z.union([z.string(), z.date()]).nullable().optional(),
+  location: z.string().nullable().optional(),
+  unlockedAt: z.union([z.string(), z.date()]),
+});
+export type UserCollectionEventDto = z.infer<typeof UserCollectionEventSchema>;
+
+export const UserCollectionResponseSchema = z.object({
+  characters: z.array(UserCollectionCharacterSchema),
+  events: z.array(UserCollectionEventSchema),
+  totalCharacters: z.number(),
+  totalEvents: z.number(),
+  totalCards: z.number(),
+});
+export type UserCollectionResponseDto = z.infer<typeof UserCollectionResponseSchema>;

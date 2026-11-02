@@ -30,6 +30,7 @@ describe('Navbar Component', () => {
     expect(html).toContain('Đăng nhập');
     expect(html).toContain('Bắt đầu học');
     expect(html).not.toContain('nav-level-exp-badge');
+    expect(html).not.toContain('Bộ sưu tập');
   });
 
   it('hiển thị Cấp độ và EXP trong pill Desktop khi người dùng đã đăng nhập (totalExp = 120)', () => {
@@ -65,6 +66,7 @@ describe('Navbar Component', () => {
     expect(html).toContain('Cấp 2: Học trò');
     expect(html).toContain('120 EXP');
     expect(html).toContain('Nguyễn Văn Sử');
+    expect(html).toContain('Bộ sưu tập');
   });
 
   it('hiển thị đúng Cấp 5: Sử gia khi totalExp >= 1000', () => {

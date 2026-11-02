@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { History, User, Settings, LogOut, ChevronDown, Award, Menu, X, LayoutDashboard } from 'lucide-react';
+import { History, User, Settings, LogOut, ChevronDown, Award, Menu, X, LayoutDashboard, Bookmark } from 'lucide-react';
 import { useMe, useLogout } from '@/features/auth/hooks';
 import { Button, buttonStyles } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -28,6 +28,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Trang chủ' },
   { href: '/lessons', label: 'Bài học' },
+  { href: '/collection', label: 'Bộ sưu tập', authRequired: true },
   { href: '/quiz', label: 'Quiz', authRequired: true },
   { href: '/chat', label: 'Hỏi đáp', authRequired: true },
 ];
@@ -303,6 +304,17 @@ export function Navbar() {
                       >
                         <LayoutDashboard size={15} aria-hidden="true" />
                         <span>Bảng điều khiển</span>
+                      </Link>
+
+                      <Link
+                        id="nav-collection-link"
+                        href="/collection"
+                        onClick={(e) => handleLinkClick(e, '/collection')}
+                        role="menuitem"
+                        className="flex items-center gap-2 px-3 py-2 text-ink-soft hover:bg-paper hover:text-ink transition-colors"
+                      >
+                        <Bookmark size={15} aria-hidden="true" />
+                        <span>Bộ sưu tập</span>
                       </Link>
 
                       {user.role === 'ADMIN' && (

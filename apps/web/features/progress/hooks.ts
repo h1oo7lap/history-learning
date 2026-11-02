@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { progressApi } from './api';
 import { ApiClientError } from '@/lib/api-client';
 import { useIsAuthenticated, authKeys } from '@/features/auth/hooks';
+import { collectionKeys } from '@/features/collection/hooks';
 
 // ─── Query keys ──────────────────────────────────────────────
 export const progressKeys = {
@@ -33,6 +34,7 @@ export function useStartLesson() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: progressKeys.me });
       queryClient.invalidateQueries({ queryKey: authKeys.me });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
     },
     onError: (err: unknown) => {
       if (err instanceof ApiClientError) {
@@ -53,6 +55,7 @@ export function useCompleteLesson() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: progressKeys.me });
       queryClient.invalidateQueries({ queryKey: authKeys.me });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
       toast.success('Đã hoàn thành bài học!');
     },
     onError: (err: unknown) => {
