@@ -246,6 +246,47 @@ describe('ProgressService', () => {
       );
     });
 
+    it('calls gamificationService.awardLessonReward inside completeLesson and returns reward', async () => {
+      prisma.lesson.findUnique.mockResolvedValue({
+        id: lessonId,
+        status: PublishStatus.PUBLISHED,
+      });
+
+      const mockProgress = {
+        id: 'prog-1',
+        userId,
+        lessonId,
+        status: ProgressStatus.COMPLETED,
+        progress: 100,
+        startedAt: new Date(),
+        completedAt: new Date(),
+      };
+
+      prisma._tx.lessonProgress.createMany.mockResolvedValue({ count: 1 });
+      prisma._tx.lessonProgress.updateMany.mockResolvedValue({ count: 0 });
+      prisma._tx.lessonProgress.findUniqueOrThrow.mockResolvedValue(mockProgress);
+
+      const mockGamification = {
+        awardLessonReward: vi.fn().mockResolvedValue({
+          expGained: 20,
+          totalExp: 20,
+          leveledUp: false,
+          currentLevel: { name: 'Tân sinh' },
+          unlockedCharacters: [],
+          unlockedEvents: [],
+        }),
+      };
+
+      const serviceWithGamification = new ProgressService(prisma, mockGamification as any);
+      const res = await serviceWithGamification.completeLesson(userId, lessonId);
+
+      expect(mockGamification.awardLessonReward).toHaveBeenCalledWith(prisma._tx, userId, lessonId);
+      expect(res).toMatchObject({
+        ...mockProgress,
+        reward: expect.objectContaining({ expGained: 20 }),
+      });
+    });
+
     it('P1/idempotent: completeLesson only writes completedAt when completedAt is null', async () => {
       prisma.lesson.findUnique.mockResolvedValue({
         id: lessonId,

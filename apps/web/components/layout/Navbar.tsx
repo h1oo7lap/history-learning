@@ -3,10 +3,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { History, User, Settings, LogOut, ChevronDown, Star, Menu, X, LayoutDashboard } from 'lucide-react';
+import { History, User, Settings, LogOut, ChevronDown, Award, Menu, X, LayoutDashboard } from 'lucide-react';
 import { useMe, useLogout } from '@/features/auth/hooks';
 import { Button, buttonStyles } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { getUserLevelProgress } from '@/lib/gamification';
+import { LevelProgress } from '@/components/gamification/LevelProgress';
 import { cn } from '@/lib/cn';
 
 export interface NavItem {
@@ -195,13 +197,26 @@ export function Navbar() {
               <div className="w-8 h-8 rounded-full bg-line/60 animate-pulse" />
             ) : user ? (
               <>
-                {/* EXP Badge (Chỉ hiện khi có dữ liệu thật từ API) */}
-                {typeof user.totalExp === 'number' && (
-                  <Badge variant="warning" className="hidden sm:inline-flex gap-1 font-medium">
-                    <Star size={12} className="fill-current text-bronze-ink" aria-hidden="true" />
-                    <span>{user.totalExp.toLocaleString('vi-VN')} EXP</span>
-                  </Badge>
-                )}
+                {/* Level & EXP Badge (Lấy từ dữ liệu thật qua API /auth/me) */}
+                {typeof user.totalExp === 'number' && (() => {
+                  const { currentLevel } = getUserLevelProgress(user.totalExp);
+                  return (
+                    <Badge
+                      variant="warning"
+                      id="nav-level-exp-badge"
+                      className="hidden sm:inline-flex items-center gap-1.5 font-medium px-2.5 py-1 text-xs"
+                    >
+                      <Award size={13} className="text-bronze-ink shrink-0" aria-hidden="true" />
+                      <span className="font-semibold text-ink">
+                        Cấp {currentLevel.displayOrder}: {currentLevel.name}
+                      </span>
+                      <span className="text-line-heavy">·</span>
+                      <span className="text-bronze-ink font-semibold">
+                        {user.totalExp.toLocaleString('vi-VN')} EXP
+                      </span>
+                    </Badge>
+                  );
+                })()}
 
                 {/* User Dropdown */}
                 <div className="relative" ref={dropdownRef}>
@@ -243,15 +258,21 @@ export function Navbar() {
                     <div
                       role="menu"
                       aria-orientation="vertical"
-                      className="absolute right-0 top-full mt-1.5 w-56 rounded-md border border-line bg-card shadow-pop py-1 z-50 text-sm font-sans"
+                      className="absolute right-0 top-full mt-1.5 w-64 rounded-md border border-line bg-card shadow-pop py-1 z-50 text-sm font-sans"
                     >
-                      <div className="px-3 py-2 border-b border-line/60">
-                        <div className="font-semibold text-ink truncate">{user.fullName}</div>
-                        <div className="text-xs text-muted truncate">{user.email}</div>
-                        {user.grade && (
-                          <div className="text-xs text-seal font-medium mt-0.5">
-                            {user.grade.name}
-                          </div>
+                      <div className="px-3 py-2 border-b border-line/60 space-y-2">
+                        <div>
+                          <div className="font-semibold text-ink truncate">{user.fullName}</div>
+                          <div className="text-xs text-muted truncate">{user.email}</div>
+                          {user.grade && (
+                            <div className="text-xs text-seal font-medium mt-0.5">
+                              {user.grade.name}
+                            </div>
+                          )}
+                        </div>
+
+                        {typeof user.totalExp === 'number' && (
+                          <LevelProgress totalExp={user.totalExp} variant="compact" />
                         )}
                       </div>
 
@@ -418,7 +439,7 @@ export function Navbar() {
             </div>
 
             {/* Bottom auth actions in drawer */}
-            <div className="pt-4 border-t border-line space-y-2">
+            <div className="pt-4 border-t border-line space-y-3">
               {!user ? (
                 <>
                   <Link
@@ -435,8 +456,21 @@ export function Navbar() {
                   </Link>
                 </>
               ) : (
-                <div className="space-y-2">
-                  <div className="text-xs text-muted truncate">{user.email}</div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="font-semibold text-ink truncate">{user.fullName}</div>
+                    <div className="text-xs text-muted truncate">{user.email}</div>
+                    {user.grade && (
+                      <div className="text-xs text-seal font-medium mt-0.5">
+                        {user.grade.name}
+                      </div>
+                    )}
+                  </div>
+
+                  {typeof user.totalExp === 'number' && (
+                    <LevelProgress totalExp={user.totalExp} variant="compact" />
+                  )}
+
                   <Button
                     variant="ghost"
                     size="sm"

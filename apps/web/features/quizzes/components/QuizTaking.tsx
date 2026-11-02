@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { StartQuizResponseDto, SubmitAnswerDto } from '../api';
 import { quizzesApi } from '../api';
+import { saveQuizReward } from '../hooks';
 import { ApiClientError } from '@/lib/api-client';
 import { QuestionCard } from './QuestionCard';
 import { QuestionPalette } from './QuestionPalette';
@@ -100,6 +101,9 @@ export function QuizTaking({
         });
 
         clearDraftAnswers(attemptId);
+        if (res.reward) {
+          saveQuizReward(res.attemptId, res.reward);
+        }
         if (!isAuto) toast.success('Nộp bài thành công!');
         onSubmitted(res.attemptId);
         return true;

@@ -3,11 +3,13 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
 import type { UpdateProfileDto } from '@history-learning/shared';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly gamificationService?: GamificationService,
   ) {}
 
   async findById(id: string) {
@@ -140,6 +142,9 @@ export class UsersService {
   }
 
   async getCollection(userId: string) {
+    if (this.gamificationService) {
+      return this.gamificationService.getUserCollection(userId);
+    }
     return this.prisma.userCard.findMany({
       where: { userId },
       orderBy: { obtainedAt: 'desc' },
@@ -149,7 +154,7 @@ export class UsersService {
             id: true,
             name: true,
             description: true,
-            imageUrl: true,
+            image: true,
             rarity: true,
             type: true,
           },

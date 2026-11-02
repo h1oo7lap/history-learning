@@ -1558,6 +1558,53 @@ it('applies gradeId filter via linked lesson', async () => {
       expect(result.passed).toBe(true);
     });
 
+    it('calls gamificationService.awardQuizReward inside submitQuiz and attaches reward to result', async () => {
+      const startedAt = new Date();
+      prisma.quizAttempt.findUnique.mockResolvedValue({
+        id: 'att-1',
+        userId: 'user-1',
+        quizId: 'quiz-1',
+        startedAt,
+        submittedAt: null,
+        quiz: {
+          status: PublishStatus.PUBLISHED,
+          timeLimit: null,
+          lesson: { status: PublishStatus.PUBLISHED },
+        },
+      });
+
+      prisma.question.findMany.mockResolvedValue([]);
+      prisma.quiz.findUniqueOrThrow.mockResolvedValue({ passScore: 60 });
+      prisma.quizAttempt.updateMany.mockResolvedValue({ count: 1 });
+      prisma.quizAttemptAnswer.createMany.mockResolvedValue({ count: 0 });
+
+      const mockGamification = {
+        awardQuizReward: vi.fn().mockResolvedValue({
+          expGained: 10,
+          totalExp: 10,
+          leveledUp: false,
+          currentLevel: { name: 'Tân sinh' },
+        }),
+      };
+
+      const serviceWithGamification = new QuizzesService(prisma, mockGamification as any);
+      const res = await serviceWithGamification.submitQuiz('user-1', 'quiz-1', {
+        attemptId: 'att-1',
+        answers: [],
+      });
+
+      expect(mockGamification.awardQuizReward).toHaveBeenCalledWith(
+        prisma,
+        'user-1',
+        'quiz-1',
+        false,
+      );
+      expect(res).toMatchObject({
+        attemptId: 'att-1',
+        reward: expect.objectContaining({ expGained: 10 }),
+      });
+    });
+
     it('Q5: submitQuiz handles concurrent submission race where updateMany returns count === 0', async () => {
       prisma.quizAttempt.findUnique.mockResolvedValue({
         id: 'att-1',

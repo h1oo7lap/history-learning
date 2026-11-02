@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { QuestionType, PublishStatus } from '../enums';
 import { QUIZ } from '../constants';
+import { QuizRewardResultSchema } from './gamification';
 
 export const AnswerSchema = z.object({
   content: z.string().min(1, 'Nội dung đáp án không được để trống'),
@@ -196,6 +197,7 @@ export const QuizSubmitResponseSchema = z.object({
   totalQuestions: z.number(),
   passed: z.boolean(),
   submittedAt: z.coerce.date(),
+  reward: QuizRewardResultSchema.nullable().optional(),
 });
 export type QuizSubmitResponseDto = z.infer<typeof QuizSubmitResponseSchema>;
 

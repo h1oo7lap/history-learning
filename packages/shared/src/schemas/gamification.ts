@@ -32,3 +32,38 @@ export const CreateCardSchema = z.object({
 export type CreateCardDto = z.infer<typeof CreateCardSchema>;
 export const UpdateCardSchema = CreateCardSchema.partial();
 export type UpdateCardDto = z.infer<typeof UpdateCardSchema>;
+
+// ---- Gamification Reward Result Schemas ----
+export const GamificationRewardLevelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  displayOrder: z.number(),
+  requiredExp: z.number(),
+});
+export type GamificationRewardLevelDto = z.infer<typeof GamificationRewardLevelSchema>;
+
+export const UnlockedCardItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+});
+export type UnlockedCardItemDto = z.infer<typeof UnlockedCardItemSchema>;
+
+export const LessonRewardResultSchema = z.object({
+  expGained: z.number(),
+  totalExp: z.number(),
+  leveledUp: z.boolean(),
+  currentLevel: GamificationRewardLevelSchema,
+  unlockedCharacters: z.array(UnlockedCardItemSchema),
+  unlockedEvents: z.array(UnlockedCardItemSchema),
+});
+export type LessonRewardResultDto = z.infer<typeof LessonRewardResultSchema>;
+
+export const QuizRewardResultSchema = z.object({
+  expGained: z.number(),
+  totalExp: z.number(),
+  leveledUp: z.boolean(),
+  currentLevel: GamificationRewardLevelSchema,
+});
+export type QuizRewardResultDto = z.infer<typeof QuizRewardResultSchema>;
+

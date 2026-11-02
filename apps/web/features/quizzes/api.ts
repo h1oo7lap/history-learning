@@ -5,6 +5,7 @@ import type {
   SubmitQuizDto,
   SubmitAnswerDto,
   QuizSubmitResponseDto,
+  QuizRewardResultDto,
   QuizAttemptReviewDto,
   QuizAttemptReviewQuestionDto,
 } from '@history-learning/shared';
@@ -15,6 +16,7 @@ export type {
   SubmitQuizDto,
   SubmitAnswerDto,
   QuizSubmitResponseDto,
+  QuizRewardResultDto,
   QuizAttemptReviewDto,
   QuizAttemptReviewQuestionDto,
 };

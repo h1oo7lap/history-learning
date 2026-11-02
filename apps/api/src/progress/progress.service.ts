@@ -3,10 +3,14 @@ import { ProgressStatus, PublishStatus } from '@history-learning/shared';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
+import { GamificationService } from '../gamification/gamification.service';
 
 @Injectable()
 export class ProgressService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gamificationService?: GamificationService,
+  ) {}
 
   /**
    * Start a lesson for the current user.
@@ -152,7 +156,7 @@ export class ProgressService {
       });
 
       // 4. Return current progress record
-      return tx.lessonProgress.findUniqueOrThrow({
+      const progressRecord = await tx.lessonProgress.findUniqueOrThrow({
         where: {
           userId_lessonId: { userId, lessonId },
         },
@@ -168,6 +172,17 @@ export class ProgressService {
           updatedAt: true,
         },
       });
+
+      // 5. Award EXP and unlock cards idempotently
+      let reward = null;
+      if (this.gamificationService) {
+        reward = await this.gamificationService.awardLessonReward(tx, userId, lessonId);
+      }
+
+      return {
+        ...progressRecord,
+        ...(reward ? { reward } : {}),
+      };
     });
   }
 

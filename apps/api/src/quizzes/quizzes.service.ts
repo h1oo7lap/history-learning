@@ -16,6 +16,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
 import { ErrorCodes } from '../common/errors/error-codes';
 import { paginate } from '../common/pagination/paginate';
+import { GamificationService } from '../gamification/gamification.service';
 
 const QUIZ_INCLUDE = {
   questions: {
@@ -41,7 +42,10 @@ const QUIZ_LIST_SELECT = {
 
 @Injectable()
 export class QuizzesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gamificationService?: GamificationService,
+  ) {}
 
   // =========================================================================
   // Admin methods (unchanged)
@@ -531,6 +535,15 @@ export class QuizzesService {
 
       // If count === 0: concurrent submit won race, return values from DB (Addition 4)
       if (updateRes.count === 0) {
+        let reward = null;
+        if (this.gamificationService) {
+          reward = await this.gamificationService.awardQuizReward(
+            tx,
+            userId,
+            quizId,
+            grading.passed,
+          );
+        }
         const alreadySubmitted = await tx.quizAttempt.findUniqueOrThrow({
           where: { id: dto.attemptId },
         });
@@ -542,7 +555,18 @@ export class QuizzesService {
           totalQuestions: alreadySubmitted.totalQuestions!,
           passed: alreadySubmitted.passed!,
           submittedAt: alreadySubmitted.submittedAt!,
+          ...(reward ? { reward } : {}),
         };
+      }
+
+      let reward = null;
+      if (this.gamificationService) {
+        reward = await this.gamificationService.awardQuizReward(
+          tx,
+          userId,
+          quizId,
+          grading.passed,
+        );
       }
 
       // Insert attempt answers in same transaction
@@ -565,6 +589,7 @@ export class QuizzesService {
         totalQuestions: grading.totalQuestions,
         passed: grading.passed,
         submittedAt: now, // using same now variable
+        ...(reward ? { reward } : {}),
       };
     });
   }

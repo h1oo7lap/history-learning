@@ -2,8 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { quizzesApi } from './api';
-import type { SubmitQuizDto } from './api';
-import { useIsAuthenticated } from '@/features/auth/hooks';
+import type { SubmitQuizDto, QuizRewardResultDto } from './api';
+import { useIsAuthenticated, authKeys } from '@/features/auth/hooks';
 
 // ─── Query keys ──────────────────────────────────────────────
 export const quizzesKeys = {
@@ -43,8 +43,31 @@ export function useSubmitQuiz() {
     onSuccess: () => {
       // Làm mới danh sách quiz để cập nhật trạng thái DONE và điểm số mới
       queryClient.invalidateQueries({ queryKey: quizzesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: authKeys.me });
     },
   });
+}
+
+/** Lưu phần thưởng quiz vào sessionStorage để hiển thị ngay trên trang kết quả */
+export function saveQuizReward(attemptId: string, reward: QuizRewardResultDto) {
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(`quiz_reward_${attemptId}`, JSON.stringify(reward));
+    } catch {
+      // Bỏ qua lỗi hạn chế quota bộ nhớ trình duyệt
+    }
+  }
+}
+
+/** Đọc phần thưởng quiz từ sessionStorage cho attempt tương ứng */
+export function getQuizReward(attemptId: string): QuizRewardResultDto | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(`quiz_reward_${attemptId}`);
+    return raw ? (JSON.parse(raw) as QuizRewardResultDto) : null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Xem kết quả và review đáp án sau khi nộp (Q10) ───────────

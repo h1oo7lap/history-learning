@@ -3,7 +3,8 @@
 import React, { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, RotateCcw, Award, CheckCircle2, XCircle, BookOpen } from 'lucide-react';
-import { useAttemptReview } from '@/features/quizzes/hooks';
+import { useAttemptReview, getQuizReward } from '@/features/quizzes/hooks';
+import { RewardSummary } from '@/components/gamification/RewardSummary';
 import { ReviewQuestionItem } from '@/features/quizzes/components/ReviewQuestionItem';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +18,7 @@ export default function QuizAttemptReviewPage({
   params: Promise<{ attemptId: string }>;
 }) {
   const { attemptId } = use(params);
+  const reward = getQuizReward(attemptId);
   const { data: reviewData, isLoading, isError, refetch } = useAttemptReview(attemptId);
 
   // Trạng thái 1: Đang tải kết quả
@@ -106,6 +108,15 @@ export default function QuizAttemptReviewPage({
         </CardHeader>
 
         <CardContent className="pt-6 space-y-6">
+          {reward && (
+            <RewardSummary
+              type="quiz"
+              expGained={reward.expGained}
+              totalExp={reward.totalExp}
+              leveledUp={reward.leveledUp}
+              currentLevel={reward.currentLevel}
+            />
+          )}
           {/* Thống kê điểm số */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div className="p-4 rounded-md border border-line bg-paper">

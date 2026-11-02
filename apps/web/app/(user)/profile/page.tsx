@@ -6,6 +6,7 @@ import { Camera, GraduationCap, Loader2, User } from 'lucide-react';
 import { UpdateProfileSchema } from '@history-learning/shared';
 import type { UpdateProfileDto } from '@history-learning/shared';
 import { useMe, useUpdateProfile, useEducationLevels } from '@/features/auth/hooks';
+import { LevelProgress } from '@/components/gamification/LevelProgress';
 
 export default function ProfilePage() {
   const { data: user, isLoading } = useMe();
@@ -121,6 +122,11 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Tiến trình cấp độ và EXP */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <LevelProgress totalExp={user?.totalExp ?? 0} variant="card" />
         </div>
 
         {/* Form */}

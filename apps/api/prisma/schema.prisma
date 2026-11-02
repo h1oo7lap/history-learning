@@ -131,6 +131,8 @@ model User {
   expTransactions    ExpTransaction[]
   userMissions       UserMission[]
   userCards          UserCard[]
+  userCharacters     UserCharacter[]
+  userEvents         UserEvent[]
 
   @@index([role])
   @@index([status])
@@ -235,7 +237,8 @@ model HistoricalCharacter {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  lessons LessonCharacter[]
+  lessons        LessonCharacter[]
+  userCharacters UserCharacter[]
 
   @@map("historical_characters")
 }
@@ -252,7 +255,8 @@ model HistoricalEvent {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  lessons LessonEvent[]
+  lessons    LessonEvent[]
+  userEvents UserEvent[]
 
   @@map("historical_events")
 }
@@ -600,4 +604,32 @@ model UserCard {
   @@unique([userId, cardId])
   @@index([userId])
   @@map("user_cards")
+}
+
+model UserCharacter {
+  id          String   @id @default(cuid())
+  userId      String
+  characterId String
+  unlockedAt  DateTime @default(now())
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character HistoricalCharacter @relation(fields: [characterId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, characterId])
+  @@index([userId])
+  @@map("user_characters")
+}
+
+model UserEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  eventId    String
+  unlockedAt DateTime @default(now())
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event HistoricalEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@map("user_events")
 }

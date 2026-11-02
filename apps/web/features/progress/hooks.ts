@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { progressApi } from './api';
 import { ApiClientError } from '@/lib/api-client';
-import { useIsAuthenticated } from '@/features/auth/hooks';
+import { useIsAuthenticated, authKeys } from '@/features/auth/hooks';
 
 // ─── Query keys ──────────────────────────────────────────────
 export const progressKeys = {
@@ -32,6 +32,7 @@ export function useStartLesson() {
     mutationFn: (lessonId: string) => progressApi.startLesson(lessonId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: progressKeys.me });
+      queryClient.invalidateQueries({ queryKey: authKeys.me });
     },
     onError: (err: unknown) => {
       if (err instanceof ApiClientError) {
@@ -51,6 +52,7 @@ export function useCompleteLesson() {
     mutationFn: (lessonId: string) => progressApi.completeLesson(lessonId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: progressKeys.me });
+      queryClient.invalidateQueries({ queryKey: authKeys.me });
       toast.success('Đã hoàn thành bài học!');
     },
     onError: (err: unknown) => {

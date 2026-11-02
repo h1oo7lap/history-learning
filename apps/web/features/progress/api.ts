@@ -2,10 +2,11 @@ import { api } from '@/lib/api-client';
 import type {
   LessonProgressResponseDto,
   LessonProgressItemDto,
+  LessonRewardResultDto,
 } from '@history-learning/shared';
 
 export { ProgressStatus } from '@history-learning/shared';
-export type { LessonProgressResponseDto, LessonProgressItemDto };
+export type { LessonProgressResponseDto, LessonProgressItemDto, LessonRewardResultDto };
 
 export const progressApi = {
   /** Start a lesson — sets status to IN_PROGRESS. Authenticated. */

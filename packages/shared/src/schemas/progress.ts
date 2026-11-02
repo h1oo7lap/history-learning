@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ProgressStatus } from '../enums';
+import { LessonRewardResultSchema } from './gamification';
 
 export const LessonProgressItemSchema = z.object({
   lessonId: z.string(),
@@ -20,6 +21,7 @@ export const LessonProgressResponseSchema = z.object({
   completedAt: z.coerce.date().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  reward: LessonRewardResultSchema.nullable().optional(),
 });
 export type LessonProgressResponseDto = z.infer<typeof LessonProgressResponseSchema>;
 
