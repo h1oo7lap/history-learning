@@ -77,9 +77,7 @@ history-learning/
 ├── packages/
 │   └── shared/           # Zod schemas, enums, constants (used by both)
 ├── docker-compose.yml    # Postgres + Mailpit
-├── SPEC.md               # Yêu cầu sản phẩm
-├── PLAYBOOK.md           # Hướng dẫn triển khai
-└── PROGRESS.md           # Nhật ký tiến độ và kiểm thử
+└── SPEC.md               # Yêu cầu sản phẩm
 ```
 
 ## Scripts

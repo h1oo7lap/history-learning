@@ -27,8 +27,8 @@ Website hỗ trợ học tập môn Lịch sử cho học sinh lớp 4–12, k�
 - [~] Tìm kiếm và lọc bài học (lọc theo chủ đề, giai đoạn, độ khó; tìm theo tiêu đề, chưa tìm trong nội dung / không dấu)
 - [x] Làm quiz và xem kết quả
 - [x] Theo dõi tiến độ học tập
-- [ ] Tính điểm, EXP và Level
-- [ ] Thẻ lịch sử
+- [x] Tính điểm, EXP và Level
+- [x] Thẻ lịch sử
 - [x] AI hỗ trợ hỏi đáp và giải thích kiến thức
 - [ ] Ôn tập kiến thức
 
@@ -52,11 +52,11 @@ Website hỗ trợ học tập môn Lịch sử cho học sinh lớp 4–12, k�
 
 ## 6. Gamification
 
-- [ ] EXP
-- [ ] Level
-- [ ] Thẻ lịch sử
+- [x] EXP
+- [x] Level
+- [x] Thẻ lịch sử
 - [ ] Nhiệm vụ
-- [ ] Thành tích / phần thưởng học tập
+- [~] Thành tích / phần thưởng học tập (đã có thưởng EXP, thăng cấp và mở khóa thẻ lịch sử khi học bài / làm quiz; chưa có danh hiệu / huy hiệu riêng)
 
 ## 7. Mailer
 
@@ -66,8 +66,8 @@ Website hỗ trợ học tập môn Lịch sử cho học sinh lớp 4–12, k�
 
 ## 8. Quyền truy cập theo lớp
 
-- [~] Mỗi bài học thuộc một lớp; số lớp (4–12) dùng để so sánh quyền truy cập (đang dùng công thức cũ trên main; bản chuẩn hóa nằm ở nhánh fix/grade-access-v2)
-- [~] Học sinh đã chọn lớp xem và hỏi AI được bài của lớp mình và các lớp thấp hơn (đã có cho bài học và AI; chưa áp cho quiz, tiến độ, tìm kiếm, dashboard)
+- [x] Mỗi bài học thuộc một lớp; thứ tự lớp và cấp học (4–12) dùng để so sánh quyền truy cập
+- [~] Học sinh đã chọn lớp xem, tìm kiếm và hỏi AI được bài của lớp mình và các lớp thấp hơn (đã áp dụng cho bài học, tìm kiếm bài học và AI; danh sách quiz hiện lọc theo lớp đang chọn, chưa áp cho dashboard)
 - [x] Khách và người chưa chọn lớp chỉ thấy các bài tiêu biểu
 - [x] Admin xem tất cả
 - [x] Học sinh không tự đổi lớp sau lần chọn đầu; chỉ Admin đổi được
