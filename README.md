@@ -15,9 +15,10 @@
 # 1. Cài đặt dependencies
 pnpm install
 
-# 2. Tạo file .env
+# 2. Tạo và cấu hình file .env
 cp .env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+# Lưu ý: Cần điền AI_API_KEY, AI_MODEL, AI_EMBEDDING_MODEL trong apps/api/.env để sử dụng tính năng AI.
 
 # 3. Khởi động Postgres + Mailpit
 docker compose up -d
@@ -31,7 +32,10 @@ pnpm db:migrate
 # 6. Seed data
 pnpm db:seed
 
-# 7. Khởi động dev servers
+# 7. Đánh chỉ mục Vector cho bài học (phục vụ tính năng AI Vector RAG)
+pnpm ai:reindex
+
+# 8. Khởi động dev servers
 # Mở 2 terminal:
 pnpm dev:api   # port 4000
 pnpm dev:web   # port 3000
@@ -49,6 +53,9 @@ Khi cần xoá trắng và tạo lại database cùng với dữ liệu mẫu (s
 ```bash
 # Lệnh này sẽ xoá trắng DB, chạy lại toàn bộ migrations và tự động chạy file seed
 pnpm db:reset
+
+# Sau khi reset DB, cần chạy lại reindex vector cho AI:
+pnpm ai:reindex
 ```
 
 Nếu chỉ muốn chạy seed data (không reset):
@@ -95,6 +102,7 @@ pnpm db:migrate       # Chạy Prisma migrations
 pnpm db:seed          # Seed dữ liệu mẫu
 pnpm db:studio        # Mở Prisma Studio
 pnpm db:reset         # Reset database
+pnpm ai:reindex       # Đánh chỉ mục vector cho bài học (Vector RAG)
 ```
 
 ---
@@ -112,8 +120,8 @@ pnpm db:reset         # Reset database
 |---|---|
 | Frontend | Next.js 16, TypeScript, TailwindCSS, shadcn/ui, TanStack Query |
 | Backend | NestJS 12, TypeScript, Prisma 7, nestjs-zod |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 16 + pgvector |
 | Auth | JWT (httpOnly cookie) + Argon2 |
 | Media | Cloudinary |
-| AI | LLM API (backend only) |
+| AI | Google Gemini, Vector RAG (pgvector) |
 | Mail | Nodemailer + Mailpit (dev) |
