@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles, Calendar, MapPin, Scroll } from 'lucide-react';
 import type { UserCollectionEventDto } from '@history-learning/shared';
 import { Badge } from '@/components/ui/Badge';
-import { formatDate } from '@/lib/format';
+import { formatDate, optimizeCloudinaryUrl } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 export interface EventCardProps {
@@ -42,7 +42,10 @@ export function EventCard({
   onSelect,
   className,
 }: EventCardProps) {
+  const [imageError, setImageError] = useState(false);
   const dateRange = formatEventDateRange(event.startDate, event.endDate);
+  const imageUrl = event.image ? optimizeCloudinaryUrl(event.image, 240) : null;
+  const showFallback = !imageUrl || imageError;
 
   return (
     <article
@@ -65,9 +68,29 @@ export function EventCard({
       <div className="space-y-3">
         {/* Header với biểu trưng sự kiện và tên */}
         <div className="flex items-start gap-3.5">
-          {/* Emblem container (biểu trưng trang sách sử nhã nhặn) */}
-          <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-md border border-line bg-bronze/10 text-bronze-ink flex items-center justify-center select-none shadow-sm group-hover:bg-bronze/20 transition-colors">
-            <Scroll size={26} className="text-bronze-ink shrink-0" aria-hidden="true" />
+          {/* Ảnh sự kiện hoặc emblem container */}
+          <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-md border border-line bg-paper overflow-hidden relative flex items-center justify-center select-none shadow-sm">
+            {imageUrl && !imageError ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imageUrl}
+                alt={event.name}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImageError(true)}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            ) : null}
+
+            {showFallback && (
+              <div
+                data-testid="event-fallback"
+                className="flex flex-col items-center justify-center w-full h-full bg-bronze/10 text-bronze-ink group-hover:bg-bronze/20 transition-colors"
+                aria-hidden="true"
+              >
+                <Scroll size={26} className="text-bronze-ink shrink-0" />
+              </div>
+            )}
           </div>
 
           {/* Tên sự kiện, thời gian và địa điểm */}

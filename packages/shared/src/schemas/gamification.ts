@@ -98,6 +98,7 @@ export const UserCollectionEventSchema = z.object({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
+  image: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   startDate: z.union([z.string(), z.date()]).nullable().optional(),
   endDate: z.union([z.string(), z.date()]).nullable().optional(),

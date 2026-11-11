@@ -48,6 +48,7 @@ export type UpdateCharacterDto = z.infer<typeof UpdateCharacterSchema>;
 export const CreateEventSchema = z.object({
   name: z.string().min(1).max(200),
   slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
+  image: z.string().url().optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
   startDate: z.string().datetime().optional().nullable(),
   endDate: z.string().datetime().optional().nullable(),

@@ -53,6 +53,7 @@ export function CollectionDetailModal({
   const lifeSpan = char ? formatLifeSpan(char.birthYear, char.deathYear) : null;
   const dateRange = evt ? formatEventDateRange(evt.startDate, evt.endDate) : null;
   const avatarUrl = char?.avatar ? optimizeCloudinaryUrl(char.avatar, 400) : null;
+  const eventImageUrl = evt?.image ? optimizeCloudinaryUrl(evt.image, 400) : null;
 
   return (
     <div
@@ -103,8 +104,20 @@ export function CollectionDetailModal({
           )}
 
           {!isCharacter && (
-            <div className="w-18 h-18 sm:w-20 sm:h-20 shrink-0 rounded-md border border-line bg-bronze/10 text-bronze-ink flex items-center justify-center shadow-sm">
-              <Scroll size={32} className="text-bronze-ink shrink-0" aria-hidden="true" />
+            <div className="w-18 h-18 sm:w-20 sm:h-20 shrink-0 rounded-md border border-line bg-paper overflow-hidden relative flex items-center justify-center shadow-sm">
+              {eventImageUrl && !imageError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={eventImageUrl}
+                  alt={evt!.name}
+                  onError={() => setImageError(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full bg-bronze/10 text-bronze-ink">
+                  <Scroll size={32} className="text-bronze-ink shrink-0" aria-hidden="true" />
+                </div>
+              )}
             </div>
           )}
 

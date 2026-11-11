@@ -363,6 +363,7 @@ export class GamificationService {
               id: true,
               name: true,
               slug: true,
+              image: true,
               description: true,
               startDate: true,
               endDate: true,

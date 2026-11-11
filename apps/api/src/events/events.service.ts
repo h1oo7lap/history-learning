@@ -43,6 +43,7 @@ export class EventsService {
           id: true,
           name: true,
           slug: true,
+          image: true,
           description: true,
           startDate: true,
           endDate: true,
@@ -130,6 +131,7 @@ export class EventsService {
       data: {
         name: dto.name,
         slug,
+        image: dto.image ?? null,
         description: dto.description ?? null,
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
@@ -173,6 +175,7 @@ export class EventsService {
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         slug,
+        ...(dto.image !== undefined ? { image: dto.image } : {}),
         ...(dto.description !== undefined
           ? { description: dto.description }
           : {}),

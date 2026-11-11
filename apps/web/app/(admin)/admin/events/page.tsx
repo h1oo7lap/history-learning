@@ -34,6 +34,13 @@ const FIELDS: FieldDef[] = [
     hint: '(để trống = tự động)',
   },
   {
+    name: 'image',
+    label: 'Ảnh sự kiện',
+    type: 'image',
+    folder: 'events',
+    hint: 'Tải ảnh lên từ máy hoặc nhập link URL',
+  },
+  {
     name: 'startDate',
     label: 'Ngày bắt đầu',
     type: 'date',
@@ -70,6 +77,47 @@ const FIELDS: FieldDef[] = [
 ];
 
 // ─── Column definitions ────────────────────────────────────────
+
+const eventNameColumn: ColumnDef<HistoricalEvent> = {
+  key: 'name',
+  header: 'Sự kiện',
+  maxWidth: 280,
+  render: (item) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: 280, minWidth: 0 }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: '6px',
+        background: item.image
+          ? `url(${item.image}) center/cover`
+          : 'rgba(180, 83, 9, 0.1)',
+        flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '0.9rem', color: '#b45309', fontWeight: 700,
+        overflow: 'hidden',
+        border: '1px solid var(--line, #e5e7eb)',
+      }}>
+        {!item.image && '📜'}
+      </div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div
+          title={item.name}
+          style={{
+            fontWeight: 600,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {item.name}
+        </div>
+        {item.slug && (
+          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontFamily: 'monospace' }}>
+            {item.slug}
+          </div>
+        )}
+      </div>
+    </div>
+  ),
+};
 
 const locationColumn: ColumnDef<HistoricalEvent> = {
   key: 'location',
@@ -116,7 +164,7 @@ const eventDateColumn: ColumnDef<HistoricalEvent> = {
 };
 
 const columns = [
-  nameColumn<HistoricalEvent>(),
+  eventNameColumn,
   slugColumn<HistoricalEvent>(),
   eventDateColumn,
   locationColumn,
@@ -137,6 +185,7 @@ export default function AdminEventsPage() {
     const dto = {
       name: formData.name as string,
       ...(formData.slug ? { slug: formData.slug as string } : {}),
+      image: (formData.image as string) || null,
       ...(formData.description ? { description: formData.description as string } : {}),
       startDate: (formData.startDate as string) || null,
       endDate: (formData.endDate as string) || null,

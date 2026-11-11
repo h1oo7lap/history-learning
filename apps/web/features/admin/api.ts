@@ -60,6 +60,7 @@ export interface HistoricalEvent {
   displayOrder?: number;
   gradeId?: string;
   grade?: { id: string; name: string; code: string } | null;
+  image: string | null;
   description: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -333,6 +334,7 @@ export const eventsAdminApi = {
   create: (dto: {
     name: string;
     slug?: string;
+    image?: string | null;
     description?: string;
     startDate?: string | null;
     endDate?: string | null;
@@ -345,6 +347,7 @@ export const eventsAdminApi = {
     dto: {
       name?: string;
       slug?: string;
+      image?: string | null;
       description?: string;
       startDate?: string | null;
       endDate?: string | null;

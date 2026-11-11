@@ -313,6 +313,7 @@ describe('GamificationService', () => {
             id: 'event-1',
             name: 'Chiến thắng Bạch Đằng',
             slug: 'chien-thang-bach-dang-938',
+            image: 'https://example.com/bach-dang.jpg',
             description: 'Đánh tan quân Nam Hán',
             startDate: new Date('0938-12-01'),
             endDate: null,
@@ -336,6 +337,7 @@ describe('GamificationService', () => {
         id: 'event-1',
         name: 'Chiến thắng Bạch Đằng',
         slug: 'chien-thang-bach-dang-938',
+        image: 'https://example.com/bach-dang.jpg',
         unlockedAt: now,
       });
     });

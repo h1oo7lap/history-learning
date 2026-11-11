@@ -51,6 +51,7 @@ describe('Collection Feature', () => {
     id: 'evt-1',
     name: 'Chiến thắng Bạch Đằng 938',
     slug: 'chien-thang-bach-dang-938',
+    image: 'https://example.com/bach-dang.jpg',
     description: 'Trận thủy chiến lịch sử trên sông Bạch Đằng đập tan mưu đồ xâm lược.',
     startDate: '0938-12-01T00:00:00.000Z',
     endDate: '0938-12-31T00:00:00.000Z',
@@ -113,7 +114,7 @@ describe('Collection Feature', () => {
   // 3. EventCard Component
   // =========================================================================
   describe('EventCard Component', () => {
-    it('kết xuất đầy đủ thông tin sự kiện (tên, thời gian, địa điểm, mô tả, trạng thái)', () => {
+    it('kết xuất đầy đủ thông tin sự kiện (tên, thời gian, địa điểm, mô tả, trạng thái, ảnh)', () => {
       const html = renderToStaticMarkup(
         <EventCard event={mockEvent} />
       );
@@ -122,6 +123,20 @@ describe('Collection Feature', () => {
       expect(html).toContain('Sông Bạch Đằng');
       expect(html).toContain('Trận thủy chiến lịch sử');
       expect(html).toContain('Đã mở khóa');
+      expect(html).toContain('alt="Chiến thắng Bạch Đằng 938"');
+    });
+
+    it('hiển thị fallback biểu tượng Scroll khi image là null', () => {
+      const eventNoImage: UserCollectionEventDto = {
+        ...mockEvent,
+        image: null,
+      };
+
+      const html = renderToStaticMarkup(
+        <EventCard event={eventNoImage} />
+      );
+
+      expect(html).toContain('data-testid="event-fallback"');
     });
   });
 
@@ -167,6 +182,7 @@ describe('Collection Feature', () => {
       expect(html).toContain('Chiến thắng Bạch Đằng 938');
       expect(html).toContain('Sông Bạch Đằng');
       expect(html).toContain('Trận thủy chiến lịch sử trên sông Bạch Đằng');
+      expect(html).toContain('alt="Chiến thắng Bạch Đằng 938"');
     });
   });
 
