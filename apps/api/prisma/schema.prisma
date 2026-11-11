@@ -124,15 +124,15 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  grade              Grade?               @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  grade               Grade?               @relation(fields: [gradeId], references: [id], onDelete: SetNull)
   passwordResetTokens PasswordResetToken[]
-  lessonProgress     LessonProgress[]
-  quizAttempts       QuizAttempt[]
-  expTransactions    ExpTransaction[]
-  userMissions       UserMission[]
-  userCards          UserCard[]
-  userCharacters     UserCharacter[]
-  userEvents         UserEvent[]
+  lessonProgress      LessonProgress[]
+  quizAttempts        QuizAttempt[]
+  expTransactions     ExpTransaction[]
+  userMissions        UserMission[]
+  userCards           UserCard[]
+  userCharacters      UserCharacter[]
+  userEvents          UserEvent[]
 
   @@index([role])
   @@index([status])
@@ -185,6 +185,7 @@ model Grade {
   educationLevel EducationLevel @relation(fields: [educationLevelId], references: [id], onDelete: Restrict)
   users          User[]
   lessons        Lesson[]
+  quizzes        Quiz[]
 
   @@index([educationLevelId])
   @@map("grades")
@@ -271,7 +272,7 @@ model Lesson {
   slug          String        @unique
   summary       String?
   content       String // sanitized HTML; auto-generated from contentJson when present
-  contentJson   Json?  // block-based content (see ContentJsonSchema in @history-learning/shared); null = legacy HTML mode
+  contentJson   Json? // block-based content (see ContentJsonSchema in @history-learning/shared); null = legacy HTML mode
   thumbnail     String?
   difficulty    Difficulty    @default(EASY)
   estimatedTime Int           @default(10) // minutes
@@ -281,16 +282,16 @@ model Lesson {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  gradeId       String
-  grade         Grade         @relation(fields: [gradeId], references: [id], onDelete: Restrict)
-  topics        LessonTopic[]
-  periods       LessonPeriod[]
-  characters    LessonCharacter[]
-  events        LessonEvent[]
-  media         LessonMedia[]
-  progress      LessonProgress[]
-  quiz          Quiz?
-  chunks        LessonChunk[]
+  gradeId    String
+  grade      Grade             @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+  topics     LessonTopic[]
+  periods    LessonPeriod[]
+  characters LessonCharacter[]
+  events     LessonEvent[]
+  media      LessonMedia[]
+  progress   LessonProgress[]
+  quizzes    QuizLesson[]
+  chunks     LessonChunk[]
 
   @@index([gradeId])
   @@index([status, displayOrder])
@@ -374,7 +375,7 @@ model LessonChunk {
   embeddingModel String
   createdAt      DateTime                    @default(now())
 
-  lesson         Lesson                      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([lessonId, chunkIndex])
   @@index([lessonId])
@@ -410,7 +411,7 @@ model LessonProgress {
 
 model Quiz {
   id          String        @id @default(cuid())
-  lessonId    String        @unique // max one quiz per lesson in MVP
+  gradeId     String
   title       String
   description String?
   timeLimit   Int? // seconds; null = unlimited
@@ -419,11 +420,25 @@ model Quiz {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+  grade     Grade         @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+  lessons   QuizLesson[]
   questions Question[]
   attempts  QuizAttempt[]
 
+  @@index([gradeId])
   @@map("quizzes")
+}
+
+model QuizLesson {
+  quizId   String
+  lessonId String
+
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([quizId, lessonId])
+  @@index([lessonId])
+  @@map("quiz_lessons")
 }
 
 model Question {
@@ -460,16 +475,16 @@ model Answer {
 }
 
 model QuizAttempt {
-  id               String    @id @default(cuid())
-  userId           String
-  quizId           String
-  startedAt        DateTime  @default(now())
-  submittedAt      DateTime? // null until submitted
-  score            Int?
-  totalScore       Int?
-  correctAnswers   Int?
-  totalQuestions   Int?
-  passed           Boolean?
+  id             String    @id @default(cuid())
+  userId         String
+  quizId         String
+  startedAt      DateTime  @default(now())
+  submittedAt    DateTime? // null until submitted
+  score          Int?
+  totalScore     Int?
+  correctAnswers Int?
+  totalQuestions Int?
+  passed         Boolean?
 
   user    User                @relation(fields: [userId], references: [id], onDelete: Restrict)
   quiz    Quiz                @relation(fields: [quizId], references: [id], onDelete: Restrict)
@@ -538,7 +553,7 @@ model Mission {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  rewardCard   HistoryCard? @relation("MissionRewardCard", fields: [rewardCardId], references: [id], onDelete: Restrict)
+  rewardCard   HistoryCard?  @relation("MissionRewardCard", fields: [rewardCardId], references: [id], onDelete: Restrict)
   userMissions UserMission[]
 
   @@index([status, type])
@@ -582,9 +597,9 @@ model HistoryCard {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  period         HistoricalPeriod? @relation(fields: [periodId], references: [id], onDelete: Restrict)
-  userCards      UserCard[]
-  rewardedByMission Mission[]      @relation("MissionRewardCard")
+  period            HistoricalPeriod? @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  userCards         UserCard[]
+  rewardedByMission Mission[]         @relation("MissionRewardCard")
 
   @@index([type])
   @@index([rarity])

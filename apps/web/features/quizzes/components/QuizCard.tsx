@@ -22,38 +22,48 @@ export interface QuizCardProps {
 
 export function QuizCard({ quiz }: QuizCardProps) {
   const { status, lastAttempt } = quiz;
+  const firstLessonSlug = quiz.lessons?.[0]?.slug;
 
   return (
     <Card className="flex flex-col h-full transition-shadow duration-150 hover:shadow-pop">
       <CardHeader className="gap-2">
-        <div className="flex items-center justify-between gap-2">
-          {/* Trạng thái bài quiz (Q13) */}
-          {status === 'LOCKED' && (
-            <Badge variant="neutral" className="gap-1">
-              <Lock size={12} aria-hidden="true" />
-              <span>Chưa mở</span>
-            </Badge>
-          )}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            {/* Khối lớp */}
+            {quiz.grade && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-muted/10 text-muted">
+                {quiz.grade.name}
+              </span>
+            )}
 
-          {status === 'AVAILABLE' && (
-            <Badge variant="warning" dot>
-              <span>Sẵn sàng</span>
-            </Badge>
-          )}
+            {/* Trạng thái bài quiz (Q13) */}
+            {status === 'LOCKED' && (
+              <Badge variant="neutral" className="gap-1">
+                <Lock size={12} aria-hidden="true" />
+                <span>Chưa mở</span>
+              </Badge>
+            )}
 
-          {status === 'DONE' && lastAttempt && (
-            <Badge
-              variant={lastAttempt.passed ? 'success' : 'danger'}
-              className="gap-1"
-            >
-              {lastAttempt.passed ? (
-                <CheckCircle2 size={12} aria-hidden="true" />
-              ) : (
-                <XCircle size={12} aria-hidden="true" />
-              )}
-              <span>{lastAttempt.passed ? 'Đã đạt' : 'Chưa đạt'}</span>
-            </Badge>
-          )}
+            {status === 'AVAILABLE' && (
+              <Badge variant="warning" dot>
+                <span>Sẵn sàng</span>
+              </Badge>
+            )}
+
+            {status === 'DONE' && lastAttempt && (
+              <Badge
+                variant={lastAttempt.passed ? 'success' : 'danger'}
+                className="gap-1"
+              >
+                {lastAttempt.passed ? (
+                  <CheckCircle2 size={12} aria-hidden="true" />
+                ) : (
+                  <XCircle size={12} aria-hidden="true" />
+                )}
+                <span>{lastAttempt.passed ? 'Đã đạt' : 'Chưa đạt'}</span>
+              </Badge>
+            )}
+          </div>
 
           {/* Thời lượng làm bài */}
           <span className="inline-flex items-center gap-1 text-xs text-muted">
@@ -98,28 +108,35 @@ export function QuizCard({ quiz }: QuizCardProps) {
         </div>
 
         {/* Thông báo điều kiện mở khóa khi LOCKED (Q12) */}
-        {status === 'LOCKED' && (
+        {status === 'LOCKED' && quiz.lessons && quiz.lessons.length > 0 && (
           <div className="rounded-md bg-paper border border-line p-2.5 text-xs text-ink-soft">
             <div className="flex items-start gap-1.5">
               <BookOpen size={14} className="shrink-0 text-bronze-ink mt-0.5" aria-hidden="true" />
-              <span className="leading-snug">
-                Cần học xong bài:{' '}
-                <Link
-                  href={`/lessons/${quiz.lesson.slug}`}
-                  className="font-medium text-seal underline hover:text-seal-dark"
-                >
-                  {quiz.lesson.title}
-                </Link>
-              </span>
+              <div className="leading-snug">
+                <span>Cần học xong {quiz.lessons.length > 1 ? 'các bài' : 'bài'}: </span>
+                <span className="inline-flex flex-wrap gap-1 mt-0.5">
+                  {quiz.lessons.map((lesson, idx) => (
+                    <span key={lesson.id}>
+                      <Link
+                        href={`/lessons/${lesson.slug}`}
+                        className="font-medium text-seal underline hover:text-seal-dark"
+                      >
+                        {lesson.title}
+                      </Link>
+                      {idx < quiz.lessons.length - 1 && ', '}
+                    </span>
+                  ))}
+                </span>
+              </div>
             </div>
           </div>
         )}
       </CardContent>
 
       <CardFooter className="pt-3">
-        {status === 'LOCKED' && (
+        {status === 'LOCKED' && firstLessonSlug && (
           <Button asChild variant="secondary" size="sm" className="w-full gap-1.5">
-            <Link href={`/lessons/${quiz.lesson.slug}`}>
+            <Link href={`/lessons/${firstLessonSlug}`}>
               <span>Đến bài học</span>
               <ArrowRight size={14} aria-hidden="true" />
             </Link>

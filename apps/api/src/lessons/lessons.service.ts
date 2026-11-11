@@ -28,7 +28,7 @@ const LESSON_INCLUDE = {
   characters: { include: { character: true } },
   events: { include: { event: true } },
   media: { orderBy: { displayOrder: 'asc' as const } },
-  quiz: true,
+  quizzes: { include: { quiz: true } },
 } as const;
 
 /** Fields for list endpoints — excludes content/contentJson for performance */
@@ -243,8 +243,11 @@ export class LessonsService {
       select: { id: true, title: true, slug: true },
     });
 
+    const firstQuiz =
+      lesson.quizzes !== undefined ? (lesson.quizzes?.[0]?.quiz ?? null) : undefined;
     return {
       ...lesson,
+      ...(firstQuiz !== undefined ? { quiz: firstQuiz } : {}),
       nextLesson: nextLesson ?? null,
     };
   }

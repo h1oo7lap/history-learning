@@ -185,6 +185,7 @@ export default function AdminQuizzesPage() {
         open={resource.modalOpen}
         quiz={resource.editing}
         initialTab={initialTab}
+        defaultGradeId={activeGradeId && activeGradeId !== 'ALL' ? activeGradeId : undefined}
         isPending={isSaving}
         onSubmit={handleSubmit}
         onClose={resource.closeModal}

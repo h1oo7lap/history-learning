@@ -40,31 +40,37 @@ export const quizTitleColumn: ColumnDef<AdminQuiz> = {
 };
 
 export const quizLessonColumn: ColumnDef<AdminQuiz> = {
-  key: 'lessonId',
-  header: 'Bài học liên kết',
-  maxWidth: 240,
+  key: 'gradeId',
+  header: 'Khối lớp & Bài học',
+  maxWidth: 260,
   render: (item) => {
-    const text = item.lesson?.title ?? item.lessonId ?? '—';
-    const gradeName = item.lesson?.grade?.name;
+    const gradeName = item.grade?.name ?? '—';
+    const lessonCount = item.lessons?.length ?? 0;
+    const lessonTitles = item.lessons?.map((l) => l.lesson.title).join(', ') ?? '';
+
     return (
       <div
-        title={text}
+        title={lessonTitles || `${gradeName} (Toàn khối lớp)`}
         style={{
           fontSize: '0.85rem',
-          maxWidth: 240,
+          maxWidth: 260,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}
       >
-        <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>
-          📖 {text}
+        <div style={{ fontWeight: 600, color: 'var(--foreground)' }}>
+          🎓 {gradeName}
         </div>
-        {gradeName && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
-            🎓 {gradeName}
-          </div>
-        )}
+        <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
+          {lessonCount === 0 ? (
+            <span>📖 Toàn khối lớp</span>
+          ) : lessonCount === 1 ? (
+            <span>📖 {item.lessons![0].lesson.title}</span>
+          ) : (
+            <span>📖 {lessonCount} bài học liên kết</span>
+          )}
+        </div>
       </div>
     );
   },

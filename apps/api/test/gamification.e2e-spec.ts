@@ -169,7 +169,8 @@ describe('Gamification (e2e)', () => {
 
     const quiz = await prisma.quiz.create({
       data: {
-        lessonId: lesson.id,
+        gradeId: lesson.gradeId,
+        lessons: { create: [{ lessonId: lesson.id }] },
         title: 'Quiz Bạch Đằng',
         status: PublishStatus.PUBLISHED,
         passScore: 60,

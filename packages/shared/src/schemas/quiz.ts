@@ -80,7 +80,8 @@ export function validateQuizQuestions(questions: unknown):
 }
 
 export const CreateQuizSchema = z.object({
-  lessonId: z.string().min(1),
+  gradeId: z.string().min(1, 'Khối lớp là bắt buộc'),
+  lessonIds: z.array(z.string().min(1)).optional().default([]),
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional().nullable(),
   timeLimit: z.number().int().positive().optional().nullable(),
@@ -145,12 +146,19 @@ export const StudentQuizItemSchema = z.object({
   description: z.string().nullable(),
   timeLimit: z.number().nullable(),
   questionCount: z.number(),
-  lessonId: z.string(),
-  lesson: z.object({
+  gradeId: z.string(),
+  grade: z.object({
     id: z.string(),
-    title: z.string(),
-    slug: z.string(),
+    name: z.string(),
+    code: z.string(),
   }),
+  lessons: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      slug: z.string(),
+    }),
+  ),
   status: z.enum(['LOCKED', 'AVAILABLE', 'DONE']),
   lastAttempt: z
     .object({
@@ -239,11 +247,18 @@ export const QuizAttemptReviewSchema = z.object({
     title: z.string(),
     passScore: z.number(),
     timeLimit: z.number().nullable(),
-    lesson: z.object({
+    grade: z.object({
       id: z.string(),
-      title: z.string(),
-      slug: z.string(),
+      name: z.string(),
+      code: z.string(),
     }),
+    lessons: z.array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        slug: z.string(),
+      }),
+    ),
   }),
   questions: z.array(QuizAttemptReviewQuestionSchema),
 });

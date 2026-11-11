@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { lessonsAdminApi } from '@/features/admin/api';
+import { useGradeOptions } from '@/features/admin/hooks';
 import type { QuizStatus, Lesson } from '@/features/admin/api';
 import { formatGrade } from '@/lib/format';
 
@@ -13,10 +14,11 @@ export interface QuizBasicTabProps {
   setDescription: (val: string) => void;
   status: QuizStatus;
   setStatus: (val: QuizStatus) => void;
-  lessonId: string;
-  setLessonId: (val: string) => void;
+  gradeId: string;
+  setGradeId: (val: string) => void;
+  lessonIds: string[];
+  setLessonIds: (val: string[]) => void;
   isEditing: boolean;
-  currentLessonTitle?: string;
   errors: Record<string, string>;
   clearError: (field: string) => void;
 }
@@ -28,22 +30,48 @@ export function QuizBasicTab({
   setDescription,
   status,
   setStatus,
-  lessonId,
-  setLessonId,
+  gradeId,
+  setGradeId,
+  lessonIds,
+  setLessonIds,
   isEditing,
-  currentLessonTitle,
   errors,
   clearError,
 }: QuizBasicTabProps) {
   const [lessonSearch, setLessonSearch] = useState('');
-  const [isChangingLesson, setIsChangingLesson] = useState(false);
+  const { data: gradeOptions = [] } = useGradeOptions();
 
   const { data: lessonsData, isLoading: lessonsLoading } = useQuery({
-    queryKey: ['admin-quiz-lesson-lookup', lessonSearch],
-    queryFn: () => lessonsAdminApi.list({ search: lessonSearch || undefined, pageSize: 50 }),
+    queryKey: ['admin-quiz-lesson-lookup', gradeId, lessonSearch],
+    queryFn: () =>
+      lessonsAdminApi.list({
+        gradeId: gradeId || undefined,
+        search: lessonSearch || undefined,
+        pageSize: 100,
+      }),
+    enabled: Boolean(gradeId),
   });
 
   const lessons: Lesson[] = lessonsData?.items ?? [];
+
+  const handleToggleLesson = (id: string) => {
+    if (lessonIds.includes(id)) {
+      setLessonIds(lessonIds.filter((lid) => lid !== id));
+    } else {
+      setLessonIds([...lessonIds, id]);
+    }
+  };
+
+  const handleSelectAllLessons = () => {
+    const allIds = lessons.map((l) => l.id);
+    const combined = Array.from(new Set([...lessonIds, ...allIds]));
+    setLessonIds(combined);
+  };
+
+  const handleDeselectAllLessons = () => {
+    const currentGradeLessonIds = new Set(lessons.map((l) => l.id));
+    setLessonIds(lessonIds.filter((id) => !currentGradeLessonIds.has(id)));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -69,45 +97,80 @@ export function QuizBasicTab({
         </p>
       </div>
 
-      {/* ─── 2. Bài học liên kết ─── */}
+      {/* ─── 2. Khối lớp ─── */}
+      <div>
+        <label className="label" htmlFor="quiz-grade" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+          Khối lớp áp dụng <span style={{ color: '#dc2626' }}>*</span>
+        </label>
+        <select
+          id="quiz-grade"
+          className={`input${errors.gradeId ? ' error' : ''}`}
+          value={gradeId}
+          onChange={(e) => {
+            const nextGradeId = e.target.value;
+            setGradeId(nextGradeId);
+            setLessonIds([]); // Reset selected lessons when changing grade
+            clearError('gradeId');
+          }}
+          style={{ fontSize: '0.88rem' }}
+        >
+          <option value="">-- Chọn khối lớp --</option>
+          {gradeOptions.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+        {errors.gradeId && <p className="field-error">{errors.gradeId}</p>}
+        <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+          Mỗi bài quiz thuộc về một khối lớp nhất định (như bài học).
+        </p>
+      </div>
+
+      {/* ─── 3. Các bài học liên kết ─── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
           <label className="label" style={{ fontWeight: 600, fontSize: '0.88rem', margin: 0 }}>
-            Bài học gắn với Quiz <span style={{ color: '#dc2626' }}>*</span>
+            Bài học liên kết của lớp{' '}
+            <span style={{ fontSize: '0.78rem', fontWeight: 400, color: 'var(--muted)' }}>
+              ({lessonIds.length} bài đã chọn — có thể chọn nhiều hoặc để trống)
+            </span>
           </label>
-          {isEditing && !isChangingLesson && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setIsChangingLesson(true)}
-              style={{ fontSize: '0.78rem', color: 'var(--brand-600)' }}
-            >
-              🔄 Đổi bài học liên kết
-            </button>
+          {gradeId && lessons.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleSelectAllLessons}
+                style={{ fontSize: '0.75rem', color: 'var(--brand-600)', padding: '0.15rem 0.4rem' }}
+              >
+                ✓ Chọn tất cả
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleDeselectAllLessons}
+                style={{ fontSize: '0.75rem', color: 'var(--muted)', padding: '0.15rem 0.4rem' }}
+              >
+                ✕ Bỏ chọn
+              </button>
+            </div>
           )}
         </div>
 
-        {isEditing && !isChangingLesson ? (
+        {!gradeId ? (
           <div
             style={{
-              padding: '0.75rem 1rem',
+              padding: '1rem',
               borderRadius: 6,
-              border: '1px solid var(--border)',
+              border: '1px dashed var(--border)',
               background: 'var(--surface-2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
+              textAlign: 'center',
+              color: 'var(--muted)',
+              fontSize: '0.82rem',
             }}
           >
-            <span style={{ fontSize: '1.1rem' }}>📖</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>
-                {currentLessonTitle || lessonId}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                Mỗi bài học trong chương trình có tối đa 1 bài quiz củng cố kiến thức.
-              </div>
-            </div>
+            Vui lòng chọn khối lớp ở trên để tải danh sách các bài học tương ứng.
           </div>
         ) : (
           <div
@@ -129,7 +192,7 @@ export function QuizBasicTab({
 
             <div
               style={{
-                maxHeight: 180,
+                maxHeight: 200,
                 overflowY: 'auto',
                 border: '1px solid var(--border)',
                 borderRadius: 4,
@@ -143,11 +206,11 @@ export function QuizBasicTab({
                 </div>
               ) : lessons.length === 0 ? (
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.82rem' }}>
-                  Không tìm thấy bài học nào phù hợp.
+                  Không tìm thấy bài học nào của khối lớp này.
                 </div>
               ) : (
                 lessons.map((lesson) => {
-                  const isSelected = lessonId === lesson.id;
+                  const isChecked = lessonIds.includes(lesson.id);
                   const gradeLabel = lesson.grade ? formatGrade(lesson.grade) : '';
                   return (
                     <label
@@ -160,22 +223,17 @@ export function QuizBasicTab({
                         cursor: 'pointer',
                         fontSize: '0.84rem',
                         borderBottom: '1px solid var(--border)',
-                        background: isSelected ? 'var(--brand-50, rgb(99 102 241 / 0.08))' : 'transparent',
+                        background: isChecked ? 'var(--brand-50, rgb(99 102 241 / 0.08))' : 'transparent',
                         transition: 'background 0.1s ease',
                       }}
                     >
                       <input
-                        type="radio"
-                        name="quiz-lesson-choice"
-                        value={lesson.id}
-                        checked={isSelected}
-                        onChange={() => {
-                          setLessonId(lesson.id);
-                          clearError('lessonId');
-                        }}
-                        style={{ accentColor: 'var(--brand-500)' }}
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleLesson(lesson.id)}
+                        style={{ accentColor: 'var(--brand-500)', cursor: 'pointer' }}
                       />
-                      <span style={{ fontWeight: isSelected ? 600 : 400, flex: 1 }}>
+                      <span style={{ fontWeight: isChecked ? 600 : 400, flex: 1 }}>
                         {lesson.title}
                       </span>
                       {gradeLabel && (
@@ -196,12 +254,14 @@ export function QuizBasicTab({
                 })
               )}
             </div>
-            {errors.lessonId && <p className="field-error">{errors.lessonId}</p>}
+            <p style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.35rem' }}>
+              💡 Để trống nếu quiz dành cho toàn bộ khối lớp (học sinh chỉ cần đạt quyền xem lớp để làm). Nếu chọn bài học, học sinh cần hoàn thành các bài học này để mở khóa quiz.
+            </p>
           </div>
         )}
       </div>
 
-      {/* ─── 3. Mô tả & Hướng dẫn ─── */}
+      {/* ─── 4. Mô tả & Hướng dẫn ─── */}
       <div>
         <label className="label" htmlFor="quiz-desc" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
           Mô tả & Hướng dẫn làm bài
@@ -220,7 +280,7 @@ export function QuizBasicTab({
         </p>
       </div>
 
-      {/* ─── 4. Trạng thái xuất bản ─── */}
+      {/* ─── 5. Trạng thái xuất bản ─── */}
       <div>
         <label className="label" htmlFor="quiz-status" style={{ fontWeight: 600, fontSize: '0.88rem' }}>
           Trạng thái Quiz

@@ -15,14 +15,11 @@ export async function seedQuizzes(
     return;
   }
 
-  // Ensure lesson slug mapping
-  let lessonMap = lessonSlugToIdMap;
-  if (!lessonMap) {
-    const allLessons = await prisma.lesson.findMany({
-      select: { id: true, slug: true },
-    });
-    lessonMap = new Map(allLessons.map((l) => [l.slug, l.id]));
-  }
+  // Ensure lesson mapping (slug -> { id, gradeId })
+  const allLessons = await prisma.lesson.findMany({
+    select: { id: true, slug: true, gradeId: true },
+  });
+  const lessonMap = new Map(allLessons.map((l) => [l.slug, { id: l.id, gradeId: l.gradeId }]));
 
   const files = fs
     .readdirSync(quizzesDir)
@@ -36,12 +33,13 @@ export async function seedQuizzes(
     const lessonSlug = path.basename(filename, '.json');
 
     // 1. Validate that the quiz has a corresponding lesson
-    const lessonId = lessonMap.get(lessonSlug);
-    if (!lessonId) {
+    const lesson = lessonMap.get(lessonSlug);
+    if (!lesson) {
       throw new Error(
         `[Lỗi File: ${filename}] Quiz không có bài học tương ứng. Trường "lessonSlug" ("${lessonSlug}") không tồn tại trong danh sách bài học.`,
       );
     }
+    const lessonId = lesson.id;
 
     // 2. Parse JSON
     let rawContent: string;
@@ -107,8 +105,13 @@ export async function seedQuizzes(
     }
 
     // 5. Upsert Quiz
-    const existingQuiz = await prisma.quiz.findUnique({
-      where: { lessonId },
+    const existingQuiz = await prisma.quiz.findFirst({
+      where: {
+        OR: [
+          { title: quizData.title.trim() },
+          { lessons: { some: { lessonId } } },
+        ],
+      },
       include: {
         questions: {
           include: {
@@ -121,12 +124,15 @@ export async function seedQuizzes(
     if (!existingQuiz) {
       await prisma.quiz.create({
         data: {
-          lessonId,
+          gradeId: lesson.gradeId,
           title: quizData.title.trim(),
           description: quizData.description?.trim() || null,
           timeLimit: quizData.timeLimit ?? null,
           passScore: quizData.passScore ?? 60,
           status: quizData.status || 'PUBLISHED',
+          lessons: {
+            create: [{ lessonId }],
+          },
           questions: {
             create: quizData.questions.map((q: any) => ({
               content: q.content.trim(),
@@ -150,12 +156,19 @@ export async function seedQuizzes(
       await prisma.quiz.update({
         where: { id: existingQuiz.id },
         data: {
+          gradeId: lesson.gradeId,
           title: quizData.title.trim(),
           description: quizData.description?.trim() || null,
           timeLimit: quizData.timeLimit ?? null,
           passScore: quizData.passScore ?? 60,
           status: quizData.status || 'PUBLISHED',
         },
+      });
+
+      await prisma.quizLesson.upsert({
+        where: { quizId_lessonId: { quizId: existingQuiz.id, lessonId } },
+        create: { quizId: existingQuiz.id, lessonId },
+        update: {},
       });
 
       // Check if students have already attempted this quiz

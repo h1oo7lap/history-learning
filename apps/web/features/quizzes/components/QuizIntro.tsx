@@ -25,6 +25,7 @@ export interface QuizIntroProps {
 
 export function QuizIntro({ quiz, onStart, isStarting, errorCode }: QuizIntroProps) {
   const isLessonLocked = errorCode === 'LESSON_NOT_COMPLETED' || quiz.status === 'LOCKED';
+  const hasLessons = Boolean(quiz.lessons && quiz.lessons.length > 0);
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
@@ -39,10 +40,28 @@ export function QuizIntro({ quiz, onStart, isStarting, errorCode }: QuizIntroPro
       <Card className="border-line shadow-card">
         <CardHeader className="space-y-3 pb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-bronze-ink bg-bronze/10 px-2.5 py-1 rounded-sm border border-bronze/20">
-              <BookOpen size={13} aria-hidden="true" />
-              <span>Bài học: {quiz.lesson.title}</span>
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {quiz.grade && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-sm bg-muted/10 text-ink">
+                  🎓 {quiz.grade.name}
+                </span>
+              )}
+
+              {hasLessons ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-bronze-ink bg-bronze/10 px-2.5 py-1 rounded-sm border border-bronze/20">
+                  <BookOpen size={13} aria-hidden="true" />
+                  <span>
+                    {quiz.lessons.length === 1
+                      ? `Bài học: ${quiz.lessons[0].title}`
+                      : `${quiz.lessons.length} bài học liên kết`}
+                  </span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-seal bg-seal/10 px-2.5 py-1 rounded-sm border border-seal/20">
+                  <span>Toàn khối lớp</span>
+                </span>
+              )}
+            </div>
 
             {quiz.lastAttempt && (
               <Badge variant={quiz.lastAttempt.passed ? 'success' : 'danger'}>
@@ -92,7 +111,7 @@ export function QuizIntro({ quiz, onStart, isStarting, errorCode }: QuizIntroPro
               </div>
               <div className="text-xs text-muted">Điều kiện đạt</div>
               <div className="font-serif text-lg font-bold text-ink mt-0.5">
-                ≥ 80% điểm
+                ≥ 60% điểm
               </div>
             </div>
           </div>
@@ -118,18 +137,22 @@ export function QuizIntro({ quiz, onStart, isStarting, errorCode }: QuizIntroPro
             <div className="rounded-md bg-danger/10 border border-danger/30 p-4 text-sm text-danger flex items-start gap-3">
               <AlertCircle size={20} className="shrink-0 mt-0.5" aria-hidden="true" />
               <div className="space-y-2 flex-1">
-                <div className="font-semibold">Bạn chưa hoàn thành bài học này!</div>
+                <div className="font-semibold">Bạn chưa hoàn thành các bài học liên kết!</div>
                 <p className="text-xs text-ink-soft leading-relaxed">
-                  Quy tắc học tập yêu cầu bạn cần học xong và hoàn thành bài đọc trước khi làm bài kiểm tra.
+                  Quy tắc học tập yêu cầu bạn cần học xong và hoàn thành tất cả bài đọc liên kết trước khi làm bài kiểm tra.
                 </p>
-                <div>
-                  <Button asChild variant="secondary" size="sm" className="gap-1.5">
-                    <Link href={`/lessons/${quiz.lesson.slug}`}>
-                      <span>Đến bài học: {quiz.lesson.title}</span>
-                      <ArrowRight size={14} aria-hidden="true" />
-                    </Link>
-                  </Button>
-                </div>
+                {hasLessons && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {quiz.lessons.map((l) => (
+                      <Button asChild variant="secondary" size="sm" key={l.id} className="gap-1.5">
+                        <Link href={`/lessons/${l.slug}`}>
+                          <span>Đến bài: {l.title}</span>
+                          <ArrowRight size={14} aria-hidden="true" />
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

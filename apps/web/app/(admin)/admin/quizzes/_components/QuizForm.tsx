@@ -19,6 +19,7 @@ export interface QuizFormProps {
   open: boolean;
   quiz: AdminQuiz | null;
   initialTab?: QuizTabKey;
+  defaultGradeId?: string;
   isPending: boolean;
   onSubmit: (data: {
     quizDto: CreateQuizPayload | UpdateQuizPayload;
@@ -31,6 +32,7 @@ export function QuizForm({
   open,
   quiz,
   initialTab = 'basic',
+  defaultGradeId,
   isPending,
   onSubmit,
   onClose,
@@ -47,7 +49,8 @@ export function QuizForm({
   const [timeLimit, setTimeLimit] = useState('');
   const [passScore, setPassScore] = useState('60');
   const [status, setStatus] = useState<QuizStatus>('DRAFT');
-  const [lessonId, setLessonId] = useState('');
+  const [gradeId, setGradeId] = useState('');
+  const [lessonIds, setLessonIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<QuestionPayload[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -75,7 +78,8 @@ export function QuizForm({
         setTimeLimit(quiz.timeLimit != null ? String(quiz.timeLimit) : '');
         setPassScore(String(quiz.passScore ?? 60));
         setStatus(quiz.status);
-        setLessonId(quiz.lessonId ?? '');
+        setGradeId(quiz.gradeId ?? '');
+        setLessonIds(quiz.lessons?.map((l) => l.lesson.id) ?? []);
         // Questions will be updated when quizDetail is loaded
       } else {
         setTitle('');
@@ -83,7 +87,8 @@ export function QuizForm({
         setTimeLimit('');
         setPassScore('60');
         setStatus('DRAFT');
-        setLessonId('');
+        setGradeId(defaultGradeId ?? '');
+        setLessonIds([]);
         setQuestions([]);
       }
 
@@ -91,7 +96,7 @@ export function QuizForm({
     } else {
       if (el.open) el.close();
     }
-  }, [open, quiz, initialTab]);
+  }, [open, quiz, initialTab, defaultGradeId]);
 
   // Sync questions when quizDetail arrives
   useEffect(() => {
@@ -120,8 +125,8 @@ export function QuizForm({
       errs.title = 'Tiêu đề không được để trống';
     }
 
-    if (!quiz && !lessonId) {
-      errs.lessonId = 'Vui lòng chọn bài học gắn với quiz';
+    if (!gradeId) {
+      errs.gradeId = 'Vui lòng chọn khối lớp cho bài quiz';
     }
 
     const ps = Number(passScore);
@@ -168,7 +173,7 @@ export function QuizForm({
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      if (errs.title || errs.lessonId) {
+      if (errs.title || errs.gradeId) {
         setActiveTab('basic');
       } else if (errs.passScore || errs.timeLimit) {
         setActiveTab('settings');
@@ -184,7 +189,8 @@ export function QuizForm({
     if (!validate()) return;
 
     const quizDto: CreateQuizPayload | UpdateQuizPayload = {
-      ...(lessonId ? { lessonId } : {}),
+      gradeId,
+      lessonIds,
       title: title.trim(),
       description: description.trim() || null,
       timeLimit: timeLimit ? Number(timeLimit) : null,
@@ -383,10 +389,11 @@ export function QuizForm({
                 setDescription={setDescription}
                 status={status}
                 setStatus={setStatus}
-                lessonId={lessonId}
-                setLessonId={setLessonId}
+                gradeId={gradeId}
+                setGradeId={setGradeId}
+                lessonIds={lessonIds}
+                setLessonIds={setLessonIds}
                 isEditing={Boolean(quiz)}
-                currentLessonTitle={quiz?.lesson?.title}
                 errors={errors}
                 clearError={clearError}
               />

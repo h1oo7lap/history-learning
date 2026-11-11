@@ -23,12 +23,26 @@ const QUIZ_INCLUDE = {
     include: { answers: { orderBy: { displayOrder: 'asc' as const } } },
     orderBy: { displayOrder: 'asc' as const },
   },
-  lesson: { select: { id: true, title: true, slug: true, displayOrder: true, gradeId: true, grade: { select: { id: true, name: true, code: true } } } },
+  grade: { select: { id: true, name: true, code: true } },
+  lessons: {
+    include: {
+      lesson: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          displayOrder: true,
+          gradeId: true,
+          grade: { select: { id: true, name: true, code: true } },
+        },
+      },
+    },
+  },
 } as const;
 
 const QUIZ_LIST_SELECT = {
   id: true,
-  lessonId: true,
+  gradeId: true,
   title: true,
   description: true,
   timeLimit: true,
@@ -36,7 +50,12 @@ const QUIZ_LIST_SELECT = {
   status: true,
   createdAt: true,
   updatedAt: true,
-  lesson: { select: { id: true, title: true, slug: true } },
+  grade: { select: { id: true, name: true, code: true } },
+  lessons: {
+    include: {
+      lesson: { select: { id: true, title: true, slug: true } },
+    },
+  },
   _count: { select: { questions: true } },
 } as const;
 
@@ -62,7 +81,7 @@ export class QuizzesService {
       ...(query.search
         ? { title: { contains: query.search, mode: 'insensitive' as const } }
         : {}),
-      ...(query.gradeId ? { lesson: { gradeId: query.gradeId } } : {}),
+      ...(query.gradeId ? { gradeId: query.gradeId } : {}),
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -71,7 +90,7 @@ export class QuizzesService {
         select: QUIZ_LIST_SELECT,
         skip,
         take,
-        orderBy: [{ lesson: { displayOrder: 'asc' } }, { createdAt: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }],
       }),
       this.prisma.quiz.count({ where }),
     ]);
@@ -94,35 +113,84 @@ export class QuizzesService {
       );
     }
 
-    const lesson = await this.prisma.lesson.findUnique({ where: { id: dto.lessonId } });
-    if (!lesson) throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Bai hoc khong ton tai');
+    const grade = await this.prisma.grade.findUnique({ where: { id: dto.gradeId } });
+    if (!grade) throw new AppError(ErrorCodes.VALIDATION_ERROR, 404, 'Khối lớp không tồn tại');
 
-    const existing = await this.prisma.quiz.findUnique({ where: { lessonId: dto.lessonId } });
-    if (existing) throw new AppError(ErrorCodes.QUIZ_ALREADY_EXISTS, 409, 'Bai hoc nay da co quiz, moi bai hoc chi co 1 quiz');
+    const lessonIds = dto.lessonIds ? Array.from(new Set(dto.lessonIds)) : [];
+    if (lessonIds.length > 0) {
+      const lessons = await this.prisma.lesson.findMany({
+        where: { id: { in: lessonIds } },
+        select: { id: true, gradeId: true },
+      });
+      if (lessons.length !== lessonIds.length) {
+        throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Một hoặc nhiều bài học liên kết không tồn tại');
+      }
+      const invalidGradeLessons = lessons.filter((l) => l.gradeId !== dto.gradeId);
+      if (invalidGradeLessons.length > 0) {
+        throw new AppError(
+          ErrorCodes.VALIDATION_ERROR,
+          400,
+          'Tất cả các bài học liên kết phải thuộc khối lớp của quiz',
+        );
+      }
+    }
 
-    return this.prisma.quiz.create({
-      data: {
-        lessonId: dto.lessonId,
-        title: dto.title,
-        description: dto.description ?? null,
-        timeLimit: dto.timeLimit ?? null,
-        passScore: dto.passScore ?? 60,
-        status: dto.status ?? PublishStatus.DRAFT,
-      },
-      include: QUIZ_INCLUDE,
+    return this.prisma.$transaction(async (tx) => {
+      const quiz = await tx.quiz.create({
+        data: {
+          gradeId: dto.gradeId,
+          title: dto.title,
+          description: dto.description ?? null,
+          timeLimit: dto.timeLimit ?? null,
+          passScore: dto.passScore ?? 60,
+          status: dto.status ?? PublishStatus.DRAFT,
+          ...(lessonIds.length > 0
+            ? {
+                lessons: {
+                  create: lessonIds.map((lessonId) => ({ lessonId })),
+                },
+              }
+            : {}),
+        },
+        include: QUIZ_INCLUDE,
+      });
+      return quiz;
     });
   }
 
   async adminUpdate(id: string, dto: UpdateQuizDto) {
-    await this.ensureExists(id);
+    const existing = await this.prisma.quiz.findUnique({
+      where: { id },
+      include: { lessons: true },
+    });
+    if (!existing) throw new AppError(ErrorCodes.QUIZ_NOT_FOUND, 404, 'Quiz khong ton tai');
 
-    if (dto.lessonId !== undefined) {
-      const lesson = await this.prisma.lesson.findUnique({ where: { id: dto.lessonId } });
-      if (!lesson) throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Bai hoc khong ton tai');
+    const targetGradeId = dto.gradeId ?? existing.gradeId;
+    if (dto.gradeId !== undefined) {
+      const grade = await this.prisma.grade.findUnique({ where: { id: dto.gradeId } });
+      if (!grade) throw new AppError(ErrorCodes.VALIDATION_ERROR, 404, 'Khối lớp không tồn tại');
+    }
 
-      const existing = await this.prisma.quiz.findUnique({ where: { lessonId: dto.lessonId } });
-      if (existing && existing.id !== id) {
-        throw new AppError(ErrorCodes.QUIZ_ALREADY_EXISTS, 409, 'Bai hoc nay da co quiz');
+    const lessonIds =
+      dto.lessonIds !== undefined
+        ? Array.from(new Set(dto.lessonIds))
+        : (existing.lessons?.map((l) => l.lessonId) ?? []);
+
+    if (lessonIds.length > 0) {
+      const lessons = await this.prisma.lesson.findMany({
+        where: { id: { in: lessonIds } },
+        select: { id: true, gradeId: true },
+      });
+      if (lessons.length !== lessonIds.length) {
+        throw new AppError(ErrorCodes.LESSON_NOT_FOUND, 404, 'Một hoặc nhiều bài học liên kết không tồn tại');
+      }
+      const invalidGradeLessons = lessons.filter((l) => l.gradeId !== targetGradeId);
+      if (invalidGradeLessons.length > 0) {
+        throw new AppError(
+          ErrorCodes.VALIDATION_ERROR,
+          400,
+          'Tất cả các bài học liên kết phải thuộc khối lớp của quiz',
+        );
       }
     }
 
@@ -130,17 +198,28 @@ export class QuizzesService {
       await this.validatePublish(id);
     }
 
-    return this.prisma.quiz.update({
-      where: { id },
-      data: {
-        ...(dto.lessonId !== undefined && { lessonId: dto.lessonId }),
-        ...(dto.title !== undefined && { title: dto.title }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.timeLimit !== undefined && { timeLimit: dto.timeLimit }),
-        ...(dto.passScore !== undefined && { passScore: dto.passScore }),
-        ...(dto.status !== undefined && { status: dto.status }),
-      },
-      include: QUIZ_INCLUDE,
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.lessonIds !== undefined) {
+        await tx.quizLesson.deleteMany({ where: { quizId: id } });
+        if (lessonIds.length > 0) {
+          await tx.quizLesson.createMany({
+            data: lessonIds.map((lessonId) => ({ quizId: id, lessonId })),
+          });
+        }
+      }
+
+      return tx.quiz.update({
+        where: { id },
+        data: {
+          ...(dto.gradeId !== undefined && { gradeId: dto.gradeId }),
+          ...(dto.title !== undefined && { title: dto.title }),
+          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.timeLimit !== undefined && { timeLimit: dto.timeLimit }),
+          ...(dto.passScore !== undefined && { passScore: dto.passScore }),
+          ...(dto.status !== undefined && { status: dto.status }),
+        },
+        include: QUIZ_INCLUDE,
+      });
     });
   }
 
@@ -243,12 +322,19 @@ export class QuizzesService {
   }
 
   async findPublishedByLessonId(lessonId: string) {
-    const quiz = await this.prisma.quiz.findFirst({
-      where: { lessonId, status: PublishStatus.PUBLISHED },
-      include: QUIZ_INCLUDE,
+    const quizLesson = await this.prisma.quizLesson.findFirst({
+      where: {
+        lessonId,
+        quiz: { status: PublishStatus.PUBLISHED },
+      },
+      include: {
+        quiz: { include: QUIZ_INCLUDE },
+      },
     });
-    if (!quiz) throw new AppError(ErrorCodes.QUIZ_NOT_FOUND, 404, 'Quiz khong ton tai hoac chua xuat ban');
-    return quiz;
+    if (!quizLesson || !quizLesson.quiz) {
+      throw new AppError(ErrorCodes.QUIZ_NOT_FOUND, 404, 'Quiz khong ton tai hoac chua xuat ban');
+    }
+    return quizLesson.quiz;
   }
 
   private async validatePublish(quizId: string) {
@@ -308,18 +394,22 @@ export class QuizzesService {
     const quizzes = await this.prisma.quiz.findMany({
       where: {
         status: PublishStatus.PUBLISHED,
-        lesson: {
-          status: PublishStatus.PUBLISHED,
-          ...(effectiveGradeId ? { gradeId: effectiveGradeId } : {}),
-        },
+        ...(effectiveGradeId ? { gradeId: effectiveGradeId } : {}),
       },
       select: {
         id: true,
+        gradeId: true,
         title: true,
         description: true,
         timeLimit: true,
-        lessonId: true,
-        lesson: { select: { id: true, title: true, slug: true } },
+        grade: { select: { id: true, name: true, code: true } },
+        lessons: {
+          select: {
+            lesson: {
+              select: { id: true, title: true, slug: true, status: true },
+            },
+          },
+        },
         _count: { select: { questions: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -329,11 +419,16 @@ export class QuizzesService {
       return [];
     }
 
-    const lessonIds = quizzes.map((q) => q.lessonId);
-    const progressList = await this.prisma.lessonProgress.findMany({
-      where: { userId, lessonId: { in: lessonIds } },
-      select: { lessonId: true, status: true },
-    });
+    const allLessonIds = Array.from(
+      new Set(quizzes.flatMap((q) => q.lessons.map((ql) => ql.lesson.id))),
+    );
+    const progressList =
+      allLessonIds.length > 0
+        ? await this.prisma.lessonProgress.findMany({
+            where: { userId, lessonId: { in: allLessonIds } },
+            select: { lessonId: true, status: true },
+          })
+        : [];
     const completedLessonIdSet = new Set(
       progressList.filter((p) => p.status === ProgressStatus.COMPLETED).map((p) => p.lessonId),
     );
@@ -356,6 +451,11 @@ export class QuizzesService {
       let status: 'LOCKED' | 'AVAILABLE' | 'DONE';
       let lastAttempt: { score: number; totalScore: number; passed: boolean } | null = null;
 
+      const quizLessonIds = q.lessons.map((ql) => ql.lesson.id);
+      const allLessonsCompleted =
+        quizLessonIds.length === 0 ||
+        quizLessonIds.every((lid) => completedLessonIdSet.has(lid));
+
       if (latest) {
         status = 'DONE';
         lastAttempt = {
@@ -363,7 +463,7 @@ export class QuizzesService {
           totalScore: latest.totalScore ?? 0,
           passed: latest.passed ?? false,
         };
-      } else if (userRole === 'ADMIN' || completedLessonIdSet.has(q.lessonId)) {
+      } else if (userRole === 'ADMIN' || allLessonsCompleted) {
         status = 'AVAILABLE';
       } else {
         status = 'LOCKED';
@@ -375,8 +475,13 @@ export class QuizzesService {
         description: q.description,
         timeLimit: q.timeLimit,
         questionCount: q._count.questions,
-        lessonId: q.lessonId,
-        lesson: q.lesson,
+        gradeId: q.gradeId,
+        grade: q.grade,
+        lessons: q.lessons.map((ql) => ({
+          id: ql.lesson.id,
+          title: ql.lesson.title,
+          slug: ql.lesson.slug,
+        })),
         status,
         lastAttempt,
       };
@@ -390,7 +495,12 @@ export class QuizzesService {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
-        lesson: true,
+        grade: true,
+        lessons: {
+          include: {
+            lesson: true,
+          },
+        },
         questions: {
           include: { answers: { orderBy: { displayOrder: 'asc' } } },
           orderBy: { displayOrder: 'asc' },
@@ -398,16 +508,30 @@ export class QuizzesService {
       },
     });
 
-    if (!quiz || quiz.status !== PublishStatus.PUBLISHED || quiz.lesson.status !== PublishStatus.PUBLISHED) {
+    if (!quiz || quiz.status !== PublishStatus.PUBLISHED) {
       throw new AppError(ErrorCodes.QUIZ_NOT_PUBLISHED, 400, 'Quiz không tồn tại hoặc chưa xuất bản');
     }
 
     if (userRole !== 'ADMIN') {
-      const progress = await this.prisma.lessonProgress.findUnique({
-        where: { userId_lessonId: { userId, lessonId: quiz.lessonId } },
-      });
-      if (!progress || progress.status !== ProgressStatus.COMPLETED) {
-        throw new AppError(ErrorCodes.LESSON_NOT_COMPLETED, 403, 'Bạn cần hoàn thành bài học trước khi làm quiz');
+      const requiredLessonIds = quiz.lessons.map((ql) => ql.lessonId);
+      if (requiredLessonIds.length > 0) {
+        const completedProgress = await this.prisma.lessonProgress.findMany({
+          where: {
+            userId,
+            lessonId: { in: requiredLessonIds },
+            status: ProgressStatus.COMPLETED,
+          },
+          select: { lessonId: true },
+        });
+        const completedSet = new Set((completedProgress ?? []).map((p) => p.lessonId));
+        const allCompleted = requiredLessonIds.every((lid) => completedSet.has(lid));
+        if (!allCompleted) {
+          throw new AppError(
+            ErrorCodes.LESSON_NOT_COMPLETED,
+            403,
+            'Bạn cần hoàn thành các bài học liên kết trước khi làm quiz',
+          );
+        }
       }
     }
 
@@ -483,14 +607,14 @@ export class QuizzesService {
     return await this.prisma.$transaction(async (tx) => {
       const attempt = await tx.quizAttempt.findUnique({
         where: { id: dto.attemptId },
-        include: { quiz: { include: { lesson: true } } },
+        include: { quiz: true },
       });
 
       if (!attempt || attempt.userId !== userId || attempt.quizId !== quizId) {
         throw new AppError(ErrorCodes.ATTEMPT_NOT_FOUND, 404, 'Lượt làm bài không tồn tại');
       }
 
-      if (attempt.quiz.status !== PublishStatus.PUBLISHED || attempt.quiz.lesson.status !== PublishStatus.PUBLISHED) {
+      if (attempt.quiz.status !== PublishStatus.PUBLISHED) {
         throw new AppError(ErrorCodes.QUIZ_NOT_PUBLISHED, 400, 'Quiz không tồn tại hoặc chưa xuất bản');
       }
 
@@ -699,7 +823,12 @@ export class QuizzesService {
       include: {
         quiz: {
           include: {
-            lesson: { select: { id: true, title: true, slug: true } },
+            grade: { select: { id: true, name: true, code: true } },
+            lessons: {
+              include: {
+                lesson: { select: { id: true, title: true, slug: true } },
+              },
+            },
             questions: {
               include: { answers: { orderBy: { displayOrder: 'asc' } } },
               orderBy: { displayOrder: 'asc' },
@@ -773,7 +902,8 @@ export class QuizzesService {
         title: attempt.quiz.title,
         passScore: attempt.quiz.passScore,
         timeLimit: attempt.quiz.timeLimit,
-        lesson: attempt.quiz.lesson,
+        grade: attempt.quiz.grade,
+        lessons: attempt.quiz.lessons.map((ql) => ql.lesson),
       },
       questions: reviewQuestions,
     };

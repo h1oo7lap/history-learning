@@ -47,7 +47,7 @@ describe('AdminQuizzesController', () => {
   });
 
   it('create calls service.adminCreate', async () => {
-    const dto = { lessonId: 'l-1', title: 'Quiz Title', status: PublishStatus.DRAFT, passScore: 60 };
+    const dto = { gradeId: 'grade-1', lessonIds: ['l-1'], title: 'Quiz Title', status: PublishStatus.DRAFT, passScore: 60 };
     const mockCreated = { id: 'q-1', ...dto };
     vi.mocked(service.adminCreate).mockResolvedValue(mockCreated as any);
 

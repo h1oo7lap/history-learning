@@ -18,6 +18,15 @@ function createMockPrisma() {
     },
     lesson: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
+    },
+    grade: {
+      findUnique: vi.fn(),
+    },
+    quizLesson: {
+      deleteMany: vi.fn(),
+      createMany: vi.fn(),
+      findFirst: vi.fn(),
     },
     question: {
       deleteMany: vi.fn(),
@@ -86,7 +95,7 @@ describe('QuizzesService', () => {
       });
     });
 
-it('applies gradeId filter via linked lesson', async () => {
+    it('applies gradeId filter directly on quiz', async () => {
       prisma.$transaction.mockResolvedValue([[], 0]);
 
       await service.adminFindAll({ gradeId: 'grade-4' });
@@ -94,7 +103,7 @@ it('applies gradeId filter via linked lesson', async () => {
       expect(prisma.quiz.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            lesson: { gradeId: 'grade-4' },
+            gradeId: 'grade-4',
           },
         }),
       );
@@ -164,7 +173,8 @@ it('applies gradeId filter via linked lesson', async () => {
   // =========================================================================
   describe('adminCreate', () => {
     const validDto = {
-      lessonId: 'lesson-1',
+      gradeId: 'grade-1',
+      lessonIds: ['lesson-1'],
       title: 'Quiz Chiến dịch Điện Biên Phủ',
       description: 'Mô tả quiz',
       timeLimit: 300,
@@ -172,30 +182,41 @@ it('applies gradeId filter via linked lesson', async () => {
       status: PublishStatus.DRAFT,
     };
 
-    it('throws 404 AppError when lesson does not exist', async () => {
-      prisma.lesson.findUnique.mockResolvedValue(null);
+    it('throws 404 AppError when grade does not exist', async () => {
+      prisma.grade.findUnique.mockResolvedValue(null);
+
+      await expect(service.adminCreate(validDto)).rejects.toMatchObject({
+        status: 404,
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+      expect(prisma.quiz.create).not.toHaveBeenCalled();
+    });
+
+    it('throws 404 when linked lesson not found', async () => {
+      prisma.grade.findUnique.mockResolvedValue({ id: 'grade-1' });
+      prisma.lesson.findMany.mockResolvedValue([]);
 
       await expect(service.adminCreate(validDto)).rejects.toMatchObject({
         status: 404,
         code: ErrorCodes.LESSON_NOT_FOUND,
       });
-      expect(prisma.quiz.findUnique).not.toHaveBeenCalled();
+      expect(prisma.quiz.create).not.toHaveBeenCalled();
     });
 
-    it('throws 409 QUIZ_ALREADY_EXISTS when lesson already has a quiz', async () => {
-      prisma.lesson.findUnique.mockResolvedValue({ id: 'lesson-1' });
-      prisma.quiz.findUnique.mockResolvedValue({ id: 'existing-quiz' });
+    it('throws 400 when linked lesson belongs to another grade', async () => {
+      prisma.grade.findUnique.mockResolvedValue({ id: 'grade-1' });
+      prisma.lesson.findMany.mockResolvedValue([{ id: 'lesson-1', gradeId: 'grade-2' }]);
 
       await expect(service.adminCreate(validDto)).rejects.toMatchObject({
-        status: 409,
-        code: ErrorCodes.QUIZ_ALREADY_EXISTS,
+        status: 400,
+        code: ErrorCodes.VALIDATION_ERROR,
       });
       expect(prisma.quiz.create).not.toHaveBeenCalled();
     });
 
     it('creates quiz with valid data and default values', async () => {
-      prisma.lesson.findUnique.mockResolvedValue({ id: 'lesson-1' });
-      prisma.quiz.findUnique.mockResolvedValue(null);
+      prisma.grade.findUnique.mockResolvedValue({ id: 'grade-1' });
+      prisma.lesson.findMany.mockResolvedValue([{ id: 'lesson-1', gradeId: 'grade-1' }]);
       const createdQuiz = { id: 'q-new', ...validDto };
       prisma.quiz.create.mockResolvedValue(createdQuiz);
 
@@ -203,28 +224,30 @@ it('applies gradeId filter via linked lesson', async () => {
 
       expect(prisma.quiz.create).toHaveBeenCalledWith({
         data: {
-          lessonId: 'lesson-1',
+          gradeId: 'grade-1',
           title: 'Quiz Chiến dịch Điện Biên Phủ',
           description: 'Mô tả quiz',
           timeLimit: 300,
           passScore: 80,
           status: PublishStatus.DRAFT,
+          lessons: {
+            create: [{ lessonId: 'lesson-1' }],
+          },
         },
         include: expect.any(Object),
       });
       expect(result).toBe(createdQuiz);
     });
 
-    it('uses defaults for optional fields', async () => {
-      prisma.lesson.findUnique.mockResolvedValue({ id: 'lesson-1' });
-      prisma.quiz.findUnique.mockResolvedValue(null);
+    it('creates quiz without lessons (pure grade-level quiz)', async () => {
+      prisma.grade.findUnique.mockResolvedValue({ id: 'grade-1' });
       prisma.quiz.create.mockResolvedValue({ id: 'q-def' });
 
-      await service.adminCreate({ lessonId: 'lesson-1', title: 'Tối giản' });
+      await service.adminCreate({ gradeId: 'grade-1', title: 'Tối giản' });
 
       expect(prisma.quiz.create).toHaveBeenCalledWith({
         data: {
-          lessonId: 'lesson-1',
+          gradeId: 'grade-1',
           title: 'Tối giản',
           description: null,
           timeLimit: null,
@@ -235,70 +258,10 @@ it('applies gradeId filter via linked lesson', async () => {
       });
     });
 
-    it('throws 404 when lesson not found', async () => {
-      prisma.lesson.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.adminCreate({
-          lessonId: 'missing-lesson',
-          title: 'Quiz 1',
-          passScore: 60,
-          status: PublishStatus.DRAFT,
-        }),
-      ).rejects.toMatchObject({
-        status: 404,
-        code: ErrorCodes.LESSON_NOT_FOUND,
-      });
-    });
-
-    it('throws 409 when lesson already has a quiz', async () => {
-      prisma.lesson.findUnique.mockResolvedValue({ id: 'lesson-1' });
-      prisma.quiz.findUnique.mockResolvedValue({ id: 'existing-quiz' });
-
-      await expect(
-        service.adminCreate({
-          lessonId: 'lesson-1',
-          title: 'Quiz 1',
-          passScore: 60,
-          status: PublishStatus.DRAFT,
-        }),
-      ).rejects.toMatchObject({
-        status: 409,
-        code: ErrorCodes.QUIZ_ALREADY_EXISTS,
-      });
-    });
-
-    it('creates quiz with defaults', async () => {
-      prisma.lesson.findUnique.mockResolvedValue({ id: 'lesson-1' });
-      prisma.quiz.findUnique.mockResolvedValue(null);
-      const mockCreated = { id: 'new-quiz', title: 'Quiz 1' };
-      prisma.quiz.create.mockResolvedValue(mockCreated);
-
-      const result = await service.adminCreate({
-        lessonId: 'lesson-1',
-        title: 'Quiz 1',
-        passScore: 60,
-        status: PublishStatus.DRAFT,
-      });
-
-      expect(prisma.quiz.create).toHaveBeenCalledWith({
-        data: {
-          lessonId: 'lesson-1',
-          title: 'Quiz 1',
-          description: null,
-          timeLimit: null,
-          passScore: 60,
-          status: PublishStatus.DRAFT,
-        },
-        include: expect.any(Object),
-      });
-      expect(result).toBe(mockCreated);
-    });
-
     it('Q-ADMIN-PUB: adminCreate throws 422 QUIZ_NO_QUESTIONS if created with status PUBLISHED', async () => {
       await expect(
         service.adminCreate({
-          lessonId: 'lesson-1',
+          gradeId: 'grade-1',
           title: 'Quiz 1',
           status: PublishStatus.PUBLISHED,
         }),
@@ -323,7 +286,7 @@ it('applies gradeId filter via linked lesson', async () => {
     });
 
     it('updates quiz fields when found', async () => {
-      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', gradeId: 'grade-1', lessons: [] });
       const updated = { id: 'q-1', title: 'Updated Title' };
       prisma.quiz.update.mockResolvedValue(updated);
 
@@ -353,7 +316,7 @@ it('applies gradeId filter via linked lesson', async () => {
     });
 
     it('updates quiz fields', async () => {
-      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1' });
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', gradeId: 'grade-1', lessons: [] });
       prisma.quiz.update.mockResolvedValue({ id: 'q-1', title: 'Updated' });
 
       const result = await service.adminUpdate('q-1', { title: 'Updated', passScore: 80 });
@@ -367,7 +330,7 @@ it('applies gradeId filter via linked lesson', async () => {
     });
 
     it('Q-ADMIN-ATTEMPTS: adminUpdate allows updating title, description, passScore, timeLimit even when quiz has attempts', async () => {
-      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', questions: [] });
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', gradeId: 'grade-1', lessons: [], questions: [] });
       prisma.quizAttempt.count.mockResolvedValue(5);
       const updated = { id: 'q-1', title: 'New Title', passScore: 80, timeLimit: 600 };
       prisma.quiz.update.mockResolvedValue(updated);
@@ -388,7 +351,7 @@ it('applies gradeId filter via linked lesson', async () => {
     });
 
     it('Q-ADMIN-PUB: adminUpdate allows changing status from PUBLISHED to DRAFT without question validation', async () => {
-      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', questions: [] });
+      prisma.quiz.findUnique.mockResolvedValue({ id: 'q-1', gradeId: 'grade-1', lessons: [], questions: [] });
       const updated = { id: 'q-1', status: PublishStatus.DRAFT };
       prisma.quiz.update.mockResolvedValue(updated);
 
@@ -1027,7 +990,7 @@ it('applies gradeId filter via linked lesson', async () => {
   // =========================================================================
   describe('findPublishedByLessonId', () => {
     it('throws 404 when published quiz not found', async () => {
-      prisma.quiz.findFirst.mockResolvedValue(null);
+      prisma.quizLesson.findFirst.mockResolvedValue(null);
 
       await expect(service.findPublishedByLessonId('lesson-1')).rejects.toMatchObject({
         status: 404,
@@ -1036,8 +999,8 @@ it('applies gradeId filter via linked lesson', async () => {
     });
 
     it('returns published quiz for lesson', async () => {
-      const mockQuiz = { id: 'q-pub', lessonId: 'lesson-1', status: PublishStatus.PUBLISHED };
-      prisma.quiz.findFirst.mockResolvedValue(mockQuiz);
+      const mockQuiz = { id: 'q-pub', gradeId: 'grade-1', status: PublishStatus.PUBLISHED };
+      prisma.quizLesson.findFirst.mockResolvedValue({ quiz: mockQuiz });
 
       const result = await service.findPublishedByLessonId('lesson-1');
       expect(result).toBe(mockQuiz);
@@ -1053,8 +1016,9 @@ it('applies gradeId filter via linked lesson', async () => {
       title: 'Quiz 1',
       description: 'Desc 1',
       timeLimit: 600,
-      lessonId: 'lesson-1',
-      lesson: { id: 'lesson-1', title: 'Lesson 1', slug: 'lesson-1' },
+      gradeId: 'grade-1',
+      grade: { id: 'grade-1', name: 'Lớp 1', code: 'GRADE_1' },
+      lessons: [{ lesson: { id: 'lesson-1', title: 'Lesson 1', slug: 'lesson-1', status: PublishStatus.PUBLISHED } }],
       _count: { questions: 5 },
     };
     const mockQuiz2 = {
@@ -1062,8 +1026,9 @@ it('applies gradeId filter via linked lesson', async () => {
       title: 'Quiz 2',
       description: 'Desc 2',
       timeLimit: null,
-      lessonId: 'lesson-2',
-      lesson: { id: 'lesson-2', title: 'Lesson 2', slug: 'lesson-2' },
+      gradeId: 'grade-1',
+      grade: { id: 'grade-1', name: 'Lớp 1', code: 'GRADE_1' },
+      lessons: [{ lesson: { id: 'lesson-2', title: 'Lesson 2', slug: 'lesson-2', status: PublishStatus.PUBLISHED } }],
       _count: { questions: 10 },
     };
 
@@ -1076,10 +1041,7 @@ it('applies gradeId filter via linked lesson', async () => {
         expect.objectContaining({
           where: {
             status: PublishStatus.PUBLISHED,
-            lesson: {
-              status: PublishStatus.PUBLISHED,
-              gradeId: 'grade-user',
-            },
+            gradeId: 'grade-user',
           },
         }),
       );
@@ -1091,10 +1053,7 @@ it('applies gradeId filter via linked lesson', async () => {
         expect.objectContaining({
           where: {
             status: PublishStatus.PUBLISHED,
-            lesson: {
-              status: PublishStatus.PUBLISHED,
-              gradeId: 'grade-override',
-            },
+            gradeId: 'grade-override',
           },
         }),
       );
@@ -1107,9 +1066,6 @@ it('applies gradeId filter via linked lesson', async () => {
         expect.objectContaining({
           where: {
             status: PublishStatus.PUBLISHED,
-            lesson: {
-              status: PublishStatus.PUBLISHED,
-            },
           },
         }),
       );
@@ -1143,8 +1099,9 @@ it('applies gradeId filter via linked lesson', async () => {
         description: 'Desc 1',
         timeLimit: 600,
         questionCount: 5,
-        lessonId: 'lesson-1',
-        lesson: { id: 'lesson-1', title: 'Lesson 1', slug: 'lesson-1' },
+        gradeId: 'grade-1',
+        grade: { id: 'grade-1', name: 'Lớp 1', code: 'GRADE_1' },
+        lessons: [{ id: 'lesson-1', title: 'Lesson 1', slug: 'lesson-1' }],
         status: 'LOCKED',
         lastAttempt: null,
       });
@@ -1155,8 +1112,9 @@ it('applies gradeId filter via linked lesson', async () => {
         description: 'Desc 2',
         timeLimit: null,
         questionCount: 10,
-        lessonId: 'lesson-2',
-        lesson: { id: 'lesson-2', title: 'Lesson 2', slug: 'lesson-2' },
+        gradeId: 'grade-1',
+        grade: { id: 'grade-1', name: 'Lớp 1', code: 'GRADE_1' },
+        lessons: [{ id: 'lesson-2', title: 'Lesson 2', slug: 'lesson-2' }],
         status: 'DONE',
         lastAttempt: { score: 8, totalScore: 10, passed: true },
       });
@@ -1198,10 +1156,16 @@ it('applies gradeId filter via linked lesson', async () => {
   describe('startQuiz', () => {
     const mockPublishedQuiz = {
       id: 'quiz-1',
-      lessonId: 'lesson-1',
+      gradeId: 'grade-1',
       status: PublishStatus.PUBLISHED,
       timeLimit: 300,
-      lesson: { id: 'lesson-1', status: PublishStatus.PUBLISHED },
+      grade: { id: 'grade-1' },
+      lessons: [
+        {
+          lessonId: 'lesson-1',
+          lesson: { id: 'lesson-1', status: PublishStatus.PUBLISHED },
+        },
+      ],
       questions: [
         {
           id: 'q-1',
@@ -1235,20 +1199,9 @@ it('applies gradeId filter via linked lesson', async () => {
       });
     });
 
-    it('Q1: startQuiz throws 400 QUIZ_NOT_PUBLISHED if lesson is not PUBLISHED', async () => {
-      prisma.quiz.findUnique.mockResolvedValue({
-        ...mockPublishedQuiz,
-        lesson: { id: 'lesson-1', status: PublishStatus.DRAFT },
-      });
-      await expect(service.startQuiz('user-1', 'USER', 'quiz-1')).rejects.toMatchObject({
-        status: 400,
-        code: ErrorCodes.QUIZ_NOT_PUBLISHED,
-      });
-    });
-
-    it('Q12: startQuiz throws 403 LESSON_NOT_COMPLETED if student has not completed lesson, but allows ADMIN', async () => {
+    it('Q12: startQuiz throws 403 LESSON_NOT_COMPLETED if student has not completed linked lessons, but allows ADMIN', async () => {
       prisma.quiz.findUnique.mockResolvedValue(mockPublishedQuiz);
-      prisma.lessonProgress.findUnique.mockResolvedValue(null);
+      prisma.lessonProgress.findMany.mockResolvedValue([]);
 
       // Student rejected
       await expect(service.startQuiz('user-1', 'USER', 'quiz-1')).rejects.toMatchObject({
@@ -1268,7 +1221,7 @@ it('applies gradeId filter via linked lesson', async () => {
 
     it('Q3: startQuiz reuses open and unexpired attempt instead of creating new one', async () => {
       prisma.quiz.findUnique.mockResolvedValue(mockPublishedQuiz);
-      prisma.lessonProgress.findUnique.mockResolvedValue({ status: ProgressStatus.COMPLETED });
+      prisma.lessonProgress.findMany.mockResolvedValue([{ lessonId: 'lesson-1' }]);
 
       const existingStartedAt = new Date(Date.now() - 60 * 1000); // 1 min ago, limit 300s -> unexpired
       prisma.quizAttempt.findFirst.mockResolvedValue({
@@ -1283,7 +1236,7 @@ it('applies gradeId filter via linked lesson', async () => {
 
     it('Q3: startQuiz creates new attempt if existing attempt is expired', async () => {
       prisma.quiz.findUnique.mockResolvedValue(mockPublishedQuiz);
-      prisma.lessonProgress.findUnique.mockResolvedValue({ status: ProgressStatus.COMPLETED });
+      prisma.lessonProgress.findMany.mockResolvedValue([{ lessonId: 'lesson-1' }]);
 
       const expiredStartedAt = new Date(Date.now() - 400 * 1000); // 400s ago, limit 300s -> expired
       prisma.quizAttempt.findFirst.mockResolvedValue({
@@ -1302,7 +1255,7 @@ it('applies gradeId filter via linked lesson', async () => {
 
     it('Q2: startQuiz returns questions and answers stripped of isCorrect and explanation', async () => {
       prisma.quiz.findUnique.mockResolvedValue(mockPublishedQuiz);
-      prisma.lessonProgress.findUnique.mockResolvedValue({ status: ProgressStatus.COMPLETED });
+      prisma.lessonProgress.findMany.mockResolvedValue([{ lessonId: 'lesson-1' }]);
       prisma.quizAttempt.findFirst.mockResolvedValue(null);
       prisma.quizAttempt.create.mockResolvedValue({
         id: 'attempt-1',
@@ -1686,7 +1639,8 @@ it('applies gradeId filter via linked lesson', async () => {
           title: 'Quiz 1',
           passScore: 60,
           timeLimit: 300,
-          lesson: { id: 'l-1', title: 'L 1', slug: 'l-1' },
+          grade: { id: 'g-1', name: 'Lớp 4', code: 'GRADE_4' },
+          lessons: [{ lesson: { id: 'l-1', title: 'L 1', slug: 'l-1' } }],
           questions: [
             {
               id: 'q-1',

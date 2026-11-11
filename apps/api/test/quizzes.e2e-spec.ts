@@ -169,7 +169,8 @@ describe('Quizzes (e2e)', () => {
     // Published quiz on published lesson (Grade A)
     publishedQuiz = await prisma.quiz.create({
       data: {
-        lessonId: publishedLesson.id,
+        gradeId: gradeA.id,
+        lessons: { create: [{ lessonId: publishedLesson.id }] },
         title: 'Quiz Bạch Đằng',
         description: 'Kiểm tra kiến thức trận Bạch Đằng',
         passScore: 60,
@@ -218,7 +219,8 @@ describe('Quizzes (e2e)', () => {
     // Draft quiz on published lesson B
     draftQuiz = await prisma.quiz.create({
       data: {
-        lessonId: publishedLessonB.id,
+        gradeId: gradeA.id,
+        lessons: { create: [{ lessonId: publishedLessonB.id }] },
         title: 'Quiz Lam Sơn Draft',
         passScore: 50,
         status: PublishStatus.DRAFT,
@@ -228,7 +230,8 @@ describe('Quizzes (e2e)', () => {
     // Published quiz on draft lesson
     quizOfDraftLesson = await prisma.quiz.create({
       data: {
-        lessonId: draftLesson.id,
+        gradeId: gradeA.id,
+        lessons: { create: [{ lessonId: draftLesson.id }] },
         title: 'Quiz of Draft Lesson',
         passScore: 50,
         status: PublishStatus.PUBLISHED,
@@ -248,7 +251,8 @@ describe('Quizzes (e2e)', () => {
 
     publishedQuiz2 = await prisma.quiz.create({
       data: {
-        lessonId: publishedLessonC.id,
+        gradeId: gradeA.id,
+        lessons: { create: [{ lessonId: publishedLessonC.id }] },
         title: 'Quiz Chống Tống',
         description: 'Kiểm tra kiến thức với True/False',
         passScore: 50,
@@ -1164,7 +1168,8 @@ describe('Quizzes (e2e)', () => {
 
       emptyQuiz = await prisma.quiz.create({
         data: {
-          lessonId: emptyLesson.id,
+          gradeId: gradeA.id,
+          lessons: { create: [{ lessonId: emptyLesson.id }] },
           title: 'Quiz Bản Nháp Chưa Có Câu Hỏi',
           description: 'Mô tả quiz',
           passScore: 60,

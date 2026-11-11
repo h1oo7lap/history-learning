@@ -440,9 +440,15 @@ export interface AdminQuizLesson {
   grade?: { id: string; name: string; code: string } | null;
 }
 
+export interface AdminQuizGrade {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface AdminQuiz {
   id: string;
-  lessonId: string;
+  gradeId: string;
   title: string;
   description: string | null;
   timeLimit: number | null;
@@ -450,13 +456,15 @@ export interface AdminQuiz {
   status: QuizStatus;
   createdAt: string;
   updatedAt: string;
-  lesson: AdminQuizLesson;
-  questions: AdminQuestion[];
+  grade?: AdminQuizGrade;
+  lessons?: Array<{ lesson: AdminQuizLesson }>;
+  questions?: AdminQuestion[];
   _count?: { questions: number };
 }
 
 export interface CreateQuizPayload {
-  lessonId: string;
+  gradeId: string;
+  lessonIds?: string[];
   title: string;
   description?: string | null;
   timeLimit?: number | null;

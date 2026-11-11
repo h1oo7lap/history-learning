@@ -78,14 +78,24 @@ export default function QuizAttemptReviewPage({
       <Card className="border-line shadow-card overflow-hidden">
         <CardHeader className="border-b border-line/60 pb-5 space-y-3 bg-paper/50">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Link
-              href={`/lessons/${quiz.lesson.slug}`}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-bronze-ink bg-bronze/10 hover:bg-bronze/20 px-2.5 py-1 rounded-sm border border-bronze/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
-              title="Quay lại ôn lý thuyết bài học"
-            >
-              <BookOpen size={13} aria-hidden="true" />
-              <span>Bài học: {quiz.lesson.title}</span>
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {quiz.grade && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded bg-muted/10 text-ink">
+                  🎓 {quiz.grade.name}
+                </span>
+              )}
+              {quiz.lessons && quiz.lessons.length > 0 && quiz.lessons.map((lesson) => (
+                <Link
+                  key={lesson.id}
+                  href={`/lessons/${lesson.slug}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-bronze-ink bg-bronze/10 hover:bg-bronze/20 px-2.5 py-1 rounded-sm border border-bronze/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal"
+                  title="Quay lại ôn lý thuyết bài học"
+                >
+                  <BookOpen size={13} aria-hidden="true" />
+                  <span>Bài học: {lesson.title}</span>
+                </Link>
+              ))}
+            </div>
 
             <Badge variant={attempt.passed ? 'success' : 'danger'} className="text-sm px-2.5 py-1">
               {attempt.passed ? (
@@ -154,9 +164,9 @@ export default function QuizAttemptReviewPage({
           </Button>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {!attempt.passed && (
+            {!attempt.passed && quiz.lessons?.[0] && (
               <Button asChild variant="secondary" size="md" className="gap-2">
-                <Link href={`/lessons/${quiz.lesson.slug}`}>
+                <Link href={`/lessons/${quiz.lessons[0].slug}`}>
                   <BookOpen size={16} aria-hidden="true" />
                   <span>Ôn lại bài học</span>
                 </Link>
@@ -198,9 +208,9 @@ export default function QuizAttemptReviewPage({
         </Button>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {!attempt.passed && (
+          {!attempt.passed && quiz.lessons?.[0] && (
             <Button asChild variant="secondary" size="md" className="gap-2">
-              <Link href={`/lessons/${quiz.lesson.slug}`}>
+              <Link href={`/lessons/${quiz.lessons[0].slug}`}>
                 <BookOpen size={16} aria-hidden="true" />
                 <span>Ôn lại bài học</span>
               </Link>
