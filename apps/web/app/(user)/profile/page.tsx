@@ -1,12 +1,16 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Camera, GraduationCap, Loader2, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { UpdateProfileSchema } from '@history-learning/shared';
 import type { UpdateProfileDto } from '@history-learning/shared';
 import { useMe, useUpdateProfile, useEducationLevels } from '@/features/auth/hooks';
 import { LevelProgress } from '@/components/gamification/LevelProgress';
+import { uploadImage } from '@/lib/upload';
+import { optimizeCloudinaryUrl } from '@/lib/format';
 
 export default function ProfilePage() {
   const { data: user, isLoading } = useMe();
@@ -14,12 +18,32 @@ export default function ProfilePage() {
   const updateProfile = useUpdateProfile();
   const isAdmin = user?.role === 'ADMIN';
 
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [viewingAvatar, setViewingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentAvatarUrl = previewUrl || user?.avatar || null;
+
+  useEffect(() => {
+    if (!viewingAvatar) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setViewingAvatar(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewingAvatar]);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isDirty },
   } = useForm<UpdateProfileDto>({
     resolver: zodResolver(UpdateProfileSchema),
+    resetOptions: { keepDirtyValues: true },
     values: {
       ...(isAdmin
         ? {
@@ -32,6 +56,47 @@ export default function ProfilePage() {
       avatar: user?.avatar ?? null,
     },
   });
+
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    let localUrl: string | null = null;
+    try {
+      localUrl = URL.createObjectURL(file);
+      setPreviewUrl(localUrl);
+      setUploading(true);
+      setUploadProgress(0);
+
+      const url = await uploadImage(file, {
+        folder: 'avatars',
+        onProgress: (pct) => setUploadProgress(pct),
+      });
+
+      await updateProfile.mutateAsync({ avatar: url });
+      setPreviewUrl(null);
+    } catch (err) {
+      setPreviewUrl(null);
+      const msg = err instanceof Error ? err.message : 'Tải ảnh đại diện thất bại';
+      console.error('[AvatarUpload]', err);
+      toast.error(msg);
+    } finally {
+      if (localUrl) URL.revokeObjectURL(localUrl);
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user?.avatar) return;
+    try {
+      await updateProfile.mutateAsync({ avatar: null });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gỡ ảnh đại diện thất bại';
+      toast.error(msg);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -69,12 +134,43 @@ export default function ProfilePage() {
 
         {/* Avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
-          <div style={{ position: 'relative' }}>
-            {user?.avatar ? (
+          <div
+            onClick={() => {
+              if (currentAvatarUrl) {
+                setViewingAvatar(true);
+              } else if (!uploading && !updateProfile.isPending) {
+                fileInputRef.current?.click();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (currentAvatarUrl) {
+                  setViewingAvatar(true);
+                } else if (!uploading && !updateProfile.isPending) {
+                  fileInputRef.current?.click();
+                }
+              }
+            }}
+            aria-label={currentAvatarUrl ? 'Xem ảnh đại diện' : 'Tải ảnh đại diện'}
+            title={currentAvatarUrl ? 'Bấm để xem rõ ảnh' : 'Bấm để tải ảnh lên'}
+            style={{
+              position: 'relative',
+              width: 72,
+              height: 72,
+              flexShrink: 0,
+              cursor: (uploading || updateProfile.isPending) ? 'not-allowed' : 'pointer',
+              borderRadius: '50%',
+              overflow: 'hidden',
+            }}
+          >
+            {currentAvatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={user.avatar}
-                alt={user.fullName}
+                src={previewUrl || optimizeCloudinaryUrl(user?.avatar, 144)}
+                alt={user?.fullName || 'Avatar'}
                 style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }}
               />
             ) : (
@@ -87,18 +183,72 @@ export default function ProfilePage() {
                 {initials}
               </div>
             )}
-            <div style={{
-              position: 'absolute', bottom: 0, right: 0,
-              width: 24, height: 24, borderRadius: '50%',
-              background: 'var(--surface)', border: '2px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}>
-              <Camera size={12} color="var(--muted)" />
-            </div>
+
+            {uploading && (
+              <div
+                style={{
+                  position: 'absolute', inset: 0, borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.55)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', zIndex: 2,
+                }}
+              >
+                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <span style={{ fontSize: '0.625rem', marginTop: 2 }}>{uploadProgress}%</span>
+                )}
+              </div>
+            )}
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            style={{ display: 'none' }}
+            onChange={handleAvatarFileSelect}
+            disabled={uploading || updateProfile.isPending}
+          />
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1.125rem' }}>{user?.fullName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>{user?.fullName}</span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || updateProfile.isPending}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: 6,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface-2)',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  color: 'var(--foreground)',
+                  cursor: (uploading || updateProfile.isPending) ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <Camera size={12} /> Đổi ảnh
+              </button>
+              {user?.avatar && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={uploading || updateProfile.isPending}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    fontSize: '0.8rem', color: 'var(--muted)',
+                    cursor: (uploading || updateProfile.isPending) ? 'not-allowed' : 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                  title="Gỡ ảnh đại diện"
+                >
+                  Gỡ ảnh
+                </button>
+              )}
+            </div>
             <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{user?.email}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
               <div style={{
@@ -326,6 +476,80 @@ export default function ProfilePage() {
           </button>
         </form>
       </div>
+
+      {/* Lightbox xem rõ ảnh đại diện */}
+      {viewingAvatar && currentAvatarUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Xem ảnh đại diện"
+          onClick={() => setViewingAvatar(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              maxWidth: 'min(90vw, 420px)',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setViewingAvatar(false)}
+              aria-label="Đóng"
+              style={{
+                position: 'absolute',
+                top: -42,
+                right: 0,
+                background: 'rgba(255, 255, 255, 0.25)',
+                border: 'none',
+                color: 'white',
+                fontSize: '1.25rem',
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              ✕
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={optimizeCloudinaryUrl(currentAvatarUrl, 1000)}
+              alt={user?.fullName || 'Ảnh đại diện'}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '75vh',
+                borderRadius: 16,
+                objectFit: 'contain',
+                boxShadow: '0 12px 36px rgba(0,0,0,0.4)',
+                background: 'var(--surface)',
+              }}
+            />
+            <div style={{ marginTop: '0.75rem', color: 'white', fontSize: '0.95rem', fontWeight: 600 }}>
+              {user?.fullName}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );

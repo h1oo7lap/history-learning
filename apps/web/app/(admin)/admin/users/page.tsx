@@ -5,6 +5,7 @@ import { useAdminUsers, useUpdateAdminUser, useGradeOptions } from '@/features/a
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import type { AdminUser, UserRole, UserStatus } from '@/features/admin/api';
 import { toast } from 'sonner';
+import { optimizeCloudinaryUrl } from '@/lib/format';
 
 // ─── Inline Modal component ────────────────────────────────────
 
@@ -95,13 +96,41 @@ function UserModal({ open, user, onClose }: UserModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label className="label">Tên người dùng</label>
-            <input className="input" value={user?.fullName || ''} disabled style={{ opacity: 0.7 }} />
-          </div>
-          <div>
-            <label className="label">Email</label>
-            <input className="input" value={user?.email || ''} disabled style={{ opacity: 0.7 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'var(--surface-2)', borderRadius: 'var(--radius)' }}>
+            {user?.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={optimizeCloudinaryUrl(user.avatar, 96)}
+                alt={user.fullName}
+                style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--brand-400), var(--brand-700))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: 'white',
+                  flexShrink: 0,
+                }}
+              >
+                {user?.fullName?.charAt(0).toUpperCase() || '?'}
+              </div>
+            )}
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--foreground)' }}>
+                {user?.fullName || '—'}
+              </div>
+              <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                {user?.email}
+              </div>
+            </div>
           </div>
 
           <div>
@@ -351,31 +380,68 @@ export default function AdminUsersPage() {
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = '')}
                   >
-                    <td style={{ padding: '0.875rem 1rem', maxWidth: 260, minWidth: 0 }}>
-                      <div
-                        title={user.fullName}
-                        style={{
-                          fontWeight: 600,
-                          color: 'var(--foreground)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {user.fullName}
-                      </div>
-                      <div
-                        title={user.email}
-                        style={{
-                          color: 'var(--muted)',
-                          fontSize: '0.8rem',
-                          marginTop: '0.15rem',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {user.email}
+                    <td style={{ padding: '0.875rem 1rem', maxWidth: 280, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        {user.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={optimizeCloudinaryUrl(user.avatar, 72)}
+                            alt={user.fullName}
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              flexShrink: 0,
+                              border: '1px solid var(--border)',
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, var(--brand-400), var(--brand-700))',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              color: 'white',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {user.fullName?.charAt(0).toUpperCase() || '?'}
+                          </div>
+                        )}
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <div
+                            title={user.fullName}
+                            style={{
+                              fontWeight: 600,
+                              color: 'var(--foreground)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {user.fullName}
+                          </div>
+                          <div
+                            title={user.email}
+                            style={{
+                              color: 'var(--muted)',
+                              fontSize: '0.8rem',
+                              marginTop: '0.15rem',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {user.email}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td style={{ padding: '0.875rem 1rem' }}>

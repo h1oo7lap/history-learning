@@ -128,7 +128,10 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: (dto: UpdateProfileDto) => usersApi.updateMe(dto),
     onSuccess: (updatedUser) => {
-      queryClient.setQueryData(authKeys.me, updatedUser);
+      queryClient.setQueryData(authKeys.me, (old: unknown) =>
+        old && typeof old === 'object' ? { ...old, ...updatedUser } : updatedUser,
+      );
+      queryClient.invalidateQueries({ queryKey: authKeys.me });
       toast.success('Cập nhật hồ sơ thành công!');
     },
     onError: (err: unknown) => {

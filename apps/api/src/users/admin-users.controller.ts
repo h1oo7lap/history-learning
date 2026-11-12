@@ -10,6 +10,7 @@ const ADMIN_USER_SELECT = {
   firstName: true,
   lastName: true,
   fullName: true,
+  avatar: true,
   role: true,
   status: true,
   gradeId: true,
