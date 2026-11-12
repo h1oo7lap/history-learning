@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { History, User, Settings, LogOut, ChevronDown, Award, Menu, X, LayoutDashboard, Bookmark } from 'lucide-react';
+import { History, User, Settings, LogOut, ChevronDown, Award, Menu, X, LayoutDashboard, Bookmark, Trophy } from 'lucide-react';
 import { useMe, useLogout } from '@/features/auth/hooks';
 import { Button, buttonStyles } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -28,7 +28,6 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Trang chủ' },
   { href: '/lessons', label: 'Bài học' },
-  { href: '/collection', label: 'Bộ sưu tập', authRequired: true },
   { href: '/quiz', label: 'Quiz', authRequired: true },
   { href: '/chat', label: 'Hỏi đáp', authRequired: true },
 ];
@@ -307,6 +306,17 @@ export function Navbar() {
                       </Link>
 
                       <Link
+                        id="nav-leaderboard-link"
+                        href="/leaderboard"
+                        onClick={(e) => handleLinkClick(e, '/leaderboard')}
+                        role="menuitem"
+                        className="flex items-center gap-2 px-3 py-2 text-ink-soft hover:bg-paper hover:text-ink transition-colors"
+                      >
+                        <Trophy size={15} aria-hidden="true" />
+                        <span>Bảng xếp hạng</span>
+                      </Link>
+
+                      <Link
                         id="nav-collection-link"
                         href="/collection"
                         onClick={(e) => handleLinkClick(e, '/collection')}
@@ -489,6 +499,41 @@ export function Navbar() {
                   {user.level ? (
                     <LevelProgress level={user.level} variant="compact" />
                   ) : null}
+
+                  <div className="space-y-0.5 pt-2 border-t border-line/60">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => closeMobileMenu()}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-ink-soft hover:bg-card hover:text-ink font-medium transition-colors"
+                    >
+                      <LayoutDashboard size={15} aria-hidden="true" />
+                      <span>Bảng điều khiển</span>
+                    </Link>
+                    <Link
+                      href="/leaderboard"
+                      onClick={() => closeMobileMenu()}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-ink-soft hover:bg-card hover:text-ink font-medium transition-colors"
+                    >
+                      <Trophy size={15} aria-hidden="true" />
+                      <span>Bảng xếp hạng</span>
+                    </Link>
+                    <Link
+                      href="/collection"
+                      onClick={() => closeMobileMenu()}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-ink-soft hover:bg-card hover:text-ink font-medium transition-colors"
+                    >
+                      <Bookmark size={15} aria-hidden="true" />
+                      <span>Bộ sưu tập</span>
+                    </Link>
+                    <Link
+                      href="/profile"
+                      onClick={() => closeMobileMenu()}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm text-ink-soft hover:bg-card hover:text-ink font-medium transition-colors"
+                    >
+                      <User size={15} aria-hidden="true" />
+                      <span>Hồ sơ cá nhân</span>
+                    </Link>
+                  </div>
 
                   <Button
                     variant="ghost"

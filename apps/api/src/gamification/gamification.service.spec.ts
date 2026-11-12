@@ -49,6 +49,15 @@ function createMockPrisma() {
     userEvent: {
       findMany: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
+    grade: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+    },
     level: {
       findMany: vi.fn().mockResolvedValue(levels),
     },
@@ -420,6 +429,170 @@ describe('GamificationService', () => {
       const progress = service.computeLevelProgress(100, []);
       expect(progress.currentLevel.name).toBe('Tân sinh');
       expect(progress.isMaxLevel).toBe(true);
+    });
+  });
+
+  // =========================================================================
+  // Leaderboard
+  // =========================================================================
+  describe('getLeaderboard', () => {
+    const mockGrade = {
+      id: 'grade-6',
+      name: 'Lớp 6',
+      code: 'GRADE_6',
+      displayOrder: 1,
+      status: 'ACTIVE',
+    };
+
+    it('returns top 10 students and identifies current user when in top 10', async () => {
+      mockPrisma.grade.findUnique.mockResolvedValue(mockGrade);
+
+      const topStudents = [
+        {
+          id: 'u-1',
+          fullName: 'Nguyễn Văn A',
+          avatar: null,
+          totalExp: 500,
+          grade: { id: 'grade-6', name: 'Lớp 6', code: 'GRADE_6' },
+        },
+        {
+          id: 'user-test-1',
+          fullName: 'Học sinh Hiện tại',
+          avatar: null,
+          totalExp: 350,
+          grade: { id: 'grade-6', name: 'Lớp 6', code: 'GRADE_6' },
+        },
+      ];
+
+      mockPrisma.user.findMany.mockResolvedValue(topStudents);
+      mockPrisma.user.count.mockResolvedValue(2);
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-test-1',
+        fullName: 'Học sinh Hiện tại',
+        avatar: null,
+        totalExp: 350,
+        gradeId: 'grade-6',
+        role: 'USER',
+        status: 'ACTIVE',
+        createdAt: new Date(),
+        grade: { id: 'grade-6', name: 'Lớp 6', code: 'GRADE_6' },
+      });
+
+      const result = await service.getLeaderboard('grade-6', 'user-test-1');
+
+      expect(result.grade.name).toBe('Lớp 6');
+      expect(result.totalParticipants).toBe(2);
+      expect(result.top10).toHaveLength(2);
+      expect(result.top10[0]?.rank).toBe(1);
+      expect(result.top10[1]?.rank).toBe(2);
+      expect(result.top10[1]?.isCurrentUser).toBe(true);
+      expect(result.currentUser?.rank).toBe(2);
+      expect(result.currentUser?.isInTop10).toBe(true);
+      expect(result.currentUser?.isSameGrade).toBe(true);
+      expect(result.currentUser?.level.name).toBe('Học giả');
+    });
+
+    it('calculates rank correctly when current user is outside top 10', async () => {
+      mockPrisma.grade.findUnique.mockResolvedValue(mockGrade);
+
+      const top10Students = Array.from({ length: 10 }, (_, i) => ({
+        id: `u-${i + 1}`,
+        fullName: `Học sinh ${i + 1}`,
+        avatar: null,
+        totalExp: 1000 - i * 50,
+        grade: { id: 'grade-6', name: 'Lớp 6', code: 'GRADE_6' },
+      }));
+
+      mockPrisma.user.findMany.mockResolvedValue(top10Students);
+      mockPrisma.user.count
+        .mockResolvedValueOnce(25) // total participants
+        .mockResolvedValueOnce(14); // higherCount (14 students have higher EXP)
+
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-rank-15',
+        fullName: 'Học sinh Hạng 15',
+        avatar: null,
+        totalExp: 120,
+        gradeId: 'grade-6',
+        role: 'USER',
+        status: 'ACTIVE',
+        createdAt: new Date(),
+        grade: { id: 'grade-6', name: 'Lớp 6', code: 'GRADE_6' },
+      });
+
+      const result = await service.getLeaderboard('grade-6', 'user-rank-15');
+
+      expect(result.top10).toHaveLength(10);
+      expect(result.totalParticipants).toBe(25);
+      expect(result.currentUser?.rank).toBe(15);
+      expect(result.currentUser?.isInTop10).toBe(false);
+      expect(result.currentUser?.isSameGrade).toBe(true);
+    });
+
+    it('handles student belonging to a different grade', async () => {
+      mockPrisma.grade.findUnique.mockResolvedValue(mockGrade);
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-grade-7',
+        fullName: 'Học sinh Lớp 7',
+        avatar: null,
+        totalExp: 200,
+        gradeId: 'grade-7',
+        role: 'USER',
+        status: 'ACTIVE',
+        createdAt: new Date(),
+        grade: { id: 'grade-7', name: 'Lớp 7', code: 'GRADE_7' },
+      });
+
+      const result = await service.getLeaderboard('grade-6', 'user-grade-7');
+
+      expect(result.currentUser?.isSameGrade).toBe(false);
+      expect(result.currentUser?.rank).toBeNull();
+      expect(result.currentUser?.isInTop10).toBe(false);
+    });
+
+    it('defaults to current user grade when gradeId is omitted', async () => {
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce({ gradeId: 'grade-6' }) // initial check
+        .mockResolvedValueOnce({
+          id: 'user-test-1',
+          fullName: 'Học sinh',
+          avatar: null,
+          totalExp: 100,
+          gradeId: 'grade-6',
+          role: 'USER',
+          status: 'ACTIVE',
+          createdAt: new Date(),
+          grade: { id: 'grade-6', name: 'Lớp 6', code: 'GRADE_6' },
+        });
+
+      mockPrisma.grade.findUnique.mockResolvedValue(mockGrade);
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      const result = await service.getLeaderboard(undefined, 'user-test-1');
+      expect(result.grade.id).toBe('grade-6');
+    });
+
+    it('works for guest user (no currentUserId)', async () => {
+      mockPrisma.grade.findFirst.mockResolvedValue(mockGrade);
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      const result = await service.getLeaderboard();
+
+      expect(result.grade.id).toBe('grade-6');
+      expect(result.currentUser).toBeNull();
+    });
+
+    it('throws NotFoundException when grade is not found', async () => {
+      mockPrisma.grade.findUnique.mockResolvedValue(null);
+
+      await expect(service.getLeaderboard('invalid-grade')).rejects.toThrow(
+        'Không tìm thấy lớp học hợp lệ',
+      );
     });
   });
 });

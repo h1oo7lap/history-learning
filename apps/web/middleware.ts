@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = [
   '/chat',
   '/missions',
   '/collection',
+  '/leaderboard',
   '/progress',
   '/ai',
   '/profile',

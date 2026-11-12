@@ -1,7 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { EXP } from '../common/config/constants';
-import type { UserLevelProgressDto, GamificationRewardLevelDto } from '@history-learning/shared';
+import type {
+  UserLevelProgressDto,
+  GamificationRewardLevelDto,
+  LeaderboardResponseDto,
+  LeaderboardEntryDto,
+  CurrentUserLeaderboardDto,
+} from '@history-learning/shared';
 
 type TransactionClient = Parameters<Parameters<PrismaService['$transaction']>[0]>[0];
 
@@ -386,6 +392,198 @@ export class GamificationService {
       totalCharacters: characters.length,
       totalEvents: events.length,
       totalCards: characters.length + events.length,
+    };
+  }
+
+  /**
+   * Bảng xếp hạng EXP theo lớp: top 10 và thứ hạng của người dùng hiện tại.
+   */
+  async getLeaderboard(
+    targetGradeId?: string,
+    currentUserId?: string,
+  ): Promise<LeaderboardResponseDto> {
+    // 1. Xác định lớp học cần xem bảng xếp hạng
+    let targetGrade: {
+      id: string;
+      name: string;
+      code: string;
+      displayOrder: number;
+      status: string;
+    } | null = null;
+
+    if (targetGradeId) {
+      targetGrade = await this.prisma.grade.findUnique({
+        where: { id: targetGradeId },
+        select: { id: true, name: true, code: true, displayOrder: true, status: true },
+      });
+      if (!targetGrade || targetGrade.status !== 'ACTIVE') {
+        throw new NotFoundException('Không tìm thấy lớp học hợp lệ');
+      }
+    } else {
+      if (currentUserId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: currentUserId },
+          select: { gradeId: true },
+        });
+        if (user?.gradeId) {
+          targetGrade = await this.prisma.grade.findUnique({
+            where: { id: user.gradeId },
+            select: { id: true, name: true, code: true, displayOrder: true, status: true },
+          });
+        }
+      }
+
+      if (!targetGrade || targetGrade.status !== 'ACTIVE') {
+        targetGrade = await this.prisma.grade.findFirst({
+          where: { status: 'ACTIVE' },
+          orderBy: [{ displayOrder: 'asc' }, { code: 'asc' }],
+          select: { id: true, name: true, code: true, displayOrder: true, status: true },
+        });
+      }
+
+      if (!targetGrade) {
+        throw new NotFoundException('Chưa có dữ liệu lớp học');
+      }
+    }
+
+    // 2. Lấy danh sách Level để tính huy hiệu cấp độ
+    const levels = await this.prisma.level.findMany({
+      orderBy: { requiredExp: 'asc' },
+    });
+
+    // 3. Truy vấn Top 10 học sinh có EXP cao nhất thuộc lớp
+    const gradeWhere = {
+      gradeId: targetGrade.id,
+      status: 'ACTIVE' as const,
+      role: 'USER' as const,
+    };
+
+    const [topUsers, totalParticipants] = await Promise.all([
+      this.prisma.user.findMany({
+        where: gradeWhere,
+        orderBy: [
+          { totalExp: 'desc' },
+          { createdAt: 'asc' },
+        ],
+        take: 10,
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          totalExp: true,
+          grade: {
+            select: { id: true, name: true, code: true },
+          },
+        },
+      }),
+      this.prisma.user.count({ where: gradeWhere }),
+    ]);
+
+    const top10: LeaderboardEntryDto[] = topUsers.map((u, index) => {
+      const levelProgress = this.computeLevelProgress(u.totalExp, levels);
+      return {
+        rank: index + 1,
+        userId: u.id,
+        fullName: u.fullName,
+        avatar: u.avatar,
+        totalExp: u.totalExp,
+        level: levelProgress.currentLevel,
+        grade: u.grade ?? {
+          id: targetGrade!.id,
+          name: targetGrade!.name,
+          code: targetGrade!.code,
+        },
+        isCurrentUser: u.id === currentUserId,
+      };
+    });
+
+    // 4. Xác định thứ hạng và thông tin của user hiện tại
+    let currentUserDto: CurrentUserLeaderboardDto | null = null;
+
+    if (currentUserId) {
+      const currentUser = await this.prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          totalExp: true,
+          gradeId: true,
+          role: true,
+          status: true,
+          createdAt: true,
+          grade: {
+            select: { id: true, name: true, code: true },
+          },
+        },
+      });
+
+      if (currentUser) {
+        const isSameGrade =
+          currentUser.gradeId === targetGrade.id &&
+          currentUser.role === 'USER' &&
+          currentUser.status === 'ACTIVE';
+
+        const currentUserLevel = this.computeLevelProgress(currentUser.totalExp, levels);
+
+        if (isSameGrade) {
+          const foundInTop10 = top10.find((entry) => entry.userId === currentUser.id);
+          let rank: number;
+          if (foundInTop10) {
+            rank = foundInTop10.rank;
+          } else {
+            const higherCount = await this.prisma.user.count({
+              where: {
+                ...gradeWhere,
+                OR: [
+                  { totalExp: { gt: currentUser.totalExp } },
+                  {
+                    totalExp: currentUser.totalExp,
+                    createdAt: { lt: currentUser.createdAt },
+                  },
+                ],
+              },
+            });
+            rank = higherCount + 1;
+          }
+
+          currentUserDto = {
+            rank,
+            userId: currentUser.id,
+            fullName: currentUser.fullName,
+            avatar: currentUser.avatar,
+            totalExp: currentUser.totalExp,
+            level: currentUserLevel.currentLevel,
+            grade: currentUser.grade,
+            isInTop10: rank <= 10,
+            isSameGrade: true,
+          };
+        } else {
+          currentUserDto = {
+            rank: null,
+            userId: currentUser.id,
+            fullName: currentUser.fullName,
+            avatar: currentUser.avatar,
+            totalExp: currentUser.totalExp,
+            level: currentUserLevel.currentLevel,
+            grade: currentUser.grade,
+            isInTop10: false,
+            isSameGrade: false,
+          };
+        }
+      }
+    }
+
+    return {
+      grade: {
+        id: targetGrade.id,
+        name: targetGrade.name,
+        code: targetGrade.code,
+        displayOrder: targetGrade.displayOrder,
+      },
+      totalParticipants,
+      top10,
+      currentUser: currentUserDto,
     };
   }
 }

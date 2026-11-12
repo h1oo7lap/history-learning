@@ -115,3 +115,51 @@ export const UserCollectionResponseSchema = z.object({
   totalCards: z.number(),
 });
 export type UserCollectionResponseDto = z.infer<typeof UserCollectionResponseSchema>;
+
+// ---- Leaderboard Schemas ----
+export const LeaderboardQuerySchema = z.object({
+  gradeId: z.string().optional(),
+});
+export type LeaderboardQueryDto = z.infer<typeof LeaderboardQuerySchema>;
+
+export const LeaderboardGradeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string(),
+  displayOrder: z.number().optional(),
+});
+export type LeaderboardGradeDto = z.infer<typeof LeaderboardGradeSchema>;
+
+export const LeaderboardEntrySchema = z.object({
+  rank: z.number().int().positive(),
+  userId: z.string(),
+  fullName: z.string(),
+  avatar: z.string().nullable().optional(),
+  totalExp: z.number().int().nonnegative(),
+  level: GamificationRewardLevelSchema,
+  grade: LeaderboardGradeSchema,
+  isCurrentUser: z.boolean().default(false),
+});
+export type LeaderboardEntryDto = z.infer<typeof LeaderboardEntrySchema>;
+
+export const CurrentUserLeaderboardSchema = z.object({
+  rank: z.number().int().positive().nullable(),
+  userId: z.string(),
+  fullName: z.string(),
+  avatar: z.string().nullable().optional(),
+  totalExp: z.number().int().nonnegative(),
+  level: GamificationRewardLevelSchema,
+  grade: LeaderboardGradeSchema.nullable(),
+  isInTop10: z.boolean(),
+  isSameGrade: z.boolean(),
+});
+export type CurrentUserLeaderboardDto = z.infer<typeof CurrentUserLeaderboardSchema>;
+
+export const LeaderboardResponseSchema = z.object({
+  grade: LeaderboardGradeSchema,
+  totalParticipants: z.number().int().nonnegative(),
+  top10: z.array(LeaderboardEntrySchema),
+  currentUser: CurrentUserLeaderboardSchema.nullable(),
+});
+export type LeaderboardResponseDto = z.infer<typeof LeaderboardResponseSchema>;
+

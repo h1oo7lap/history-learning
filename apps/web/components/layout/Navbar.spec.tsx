@@ -66,7 +66,7 @@ describe('Navbar Component', () => {
     expect(html).toContain('Cấp 2: Học trò');
     expect(html).toContain('120 EXP');
     expect(html).toContain('Nguyễn Văn Sử');
-    expect(html).toContain('Bộ sưu tập');
+    expect(html).not.toContain('nav-link-collection');
   });
 
   it('hiển thị đúng Cấp 5: Sử gia khi totalExp >= 1000', () => {
